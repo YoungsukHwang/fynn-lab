@@ -1,0 +1,16 @@
+# Secrets: any .env variant (.env, .env.local, .env.save, .env.production, ...), except the template
+.env*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+
+# OS
+.DS_Store

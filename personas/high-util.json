@@ -1,0 +1,31 @@
+{
+  "id": "high-util",
+  "name": "Priya",
+  "summary": "Priya pays every bill on time but carries high card balances: $2,550 against $3,000 in limits (85%), with one card at 95% of its limit.",
+  "as_of": "2026-10-15",
+  "credit": {
+    "score": {"model": "VantageScore 3.0", "current": 655, "previous": 668, "previous_as_of": "2026-09-15"},
+    "utilization": {"overall": 0.85, "total_revolving_balance": 2550, "total_revolving_limit": 3000},
+    "accounts": [
+      {"name": "Rewards credit card", "type": "revolving", "limit": 2000, "balance": 1900, "opened": "2021-09-10", "status": "open, current"},
+      {"name": "Bank credit card", "type": "revolving", "limit": 1000, "balance": 650, "opened": "2023-02-15", "status": "open, current"},
+      {"name": "Credit Builder plan", "type": "installment", "limit": null, "balance": 102, "opened": "2026-03-01", "status": "open, current"}
+    ],
+    "negative_items": [],
+    "hard_inquiries_last_12_months": 0,
+    "oldest_account_opened": "2021-09-10"
+  },
+  "products": {
+    "credit_builder": {"status": "active", "enrolled": "2026-03-01", "on_time_payments": 7, "late_payments": 0, "payments_remaining": 17, "savings_balance": 42, "next_payment_due": "2026-11-01"},
+    "secured_card": null,
+    "rent_reporting": null,
+    "bill_reporting": null,
+    "debt_settlement": null
+  },
+  "recent_events": [
+    "2026-10-05: Card balances reported at $2,550 of $3,000 in limits (85%), up from $2,100 (70%) the month before",
+    "2026-10-01: Made the 7th Credit Builder payment on time",
+    "2026-09-27: Paid the minimum due on both credit cards on time",
+    "2026-09-20: Charged a car repair to the Rewards credit card"
+  ]
+}

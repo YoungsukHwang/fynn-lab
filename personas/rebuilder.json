@@ -1,0 +1,51 @@
+{
+  "id": "rebuilder",
+  "name": "Jordan",
+  "summary": "Jordan is rebuilding after a 30-day late payment on a retail store card was reported in September; utilization is 47%, Credit Builder has 10 on-time payments, and a Secured Card shipped on 2026-10-06 has not arrived yet.",
+  "as_of": "2026-10-15",
+  "credit": {
+    "score": {"model": "VantageScore 3.0", "current": 588, "previous": 611, "previous_as_of": "2026-09-15"},
+    "utilization": {"overall": 0.47, "total_revolving_balance": 1410, "total_revolving_limit": 3000},
+    "accounts": [
+      {"name": "Bank credit card", "type": "revolving", "limit": 1500, "balance": 510, "opened": "2022-05-01", "status": "open, current"},
+      {"name": "Retail store card", "type": "revolving", "limit": 1500, "balance": 900, "opened": "2023-08-01", "status": "open, current (reported 30 days late on 2026-09-28)"},
+      {"name": "Credit Builder plan", "type": "installment", "limit": null, "balance": 84, "opened": "2025-12-01", "status": "open, current"}
+    ],
+    "negative_items": [
+      {"type": "late_payment", "account": "Retail store card", "detail": "30 days late", "reported": "2026-09-28", "original_delinquency": "2026-08-25"}
+    ],
+    "hard_inquiries_last_12_months": 1,
+    "oldest_account_opened": "2022-05-01"
+  },
+  "products": {
+    "credit_builder": {"status": "active", "enrolled": "2025-12-01", "on_time_payments": 10, "late_payments": 0, "payments_remaining": 14, "savings_balance": 60, "next_payment_due": "2026-11-01"},
+    "secured_card": {
+      "status": "shipped",
+      "deposit": 300,
+      "credit_limit": 300,
+      "approved": "2026-10-02",
+      "shipped_on": "2026-10-06",
+      "expected_delivery_window": {"start": "2026-10-16", "end": "2026-10-21"},
+      "delivered_on": null,
+      "activated": false,
+      "on_time_payments": 0,
+      "late_payments": 0,
+      "statement_closing_day": null,
+      "next_payment_due": null,
+      "upgrade_review": "not_eligible"
+    },
+    "rent_reporting": null,
+    "bill_reporting": null,
+    "debt_settlement": null
+  },
+  "recent_events": [
+    "2026-10-14: Viewed a travel credit card offer in the Marketplace",
+    "2026-10-06: Secured Card shipped; not delivered yet",
+    "2026-10-05: Card balances reported at $1,410 of $3,000 in limits (47%), up from $900 (30%) the month before",
+    "2026-10-02: Approved for the Secured Card with a $300 deposit (no hard inquiry)",
+    "2026-10-02: Paid the past-due amount on the Retail store card; the account is current again",
+    "2026-10-01: Made the 10th Credit Builder payment on time",
+    "2026-09-28: Retail store card reported 30 days late (the payment due 2026-08-25 was missed)",
+    "2026-04-14: Applied for a personal loan with another lender (hard inquiry; declined)"
+  ]
+}

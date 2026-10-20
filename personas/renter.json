@@ -1,0 +1,32 @@
+{
+  "id": "renter",
+  "name": "Luis",
+  "summary": "Luis has 4 months of on-time rent ($1,400 a month) reported through Rent Reporting, has not added past rent, and plans to apply for a mortgage in 2027.",
+  "as_of": "2026-10-15",
+  "credit": {
+    "score": {"model": "VantageScore 3.0", "current": 641, "previous": 634, "previous_as_of": "2026-09-15"},
+    "utilization": {"overall": 0.22, "total_revolving_balance": 550, "total_revolving_limit": 2500},
+    "accounts": [
+      {"name": "Bank credit card", "type": "revolving", "limit": 2500, "balance": 550, "opened": "2022-01-12", "status": "open, current (reported 30 days late on 2024-12-16)"},
+      {"name": "Auto loan", "type": "installment", "limit": null, "balance": 9800, "opened": "2024-04-15", "status": "open, current"}
+    ],
+    "negative_items": [
+      {"type": "late_payment", "account": "Bank credit card", "detail": "30 days late", "reported": "2024-12-16", "original_delinquency": "2024-11-12"}
+    ],
+    "hard_inquiries_last_12_months": 0,
+    "oldest_account_opened": "2022-01-12"
+  },
+  "products": {
+    "credit_builder": null,
+    "secured_card": null,
+    "rent_reporting": {"status": "active", "enrolled": "2026-06-01", "monthly_rent": 1400, "months_reported_since_enrollment": 4, "past_rent_added": false, "past_months_added": 0, "lease_start": "2024-09-01"},
+    "bill_reporting": null,
+    "debt_settlement": null
+  },
+  "recent_events": [
+    "2026-10-12: Told Coach he wants to apply for a mortgage in 2027",
+    "2026-10-01: Paid October rent ($1,400) on time from his linked bank account; not reported yet",
+    "2026-09-01: Paid September rent ($1,400) on time; it is his 4th reported month (June to September)",
+    "2026-06-01: Enrolled in Rent Reporting and chose not to add past rent"
+  ]
+}

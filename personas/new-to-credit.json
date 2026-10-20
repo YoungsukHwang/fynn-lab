@@ -1,0 +1,29 @@
+{
+  "id": "new-to-credit",
+  "name": "Maya",
+  "summary": "Maya is 22 with a thin file: her only account is a Credit Builder plan opened 4 months ago, so she has a VantageScore 3.0 but no FICO score yet, and she has never had a credit card.",
+  "as_of": "2026-10-15",
+  "credit": {
+    "score": {"model": "VantageScore 3.0", "current": 612, "previous": 603, "previous_as_of": "2026-09-15"},
+    "utilization": {"overall": null, "total_revolving_balance": 0, "total_revolving_limit": 0},
+    "accounts": [
+      {"name": "Credit Builder plan", "type": "installment", "limit": null, "balance": 120, "opened": "2026-06-01", "status": "open, current"}
+    ],
+    "negative_items": [],
+    "hard_inquiries_last_12_months": 0,
+    "oldest_account_opened": "2026-06-01"
+  },
+  "products": {
+    "credit_builder": {"status": "active", "enrolled": "2026-06-01", "on_time_payments": 4, "late_payments": 0, "payments_remaining": 20, "savings_balance": 24, "next_payment_due": "2026-11-01"},
+    "secured_card": null,
+    "rent_reporting": null,
+    "bill_reporting": null,
+    "debt_settlement": null
+  },
+  "recent_events": [
+    "2026-10-09: Browsed credit card offers in the Marketplace but did not apply",
+    "2026-10-01: Made her 4th Credit Builder payment on time",
+    "2026-09-02: A lender's prequalification check found no FICO score for her",
+    "2026-06-01: Opened the Credit Builder plan (no credit check, no hard inquiry)"
+  ]
+}

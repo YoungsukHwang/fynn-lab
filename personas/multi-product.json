@@ -1,0 +1,54 @@
+{
+  "id": "multi-product",
+  "name": "Sam",
+  "summary": "Sam uses every building product: Credit Builder has 2 payments left, the Secured Card ($500 deposit) has 9 on-time payments and is eligible for upgrade review, Rent Reporting (15 months reported since enrolling, plus 12 past months added, 27 in total) and Bill Reporting are both active, and utilization is 12%.",
+  "as_of": "2026-10-15",
+  "credit": {
+    "score": {"model": "VantageScore 3.0", "current": 702, "previous": 695, "previous_as_of": "2026-09-15"},
+    "utilization": {"overall": 0.12, "total_revolving_balance": 300, "total_revolving_limit": 2500},
+    "accounts": [
+      {"name": "Bank credit card", "type": "revolving", "limit": 2000, "balance": 240, "opened": "2020-08-03", "status": "open, current"},
+      {"name": "Secured Card", "type": "revolving", "limit": 500, "balance": 60, "opened": "2025-12-08", "status": "open, current"},
+      {"name": "Credit Builder plan", "type": "installment", "limit": null, "balance": 12, "opened": "2024-12-01", "status": "open, current"}
+    ],
+    "negative_items": [],
+    "hard_inquiries_last_12_months": 0,
+    "oldest_account_opened": "2020-08-03"
+  },
+  "products": {
+    "credit_builder": {"status": "active", "enrolled": "2024-12-01", "on_time_payments": 22, "late_payments": 0, "payments_remaining": 2, "savings_balance": 132, "next_payment_due": "2026-11-01"},
+    "secured_card": {
+      "status": "active",
+      "deposit": 500,
+      "credit_limit": 500,
+      "approved": "2025-12-08",
+      "shipped_on": "2025-12-09",
+      "expected_delivery_window": {"start": "2025-12-18", "end": "2025-12-23"},
+      "delivered_on": "2025-12-18",
+      "activated": true,
+      "on_time_payments": 9,
+      "late_payments": 0,
+      "statement_closing_day": 10,
+      "next_payment_due": "2026-11-05",
+      "upgrade_review": "eligible"
+    },
+    "rent_reporting": {"status": "active", "enrolled": "2025-07-01", "monthly_rent": 1650, "months_reported_since_enrollment": 15, "past_rent_added": true, "past_months_added": 12, "lease_start": "2023-05-01"},
+    "bill_reporting": {
+      "status": "active",
+      "enrolled": "2026-02-01",
+      "bills": [
+        {"name": "Mobile phone", "category": "phone", "monthly_amount": 65, "months_reported": 8},
+        {"name": "Electric utility", "category": "utility", "monthly_amount": 90, "months_reported": 8},
+        {"name": "Home internet", "category": "internet", "monthly_amount": 60, "months_reported": 8}
+      ]
+    },
+    "debt_settlement": null
+  },
+  "recent_events": [
+    "2026-10-10: Secured Card statement closed with a $60 balance",
+    "2026-10-05: Made the 9th consecutive on-time Secured Card payment",
+    "2026-10-01: Made the 22nd Credit Builder payment on time; 2 payments left",
+    "2026-10-01: Paid October rent ($1,650) on time from the linked bank account",
+    "2026-09-05: Made the 8th consecutive on-time Secured Card payment; the account became eligible for upgrade review"
+  ]
+}

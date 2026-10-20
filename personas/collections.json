@@ -1,0 +1,40 @@
+{
+  "id": "collections",
+  "name": "Dana",
+  "summary": "Dana has an unpaid $1,200 non-medical collection from a phone company (original delinquency March 2022) and a $2,800 charged-off credit card enrolled in Debt Settlement, still in negotiation; she has no medical collections.",
+  "as_of": "2026-10-15",
+  "credit": {
+    "score": {"model": "VantageScore 3.0", "current": 560, "previous": 555, "previous_as_of": "2026-09-15"},
+    "utilization": {"overall": 0.35, "total_revolving_balance": 280, "total_revolving_limit": 800},
+    "accounts": [
+      {"name": "Store card", "type": "revolving", "limit": 800, "balance": 280, "opened": "2021-11-03", "status": "open, current"},
+      {"name": "Bank credit card", "type": "revolving", "limit": 2500, "balance": 2800, "opened": "2019-05-20", "status": "closed, charged off (2024-12-18)"}
+    ],
+    "negative_items": [
+      {"type": "collection", "account": "Mobile phone carrier (placed with a collection agency)", "detail": "Non-medical collection, $1,200 unpaid", "reported": "2022-09-20", "original_delinquency": "2022-03-14", "balance": 1200, "medical": false, "paid": false},
+      {"type": "charge_off", "account": "Bank credit card", "detail": "Charged off with a $2,800 balance", "reported": "2024-12-18", "original_delinquency": "2024-06-12", "balance": 2800, "paid": false}
+    ],
+    "hard_inquiries_last_12_months": 0,
+    "oldest_account_opened": "2019-05-20"
+  },
+  "products": {
+    "credit_builder": null,
+    "secured_card": null,
+    "rent_reporting": null,
+    "bill_reporting": null,
+    "debt_settlement": {
+      "status": "active",
+      "enrolled": "2026-08-18",
+      "fees_charged": 0,
+      "accounts": [
+        {"account": "Bank credit card", "balance": 2800, "stage": "negotiating"}
+      ]
+    }
+  },
+  "recent_events": [
+    "2026-10-08: Debt Settlement update: still negotiating with the Bank credit card creditor; no settlement agreed yet",
+    "2026-10-01: Paid the Store card on time",
+    "2026-09-22: Got a letter from the collection agency about the $1,200 phone bill",
+    "2026-08-18: Enrolled the charged-off Bank credit card ($2,800) in Debt Settlement; no upfront fee"
+  ]
+}
