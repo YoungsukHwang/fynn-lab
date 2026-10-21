@@ -34,6 +34,13 @@ MAX_CARRIED_SKILLS = 2
 # How many recent messages the routers read to interpret the latest one.
 ROUTER_CONTEXT_MESSAGES = 4
 
+# Browser origins allowed to call the API (comma-separated in FYNN_CORS_ORIGINS).
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("FYNN_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    if origin.strip()
+]
+
 # Before bot: one expert agent per domain. Each topic skill declares its domain,
 # so both bots draw on exactly the same skill text.
 DOMAINS: dict[str, str] = {

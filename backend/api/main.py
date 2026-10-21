@@ -134,7 +134,7 @@ app = FastAPI(title="Fynn Lab API", version="0.1.0")
 app.add_middleware(BaseHTTPMiddleware, dispatch=_catch_unhandled)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=config.CORS_ORIGINS,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
     expose_headers=["Retry-After"],

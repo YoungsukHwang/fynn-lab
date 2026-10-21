@@ -16,7 +16,7 @@ skills/      skill files (Markdown + YAML frontmatter), shared by both bots
 personas/    synthetic member profiles (JSON, no real data)
 docs/        product fact sheet for the fictional app
 backend/     Python: fynn core package, FastAPI app, tests
-web/         Next.js demo site (coming in M2)
+web/         Next.js demo site: Before/After chat, routing display, architecture diagrams
 ```
 
 ## Backend
@@ -63,3 +63,18 @@ You can override each model with an environment variable; see `backend/.env.exam
 | `POST /chat` | Takes `{bot, persona_id, messages, carry_skills?}`. Messages must alternate, starting and ending with the user. `carry_skills` applies to the After bot only; the Before bot ignores it, and unknown names are dropped. Returns `bot`, `reply`, `model`, `stop_reason`, the routing decision (`strategy`, `selected`, `carried`, `reason`, `error`), and token usage including cache reads and writes. Every error comes back as JSON `{detail, retryable}` with CORS headers. |
 | `GET /personas` | Synthetic member profiles |
 | `GET /architecture` | Domains, skills, and models, used to draw the diagrams |
+
+## Web demo
+
+The demo needs the backend running on port 8000 (see above).
+
+```bash
+cd web
+npm install
+npm run dev                 # http://localhost:3000
+```
+
+- **Pages.** `/` is the demo: pick a synthetic member, then send one message to both bots. Each column shows the reply, the router's decision and reason, and the architecture diagram with the agent or skills that were used.
+- **Different backend.** To point the site at a different backend, set `NEXT_PUBLIC_API_URL`. It is read at build time.
+- **CORS.** The API allows `localhost:3000` and `127.0.0.1:3000`. Set `FYNN_CORS_ORIGINS` in `backend/.env` for any other origin.
+- **Placeholders.** `/framework` and `/results` stay placeholders until M5.
