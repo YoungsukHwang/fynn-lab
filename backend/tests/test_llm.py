@@ -136,3 +136,63 @@ def test_generate_json_wraps_unusable_output(fake_api: FakeAPI, llm: AnthropicLL
         )
     # The billed tokens travel with the error so callers can still count them.
     assert raised.value.usage.input_tokens == 12
+
+
+def test_has_credentials_without_any_source(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from fynn.llm import has_credentials
+
+    # The realistic no-key case: no env credentials and no profile on disk, so the SDK chain returns None.
+    monkeypatch.delenv("ANTHROPIC_CONFIG_DIR", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert has_credentials() is False
+
+
+@pytest.mark.parametrize(
+    ("env", "chain", "expected"),
+    [
+        ({"ANTHROPIC_API_KEY": "k"}, None, True),  # API key short-circuits the chain
+        ({}, object(), True),  # token, profile or WIF resolved by the SDK
+        ({}, None, False),  # nothing resolved
+        ({}, RuntimeError("broken profile"), False),  # explicit profile that fails to load
+    ],
+)
+def test_has_credentials_branches(monkeypatch: pytest.MonkeyPatch, env, chain, expected) -> None:
+    import fynn.llm as llm_module
+
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+
+    def fake_chain():
+        if isinstance(chain, Exception):
+            raise chain
+        return chain
+
+    monkeypatch.setattr(llm_module, "default_credentials", fake_chain)
+    assert llm_module.has_credentials() is expected
+
+
+def test_router_and_agent_calls_use_their_own_clients() -> None:
+    from types import SimpleNamespace
+
+    class TextCall(Exception):
+        pass
+
+    class JsonCall(Exception):
+        pass
+
+    def raise_text(**_):
+        raise TextCall
+
+    def raise_json(**_):
+        raise JsonCall
+
+    llm = AnthropicLLM(anthropic.Anthropic(api_key="test-key"), json_timeout=20, text_timeout=90)
+    assert llm._json_client.timeout == 20
+    assert llm._text_client.timeout == 90
+    # Route each call to a recorder to prove which (timeout-specific) client it uses.
+    llm._text_client = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=raise_text)))
+    llm._json_client = SimpleNamespace(messages=SimpleNamespace(create=raise_json))
+    with pytest.raises(TextCall):
+        llm.generate(model="m", system=[], messages=[], effort="low", max_tokens=1)
+    with pytest.raises(JsonCall):
+        llm.generate_json(model="m", system="s", messages=[], schema={}, effort="low", max_tokens=1)

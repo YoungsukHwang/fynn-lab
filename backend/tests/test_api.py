@@ -146,6 +146,7 @@ def _status_error(cls: type[anthropic.APIStatusError], status: int) -> anthropic
         (_status_error(anthropic.OverloadedError, 529), 503, True),
         (_status_error(anthropic.BadRequestError, 400), 502, False),
         (anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com")), 504, True),
+        (anthropic.APITimeoutError(request=httpx2.Request("POST", "https://api.anthropic.com")), 504, True),
         (anthropic.AnthropicError("credentials could not be resolved"), 502, False),
         (TypeError("Could not resolve authentication method"), 500, False),
     ],
@@ -175,6 +176,7 @@ def test_architecture_describes_both_bots(client: TestClient) -> None:
     assert body["always_on"] == ["guardrails", "tone"]
     assert body["max_new_skills_per_turn"] == 3
     assert body["max_carried_skills"] == 2
+    assert body["limits"] == {"max_messages": 20, "max_user_message_chars": 2000}
     assert [d["id"] for d in body["domains"]] == [
         "score-and-reports",
         "credit-products",
@@ -186,3 +188,45 @@ def test_architecture_describes_both_bots(client: TestClient) -> None:
 
 def test_personas_endpoint(client: TestClient) -> None:
     assert [p["id"] for p in client.get("/personas").json()] == ["tester"]
+
+
+def test_chat_without_credentials_explains_how_to_fix(mini_library: SkillLibrary, persona_dir: Path) -> None:
+    llm = FakeLLM([TWO_SKILLS])
+    runtime = Runtime(
+        library=mini_library,
+        personas=load_personas(persona_dir),
+        bots=build_bots(llm, mini_library),
+        credentials_ok=False,
+    )
+    app.dependency_overrides[get_runtime] = lambda: runtime
+    try:
+        response = _chat(TestClient(app), USER)
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 503
+    assert "ANTHROPIC_API_KEY" in response.json()["detail"]
+    # Retryable: after adding the key and restarting the API, the same message goes through.
+    assert response.json()["retryable"] is True
+    assert llm.json_calls == []  # nothing was sent to the model
+
+
+def test_timeouts_and_unreachable_api_have_different_messages(make_client) -> None:
+    request = httpx2.Request("POST", "https://api.anthropic.com")
+    details = []
+    for error in (anthropic.APITimeoutError(request=request), anthropic.APIConnectionError(request=request)):
+        llm = FakeLLM([TWO_SKILLS])
+        llm.text_error = error
+        details.append(_chat(make_client(llm), USER).json()["detail"])
+    assert details == ["the model took too long to answer", "could not reach the model API"]
+
+
+def test_runtime_without_credentials_still_serves_static_data() -> None:
+    # conftest leaves no usable credentials (and an explicit, missing profile dir that the SDK
+    # would fail on). The runtime must still build, so /personas and /architecture keep working.
+    get_runtime.cache_clear()
+    try:
+        runtime = get_runtime()
+        assert runtime.credentials_ok is False
+        assert runtime.personas and runtime.library.topics
+    finally:
+        get_runtime.cache_clear()

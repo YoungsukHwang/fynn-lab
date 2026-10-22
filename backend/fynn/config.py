@@ -34,6 +34,13 @@ MAX_CARRIED_SKILLS = 2
 # How many recent messages the routers read to interpret the latest one.
 ROUTER_CONTEXT_MESSAGES = 4
 
+# The web client gives up on a chat after 120 s. A chat is two sequential calls, so the API
+# runtime gives the short router call 20 s and the answer call 90 s, with no SDK retries
+# (20 + 90 < 120); the site's Retry button retries instead. The terminal chat keeps SDK defaults.
+API_ROUTER_TIMEOUT_SECONDS = 20.0
+API_AGENT_TIMEOUT_SECONDS = 90.0
+API_MAX_RETRIES = 0
+
 # Browser origins allowed to call the API (comma-separated in FYNN_CORS_ORIGINS).
 CORS_ORIGINS = [
     origin.strip()

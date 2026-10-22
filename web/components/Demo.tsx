@@ -8,9 +8,8 @@ import {
   type BotName,
   type ChatMessage,
   getArchitecture,
+  DEFAULT_LIMITS,
   getPersonas,
-  MAX_MESSAGES,
-  MAX_USER_MESSAGE_CHARS,
   type Persona,
   RequestCancelled,
   sendChat,
@@ -30,7 +29,7 @@ const EMPTY_COLUMNS: Columns = { before: EMPTY_COLUMN, after: EMPTY_COLUMN };
 export function Demo() {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [architecture, setArchitecture] = useState<Architecture | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<ApiError | null>(null);
   const [personaId, setPersonaId] = useState(DEFAULT_PERSONA);
   const [columns, setColumns] = useState<Columns>(EMPTY_COLUMNS);
   const [input, setInput] = useState("");
@@ -56,15 +55,17 @@ export function Demo() {
       })
       .catch((error: unknown) => {
         loadStarted.current = false;
-        setLoadError(error instanceof ApiError ? error.message : "Could not load the demo data.");
+        // Status -1: an unexpected client-side failure, not "backend unreachable" (status 0).
+        setLoadError(error instanceof ApiError ? error : new ApiError("Could not load the demo data.", -1, false));
       });
   }, []);
 
   const persona = personas.find((p) => p.id === personaId) ?? null;
+  const limits = architecture?.limits ?? DEFAULT_LIMITS;
   const pending = BOTS.some((bot) => columns[bot].pending);
   const blockedByError = BOTS.some((bot) => columns[bot].error !== null);
-  // Every request must end with the new user turn and stay within MAX_MESSAGES.
-  const atLimit = BOTS.some((bot) => columns[bot].turns.length + 1 > MAX_MESSAGES);
+  // Every request must end with the new user turn and stay within the backend's message limit.
+  const atLimit = BOTS.some((bot) => columns[bot].turns.length + 1 > limits.max_messages);
   const hasConversation = BOTS.some((bot) => columns[bot].turns.length > 0 || columns[bot].error !== null);
 
   function updateColumn(bot: BotName, update: (column: ColumnState) => ColumnState) {
@@ -92,7 +93,7 @@ export function Demo() {
 
     for (const bot of bots) {
       const column = columns[bot];
-      if (column.turns.length + 1 > MAX_MESSAGES) continue;
+      if (column.turns.length + 1 > limits.max_messages) continue;
       const history: ChatMessage[] = [
         ...column.turns.map((turn) => ({ role: turn.role, content: turn.content })),
         { role: "user", content: message },
@@ -144,12 +145,16 @@ export function Demo() {
   if (loadError) {
     return (
       <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-        <p className="font-medium">{loadError}</p>
-        <p className="mt-1">
-          Start it from the repo root with{" "}
-          <code className="rounded bg-white px-1">cd backend && .venv/bin/uvicorn api.main:app --port 8000</code>, then reload this
-          page.
-        </p>
+        <p className="font-medium">{loadError.message}</p>
+        {loadError.status === 0 ? (
+          <p className="mt-1">
+            Start it from the repo root with{" "}
+            <code className="rounded bg-white px-1">cd backend && .venv/bin/uvicorn api.main:app --port 8000</code>, then reload
+            this page.
+          </p>
+        ) : (
+          <p className="mt-1">The backend returned an error. Check its log, then reload this page.</p>
+        )}
       </div>
     );
   }
@@ -158,10 +163,15 @@ export function Demo() {
     return <p className="text-sm text-zinc-500">Loading personas and architecture...</p>;
   }
 
+  const failed = BOTS.filter((bot) => columns[bot].error !== null);
+  // Retrying helps only if every failed column can be retried; otherwise a reset is needed anyway.
+  const canRetry = failed.length > 0 && failed.every((bot) => columns[bot].error?.retryable);
   const composerHint = atLimit
-    ? `This conversation reached the demo limit of ${MAX_MESSAGES / 2} questions. Start a new conversation to keep going.`
+    ? `This conversation reached the demo limit of ${Math.floor(limits.max_messages / 2)} questions. Start a new conversation to keep going.`
     : blockedByError
-      ? "One bot didn't answer. Retry it, or start a new conversation, before asking the next question."
+      ? `${failed.length === BOTS.length ? "Neither bot answered" : "One bot didn't answer"} the last message. ${
+          canRetry ? "Retry it, or start a new conversation," : "Start a new conversation"
+        } before asking the next question.`
       : null;
   const canSend = !pending && !blockedByError && !atLimit && input.trim().length > 0;
 
@@ -250,7 +260,7 @@ export function Demo() {
             ref={textarea}
             className="min-h-10 flex-1 resize-y rounded-md border border-zinc-300 px-3 py-2 text-base text-zinc-900 sm:text-sm"
             rows={1}
-            maxLength={MAX_USER_MESSAGE_CHARS}
+            maxLength={limits.max_user_message_chars}
             placeholder="Ask both bots the same question. Enter sends, Shift+Enter adds a line."
             value={input}
             onChange={(event) => setInput(event.target.value)}

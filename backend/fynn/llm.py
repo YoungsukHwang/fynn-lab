@@ -9,10 +9,12 @@ history check even though the system prompt changes from turn to turn.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from typing import Any, Protocol
 
 import anthropic
+from anthropic.lib.credentials import default_credentials
 
 from fynn.prompts import PromptBlock
 
@@ -69,6 +71,18 @@ class LLM(Protocol):
     ) -> tuple[dict[str, Any], Usage]: ...
 
 
+def has_credentials() -> bool:
+    """Whether the SDK will find credentials, using its own resolution chain: an API key,
+    an auth token, an `ant auth login` profile, or workload identity federation.
+    fynn.config has already loaded backend/.env into the environment."""
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return True
+    try:
+        return default_credentials() is not None
+    except Exception:  # noqa: BLE001 (a broken profile means no usable credentials)
+        return False
+
+
 def _usage(response: Any) -> Usage:
     usage = response.usage
     return Usage(
@@ -91,13 +105,24 @@ def system_param(blocks: list[PromptBlock]) -> list[dict[str, Any]]:
 
 
 class AnthropicLLM:
-    def __init__(self, client: anthropic.Anthropic | None = None):
+    """`json_timeout` / `text_timeout` (seconds) override the client's timeout for router and
+    answer calls respectively; None keeps the client's own setting."""
+
+    def __init__(
+        self,
+        client: anthropic.Anthropic | None = None,
+        *,
+        json_timeout: float | None = None,
+        text_timeout: float | None = None,
+    ):
         self._client = client or anthropic.Anthropic()
+        self._json_client = self._client.with_options(timeout=json_timeout) if json_timeout else self._client
+        self._text_client = self._client.with_options(timeout=text_timeout) if text_timeout else self._client
 
     def generate(
         self, *, model: str, system: list[PromptBlock], messages: list[dict[str, str]], effort: str, max_tokens: int
     ) -> Generation:
-        response = self._client.beta.messages.create(
+        response = self._text_client.beta.messages.create(
             model=model,
             max_tokens=max_tokens,
             system=system_param(system),
@@ -120,7 +145,7 @@ class AnthropicLLM:
         max_tokens: int,
     ) -> tuple[dict[str, Any], Usage]:
         # No `fallbacks` here: the router runs on Haiku, which has no server-side fallback.
-        response = self._client.messages.create(
+        response = self._json_client.messages.create(
             model=model,
             max_tokens=max_tokens,
             system=system,

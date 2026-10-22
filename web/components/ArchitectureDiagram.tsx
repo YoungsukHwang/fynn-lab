@@ -8,7 +8,6 @@ const ACCENT = {
   },
   after: {
     picked: "border-teal-600 bg-teal-50 text-teal-900 ring-2 ring-teal-200",
-    carried: "border-dashed border-teal-500 bg-white text-teal-900",
     badge: "bg-teal-100 text-teal-900",
   },
 } as const;
@@ -47,6 +46,8 @@ interface DiagramProps {
   architecture: Architecture;
   routing: Routing | null;
   pending: boolean;
+  // After only: the skills the app will send as carry_skills with the next message.
+  carryNext?: string[];
 }
 
 export function BeforeDiagram({ architecture, routing, pending }: DiagramProps) {
@@ -79,40 +80,36 @@ export function BeforeDiagram({ architecture, routing, pending }: DiagramProps) 
   );
 }
 
-export function AfterDiagram({ architecture, routing, pending }: DiagramProps) {
+export function AfterDiagram({ architecture, routing, pending, carryNext = [] }: DiagramProps) {
+  // Router output only; carried skills are shown in their own app-side box below.
   const picked = new Set(routing?.selected ?? []);
-  const carried = new Set(routing?.carried ?? []);
-  const budget = `picks up to ${architecture.max_new_skills_per_turn} skills, keeps up to ${architecture.max_carried_skills} from the last turn`;
+  // After a reply: what the app actually kept. Before one: every candidate it sends; the backend
+  // keeps up to max_carried_skills of those the router didn't pick again.
+  const kept = routing ? routing.carried.join(", ") || "none" : null;
+  const candidates = carryNext.length
+    ? `${carryNext.join(", ")} (sent with ${pending ? "this" : "the next"} message; up to ${architecture.max_carried_skills} kept after routing)`
+    : "none";
   return (
     <figure aria-label="After architecture: composable skills, one agent">
       <Node title="Member message" />
       <Arrow />
       <Node title="Skill router (small LLM)" detail={architecture.models.router} />
-      <Arrow label={pending ? "routing..." : budget} />
+      <Arrow label={pending ? "routing..." : `picks the matching skills (up to ${architecture.max_new_skills_per_turn})`} />
       <ul className="flex flex-wrap gap-1.5">
         {architecture.topics.map((topic) => {
-          const state = picked.has(topic.name)
-            ? ACCENT.after.picked
-            : carried.has(topic.name)
-              ? ACCENT.after.carried
-              : routing
-                ? DIMMED
-                : IDLE;
-          const tag = picked.has(topic.name) ? "picked" : carried.has(topic.name) ? "carried" : null;
+          const isPicked = picked.has(topic.name);
+          const state = isPicked ? ACCENT.after.picked : routing ? DIMMED : IDLE;
           return (
             <li key={topic.name} className={`rounded-full border px-2 py-0.5 text-[11px] ${state}`} title={topic.description}>
               {topic.name}
-              {tag && <span className="sr-only"> ({tag})</span>}
+              {isPicked && <span className="sr-only"> (picked)</span>}
             </li>
           );
         })}
       </ul>
       <div className="mt-1.5 flex gap-3 text-[11px] text-zinc-500" aria-hidden="true">
         <span className="flex items-center gap-1">
-          <span className={`inline-block h-2.5 w-4 rounded-full border ${ACCENT.after.picked}`} /> picked now
-        </span>
-        <span className="flex items-center gap-1">
-          <span className={`inline-block h-2.5 w-4 rounded-full border ${ACCENT.after.carried}`} /> carried
+          <span className={`inline-block h-2.5 w-4 rounded-full border ${ACCENT.after.picked}`} /> picked by the router
         </span>
       </div>
       <details className="mt-2 text-xs text-zinc-700">
@@ -126,6 +123,14 @@ export function AfterDiagram({ architecture, routing, pending }: DiagramProps) {
           ))}
         </dl>
       </details>
+      <div className="mt-2 rounded-md border border-dashed border-teal-500 px-3 py-2 text-xs text-zinc-700">
+        <span className="font-medium text-zinc-900">+ Kept from the previous turn:</span>{" "}
+        {kept ?? candidates}
+        <span className="text-zinc-500">
+          {" "}
+          (Fynn Lab addition, done by the app rather than the router; up to {architecture.max_carried_skills})
+        </span>
+      </div>
       <SharedBox title="Always-on skills" skills={architecture.always_on} />
       <Arrow />
       <Node title="One agent answers with the loaded skills" detail={architecture.models.agent} />

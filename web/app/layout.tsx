@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   // Distinct titles per page also let Next's route announcer tell screen readers about navigation.
   title: { default: "Fynn Lab", template: "%s | Fynn Lab" },
   description:
-    "Before/after re-implementation of a skill-based credit coach, with the regression evals that check each skill change.",
+    "Before/after re-implementation of a skill-based credit coach. Regression evals for each skill change are in progress.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

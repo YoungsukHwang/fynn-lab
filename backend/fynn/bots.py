@@ -92,7 +92,7 @@ class _BaseBot:
 
 
 class BeforeBot(_BaseBot):
-    """Beta architecture: route to exactly one domain expert agent."""
+    """Before: the earlier design in the post (its beta). Route each message to exactly one domain expert agent."""
 
     name: BotName = "before"
 
@@ -111,7 +111,7 @@ class BeforeBot(_BaseBot):
 
 
 class AfterBot(_BaseBot):
-    """Skill architecture: route to every needed topic skill, answer with one agent.
+    """After: the skill design the post moved to. Route to the topic skills the message needs, answer with one agent.
 
     Skills picked on the previous turn (`carry_skills`) stay loaded for one more turn,
     up to MAX_CARRIED_SKILLS, so a follow-up does not lose the guidance behind the

@@ -7,13 +7,11 @@
 from __future__ import annotations
 
 import argparse
-import os
-from pathlib import Path
 
 import anthropic
 
 from fynn.bots import Bot, BotReply, build_bots
-from fynn.llm import AnthropicLLM, LLM, LLMError
+from fynn.llm import LLM, AnthropicLLM, LLMError, has_credentials
 from fynn.personas import load_personas
 from fynn.skills import SkillLibrary
 
@@ -73,18 +71,12 @@ def run(persona_id: str, bot_names: list[str], llm: LLM, library: SkillLibrary) 
             _print_reply(reply)
 
 
-def _has_credentials() -> bool:
-    # fynn.config has already loaded backend/.env. An `ant auth login` profile also works.
-    config_dir = Path(os.environ.get("ANTHROPIC_CONFIG_DIR", "~/.config/anthropic")).expanduser()
-    return any(os.environ.get(v) for v in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")) or config_dir.exists()
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Chat with the before/after credit coach bots.")
     parser.add_argument("--persona", default="rebuilder", choices=sorted(load_personas()))
     parser.add_argument("--bot", choices=["before", "after", "both"], default="both")
     args = parser.parse_args()
-    if not _has_credentials():
+    if not has_credentials():
         parser.error("no Anthropic credentials found: add ANTHROPIC_API_KEY to backend/.env")
     names = ["before", "after"] if args.bot == "both" else [args.bot]
     run(args.persona, names, AnthropicLLM(), SkillLibrary.load())

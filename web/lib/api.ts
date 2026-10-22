@@ -2,11 +2,11 @@
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
 
-// Mirrors backend MAX_MESSAGES: a request may hold at most this many messages and must end with a user turn.
-export const MAX_MESSAGES = 20;
-// Mirrors backend MAX_USER_MESSAGE_CHARS.
-export const MAX_USER_MESSAGE_CHARS = 2000;
-// A reply normally takes 10 to 30 seconds; past this the request is abandoned as retryable.
+// Request limits come from GET /architecture; these defaults are used only until it loads.
+export const DEFAULT_LIMITS = { max_messages: 20, max_user_message_chars: 2000 };
+// A reply normally takes 10 to 30 seconds. The backend caps the router call at 20 s and the answer
+// call at 90 s with no SDK retries (backend/fynn/config.py), so past 120 s the request is abandoned
+// as retryable.
 const CHAT_TIMEOUT_MS = 120_000;
 
 export type BotName = "before" | "after";
@@ -62,6 +62,7 @@ export interface Architecture {
   models: { router: string; agent: string };
   max_new_skills_per_turn: number;
   max_carried_skills: number;
+  limits: { max_messages: number; max_user_message_chars: number };
   always_on: string[];
   domains: { id: string; title: string; skills: string[] }[];
   topics: { name: string; domain: string; description: string }[];
@@ -104,7 +105,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const detail = typeof body?.detail === "string" ? body.detail : `Request failed (${response.status})`;
     throw new ApiError(detail, response.status, body?.retryable === true);
   }
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new ApiError(`The API at ${API_URL} returned an unexpected response.`, response.status, false);
+  }
 }
 
 export function getPersonas(): Promise<Persona[]> {
@@ -115,7 +120,14 @@ export function getArchitecture(): Promise<Architecture> {
   return request<Architecture>("/architecture");
 }
 
-export function sendChat(
+function combineSignals(signal: AbortSignal | undefined, timeout: AbortSignal): AbortSignal {
+  if (!signal) return timeout;
+  // AbortSignal.any is missing in older browsers; fall back to the caller's signal (no timeout).
+  return typeof AbortSignal.any === "function" ? AbortSignal.any([signal, timeout]) : signal;
+}
+
+// async so that anything thrown while building the request becomes a rejection the caller handles.
+export async function sendChat(
   body: { bot: BotName; persona_id: string; messages: ChatMessage[]; carry_skills?: string[] },
   signal?: AbortSignal,
 ): Promise<ChatResponse> {
@@ -124,6 +136,6 @@ export function sendChat(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    signal: combineSignals(signal, timeout),
   });
 }

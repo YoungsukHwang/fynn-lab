@@ -25,7 +25,7 @@ from starlette.responses import Response
 
 from fynn import config
 from fynn.bots import Bot, BotName, build_bots
-from fynn.llm import AnthropicLLM, LLMError
+from fynn.llm import AnthropicLLM, LLMError, has_credentials
 from fynn.personas import Persona, load_personas
 from fynn.skills import SkillLibrary
 
@@ -46,12 +46,35 @@ class Runtime:
     library: SkillLibrary
     personas: dict[str, Persona]
     bots: dict[BotName, Bot]
+    # Checked once at startup so a missing key gives a clear error instead of a generic 500.
+    credentials_ok: bool = True
 
 
 @lru_cache(maxsize=1)
 def get_runtime() -> Runtime:
     library = SkillLibrary.load()
-    return Runtime(library=library, personas=load_personas(), bots=build_bots(AnthropicLLM(), library))
+    credentials_ok = has_credentials()
+    try:
+        # Without credentials, a placeholder key keeps the SDK from resolving (and possibly
+        # failing on) a profile at startup; /chat answers 503 before this client is ever used.
+        client = anthropic.Anthropic(
+            max_retries=config.API_MAX_RETRIES, **({} if credentials_ok else {"api_key": "not-configured"})
+        )
+    except anthropic.AnthropicError:
+        logger.exception("could not build the Anthropic client; chat is disabled")
+        credentials_ok = False
+        client = anthropic.Anthropic(max_retries=config.API_MAX_RETRIES, api_key="not-configured")
+    llm = AnthropicLLM(
+        client,
+        json_timeout=config.API_ROUTER_TIMEOUT_SECONDS,
+        text_timeout=config.API_AGENT_TIMEOUT_SECONDS,
+    )
+    return Runtime(
+        library=library,
+        personas=load_personas(),
+        bots=build_bots(llm, library),
+        credentials_ok=credentials_ok,
+    )
 
 
 RuntimeDep = Annotated[Runtime, Depends(get_runtime)]
@@ -170,14 +193,36 @@ async def api_status_error(_: Request, exc: anthropic.APIStatusError) -> JSONRes
     return _error(502, f"the model API rejected the request ({exc.status_code})", retryable=False)
 
 
+@app.exception_handler(anthropic.APITimeoutError)
+async def api_timeout(_: Request, exc: anthropic.APITimeoutError) -> JSONResponse:
+    # APITimeoutError subclasses APIConnectionError; the more specific handler wins.
+    return _error(504, "the model took too long to answer", retryable=True)
+
+
 @app.exception_handler(anthropic.APIConnectionError)
 async def api_connection_error(_: Request, exc: anthropic.APIConnectionError) -> JSONResponse:
     return _error(504, "could not reach the model API", retryable=True)
 
 
+class MissingCredentials(Exception):
+    pass
+
+
+@app.exception_handler(MissingCredentials)
+async def missing_credentials(_: Request, exc: MissingCredentials) -> JSONResponse:
+    # Retryable: once the key is added and the API restarted, the same message will go through.
+    return _error(
+        503,
+        "No usable Anthropic credentials: add ANTHROPIC_API_KEY to backend/.env (or fix your ant auth profile) "
+        "and restart the API.",
+        True,
+    )
+
+
 @app.exception_handler(anthropic.AnthropicError)
 async def anthropic_error(_: Request, exc: anthropic.AnthropicError) -> JSONResponse:
     # Remaining SDK errors (e.g. credentials, response validation) are not fixed by retrying.
+    logger.error("model API client error: %r", exc)
     return _error(502, f"model API client error: {type(exc).__name__}", retryable=False)
 
 
@@ -198,6 +243,8 @@ def architecture(runtime: RuntimeDep) -> dict[str, Any]:
         "models": {"router": config.ROUTER_MODEL, "agent": config.AGENT_MODEL},
         "max_new_skills_per_turn": config.MAX_NEW_SKILLS_PER_TURN,
         "max_carried_skills": config.MAX_CARRIED_SKILLS,
+        # Request limits, so the web client doesn't have to hard-code them.
+        "limits": {"max_messages": MAX_MESSAGES, "max_user_message_chars": MAX_USER_MESSAGE_CHARS},
         "always_on": [s.name for s in library.always_on],
         "domains": [
             {"id": domain, "title": title, "skills": [s.name for s in library.domain_skills(domain)]}
@@ -209,6 +256,8 @@ def architecture(runtime: RuntimeDep) -> dict[str, Any]:
 
 @app.post("/chat")
 def chat(request: ChatRequest, runtime: RuntimeDep) -> ChatResponse:
+    if not runtime.credentials_ok:
+        raise MissingCredentials()
     persona = runtime.personas.get(request.persona_id)
     if persona is None:
         raise HTTPException(status_code=404, detail=f"unknown persona {request.persona_id!r}")

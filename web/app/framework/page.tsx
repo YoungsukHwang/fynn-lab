@@ -6,6 +6,10 @@ export default function FrameworkPage() {
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Monitoring framework</h1>
+      <p className="mt-2 text-sm text-zinc-600">
+        Here, monitoring means offline regression testing: every skill change is checked on a fixed eval set before it
+        ships. Production monitoring is out of scope for this version.
+      </p>
       <p className="mt-2 text-sm text-zinc-600">Coming in milestone M5. This page will show:</p>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-zinc-700">
         <li>

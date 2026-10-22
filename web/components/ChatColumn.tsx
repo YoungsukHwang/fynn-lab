@@ -14,16 +14,24 @@ const COPY: Record<BotName, { title: string; tag: string; badge: string; explana
     tag: "single-agent router",
     badge: "bg-amber-100 text-amber-900",
     explanation:
-      "The beta design. A small router model hands each message to exactly one expert agent. A question that spans several domains gets one domain's expertise; the other parts are answered from shared instructions only.",
+      "The earlier design described in the post. A small router model hands each message to exactly one expert agent, which answers with its domain's guidance plus shared instructions. A question that spans several domains gets only one domain's expertise.",
   },
   after: {
     title: "After",
     tag: "skill-based",
     badge: "bg-teal-100 text-teal-900",
     explanation:
-      "The skill design. A small router picks every topic skill the message needs and keeps the previous turn's skills for one more turn. One agent answers with those skills plus always-on tone, response rules and guardrails.",
+      "The design the post moved to. A small router picks the topic skills the message needs, and one agent answers with them plus always-on skills (tone, response rules, guardrails).",
   },
 };
+
+// What Fynn Lab adds on top of the post, shown separately so it isn't read as Kikoff's design.
+function additionNote(bot: BotName, architecture: Architecture): string {
+  if (bot === "before") {
+    return "Added in Fynn Lab: the post doesn't name its expert agents, so these four domains are this project's own grouping of the same skill files.";
+  }
+  return `Added in Fynn Lab, not in the post: at most ${architecture.max_new_skills_per_turn} new skills per message, and up to ${architecture.max_carried_skills} of the previous turn's skills stay loaded for one more turn so follow-up questions keep their context.`;
+}
 
 function formatNumber(value: number): string {
   return value.toLocaleString("en-US");
@@ -80,7 +88,9 @@ export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled }:
   // Refs survive the route being hidden and re-shown, so re-showing does not scroll again.
   const seenTurns = useRef(state.turns.length);
   const lastAssistant = state.turns.findLast((t): t is AssistantTurn => t.role === "assistant");
-  const routing = state.pending ? null : (lastAssistant?.routing ?? null);
+  // After a failed turn the last reply's routing is stale, so show it only when the column is idle.
+  const idle = !state.pending && !state.error;
+  const routing = idle ? (lastAssistant?.routing ?? null) : null;
   const Diagram = bot === "before" ? BeforeDiagram : AfterDiagram;
 
   useEffect(() => {
@@ -92,7 +102,7 @@ export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled }:
   }, [state.turns.length, state.pending]);
 
   const announcement =
-    !state.pending && lastAssistant
+    idle && lastAssistant
       ? `${copy.title} replied. ${bot === "before" ? "Agent" : "Skills"}: ${pickedLabel(bot, lastAssistant.routing, architecture)}.`
       : "";
 
@@ -104,11 +114,14 @@ export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled }:
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${copy.badge}`}>{copy.tag}</span>
         </h2>
         <p className="mt-1 text-sm text-zinc-600">{copy.explanation}</p>
+        <p className="mt-2 rounded-md border border-dashed border-zinc-300 px-2 py-1.5 text-xs text-zinc-600">
+          {additionNote(bot, architecture)}
+        </p>
       </header>
 
-      <Diagram architecture={architecture} routing={routing} pending={state.pending} />
+      <Diagram architecture={architecture} routing={routing} pending={state.pending} carryNext={state.carry} />
 
-      {lastAssistant && !state.pending && (
+      {lastAssistant && idle && (
         <RoutingSummary bot={bot} routing={lastAssistant.routing} architecture={architecture} />
       )}
 
