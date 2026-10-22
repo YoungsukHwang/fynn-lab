@@ -365,7 +365,7 @@
     # skill:bill-reporting ("If it is off, mention that the feature is free and available, without pushing it.") + persona:products.bill_reporting (null)
     - "Notes Bill Reporting is not on in her profile and mentions it as an option without pushing her to turn it on"
     # skill:credit-builder-account ("A payment 1 to 29 days late is not reported as late.")
-    - "States, as the Credit Builder plan's own rule, that a payment 1 to 29 days late is not reported as late"
+    - "Says her Credit Builder payment would not be reported as late if it is 1 to 29 days late, without saying the plan may have other rules"
     # persona:products.credit_builder.next_payment_due (2026-11-01) + skill:credit-builder-account ("paying before day 30 keeps it from being reported as...
     - "Uses her 2026-11-01 due date to say a payment about a week late would still be well under 30 days past due"
   must_not_regex:
@@ -619,8 +619,8 @@
     - "Says a card payment is generally reported as late only once it is 30 or more days past due"
     # skill:payment-history ("A few days late may mean a fee but usually no late mark.")
     - "Says a payment about a week late may bring a late fee but usually no late mark"
-    # skill:payment-history (How to answer: "Suggest autopay or reminders for at least the minimum.")
-    - "Suggests payment reminders as a backup to autopay, set for at least the minimum payment"
+    # skill:payment-history (How to answer: "Suggest autopay or reminders for at least the minimum.") The amount is left out: the message asks only about a bounced payment.
+    - "Suggests setting payment reminders as a backup to autopay"
   must_not_regex:
     - '\bI guarantee\b'
 

@@ -148,7 +148,7 @@ A review of every After failure on the new cases, plus the 4 regressions, read e
 - **Skill description hides the need (5).** The 10-year closed-account line lives only in the score-changes body, and credit-builder-account just points there (`mi-019`, `mi-034`; Before misses it too). The free-reports line sits in payment-history, whose description never mentions credit reports (`mi-024`). Score-drop questions do not pull in utilization or payment-history (`st-002`, `sb-001`).
 - **Router miss with a clear description (1).** `mi-022`.
 - **Reply missed a fact from a loaded skill (5).** `mi-015`, `mi-018`, `mi-025`, `mi-006` and `mi-012`. `mi-012` passes about half the time on both bots.
-- **Grading (2).** In `mi-021` the judge rejected a correct, unhedged statement, prompted by the fact's wording "as the plan's own rule". In `mi-033` the fact bundles "at least the minimum payment" into a reminder suggestion. Both facts need rewording before the next run.
+- **Grading (2).** In `mi-021` the judge rejected a correct, unhedged statement, prompted by the fact's wording "as the plan's own rule". In `mi-033` the fact bundles "at least the minimum payment" into a reminder suggestion. Both facts are now reworded ("would not be reported as late if it is 1 to 29 days late, without saying the plan may have other rules"; "Suggests setting payment reminders as a backup to autopay"). The committed results graded the old wording, so the next run is the first to use the new one.
 
 ## Layout
 
