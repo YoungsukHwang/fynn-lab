@@ -34,9 +34,9 @@ Both bots read the same skill files, see the same member profile and use the sam
 
 "Monitoring" in this project means **offline regression testing before a skill change ships**, run on a fixed eval set. Production monitoring is out of scope for v1.
 
-- **Eval set.** About 40 cases over 6 synthetic personas, in four datasets:
+- **Eval set.** 64 cases over 6 synthetic personas, in four datasets:
   - single-topic questions;
-  - multi-part questions;
+  - multi-part questions (36 cases). Real member messages often mix several intents, so 24 of these were added on 2026-10-22, each needing skills from two or more Before domains (see Eval set expansion below);
   - use of the member's own profile data;
   - basic safety, such as no promised score gains.
 - **Scoring.** A case passes only if both checks pass:
@@ -61,7 +61,7 @@ The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
 ## Running the evals
 
 - **What it calls.** The runner calls the Anthropic API for the routers, the answer model and the Opus judge, so it needs `ANTHROPIC_API_KEY` in `backend/.env`. The tests never call the API.
-- **Inputs.** The 40 cases are in `backend/evals/cases/` (four datasets). Each scenario in `scenarios/<id>/` has a `scenario.yaml` with its hypothesis and an edited copy of one skill. The copy is overlaid at run time; `skills/` is never modified.
+- **Inputs.** The 64 cases are in `backend/evals/cases/` (four datasets). Each scenario in `scenarios/<id>/` has a `scenario.yaml` with its hypothesis and an edited copy of one skill. The copy is overlaid at run time; `skills/` is never modified.
 - **Outputs.** Results go to `results/` at the repo root. Run the commands from `backend/`.
 
 ```bash
@@ -88,7 +88,7 @@ cd backend
 - **Baseline freshness.** Run the scenarios against an `after.json` made from the current `skills/`. The runner warns when the baseline's skill hashes differ.
 - **Reports.** A report compares only the cases in the candidate. The verdict is Passed when no case regressed. A scenario report also says whether the result matches the hypothesis in `scenario.yaml`.
 - **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, and `--workers N` sets parallel case runs (default 8).
-- **Cost.** The token usage recorded in the committed results comes to at most about $1.30 for a full single-run round (40 cases; Sonnet 5.5 answering and an Opus 5.5 judge, at list prices). `--repeats K` multiplies that by K, so the set of commands above with K=3 is roughly 13 full rounds, about $16. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
+- **Cost.** The token usage recorded in the committed results comes to at most about $1.30 per 40 case runs (Sonnet 5.5 answering and an Opus 5.5 judge, at list prices), so about $2.10 for a single-run round of the current 64 cases. `--repeats K` multiplies that by K: the set of commands above with K=3 is about 816 case runs (before, after, S2 and S3 on 64 cases each, S1 on about 16), roughly $27. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
 
 ## Noise and significance
 
@@ -109,8 +109,20 @@ The first real run had several scenario flips that could be run-to-run variation
   - A second baseline run passed as `report.py --aa PATH` gives an observed count under the flag rule instead. It should have the candidate's K; when it does not, the report warns and says which rule it used instead.
   - A report whose two runs share the bot, skills and models is marked as an A/A report. Code, the judge and the cases are not fingerprinted, so it is only pure noise if nothing else changed.
 - **Multiplicity.** The per-dataset p-values are Holm-corrected together, which controls the chance of any false positive among them. The overall test is the primary one at 0.05 and is not adjusted, so across every row of the table that chance can reach 0.10. Significant means p at or below 0.05.
-- **Calibration.** In A/A simulations on this eval set's layout (40 cases, 6 personas, K=3), the permutation test flags about 3% of no-change runs at 0.05, and 0 to 4% depending on how noisy the cases are. It never went above 5%, because an exact test on coarse pass fractions is a little conservative. When 8 cases really drop (from passing 95% of the time to 30%), the overall test catches it roughly 75 to 95% of the time at K=3 and 20 to 30% at K=1, depending on how noisy the other cases are. That gap is the case for K=3. With nothing changed, the per-case verdict still reads Not passed in about 93 to 99.7% of comparisons at K=1 and 53 to 70% at K=3, and at K=1 a real 10-point gain is caught only about one time in five. These figures come from one-off simulations that are not committed.
-- **Caveats.** 40 cases cannot detect small effects, and a non-significant result is not evidence of no change.
+- **Calibration.** In A/A simulations on the original 40-case layout (6 personas, K=3), the permutation test flags about 3% of no-change runs at 0.05, and 0 to 4% depending on how noisy the cases are. It never went above 5%, because an exact test on coarse pass fractions is a little conservative. When 8 cases really drop (from passing 95% of the time to 30%), the overall test catches it roughly 75 to 95% of the time at K=3 and 20 to 30% at K=1, depending on how noisy the other cases are. That gap is the case for K=3. With nothing changed, the per-case verdict still reads Not passed in about 93 to 99.7% of comparisons at K=1 and 53 to 70% at K=3, and at K=1 a real 10-point gain is caught only about one time in five. These figures come from one-off simulations that are not committed.
+- **Caveats.** A few dozen cases cannot detect small effects, and a non-significant result is not evidence of no change.
+
+## Eval set expansion
+
+The first Before vs After run could not show much difference, because 31 of the 40 cases fit inside one Before domain, where the Before agent already holds every skill the case needs. On 2026-10-22, 24 multi-question cases were added (`mi-013` to `mi-036`, four per persona, 11 with two questions and 13 with three):
+
+- **Each needs a second domain.** Its labeled skills span two or more Before domains (13 span two, 11 span three, covering every domain pair).
+- **Each extra question hinges on a skill-only fact**: a price, fee, bureau list, threshold or how-to-answer rule found only in that topic skill, not in the profile, the always-on skills or general credit knowledge. A Before agent routed elsewhere should miss it.
+- **Facts are single claims**, and a comment above each one names the skill line or profile field it comes from. A separate reviewer checked every fact against its source, and dropped facts the message never asked for.
+- **Four cases need four topic skills** (`mi-016`, `mi-020`, `mi-028`, `mi-036`), one more than the After bot's cap of 3 new skills (a Fynn Lab setting). They test raising the cap to 4.
+- **Labels on five existing cases were completed** (`st-001`, `st-002`, `mi-003` and `mi-008` gain utilization, `sb-001` gains payment-history), because a fact in each relied on that skill. With the added label, `mi-008` also needs four skills.
+
+The committed results predate the expansion and cover the original 40 cases. The new cases need a rerun: about $4.20 to run both bots once on all 64 cases, or the K=3 set above.
 
 ```bash
 # A/A: a second baseline run with nothing changed and the same --repeats, then a report against it

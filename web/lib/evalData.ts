@@ -614,6 +614,16 @@ export async function getJudgeInstructions(): Promise<string | null> {
   return match?.[1] ? match[1].replace(/\\\r?\n/g, "").trim() : null;
 }
 
+/** The After bot's cap on new topic skills per message, from backend/fynn/config.py (null if not found). */
+export async function getSkillCap(): Promise<number | null> {
+  "use cache";
+  cacheLife("max");
+
+  const source = (await readText(CONFIG_FILE)) ?? "";
+  const match = source.match(/^MAX_NEW_SKILLS_PER_TURN\s*=\s*(\d+)/m);
+  return match?.[1] ? Number(match[1]) : null;
+}
+
 /** Default model ids from backend/fynn/config.py, used when no results file names them. */
 export async function getConfiguredModels(): Promise<Partial<Models>> {
   "use cache";
@@ -1100,6 +1110,7 @@ export interface BeforeAfterData {
   byQuestions: CaseGroup[];
   byDataset: CaseGroup[];
   crossDomain: { ids: string[]; domains: Record<string, string[]> }; // case id -> Before domains it spans
+  pending: string[]; // cases in the eval set that the committed results do not cover yet
   caseCount: number;
 }
 
@@ -1181,6 +1192,9 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
     byQuestions,
     byDataset,
     crossDomain: { ids: crossIds, domains },
+    pending: cases
+      .map((c) => c.id)
+      .filter((id) => [before, after].some((run) => run && !run.cases.some((c) => c.id === id))),
     caseCount: cases.length,
   };
 }

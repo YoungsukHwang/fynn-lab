@@ -6,7 +6,7 @@
   persona: rebuilder
   message: "Why did my score drop from 611 to 588 this month?"
   intents: 1
-  skills: [score-changes]
+  skills: [score-changes, utilization]
   expected_facts:
     - "Names the 30-day late payment on the Retail store card (reported 2026-09-28) as the most likely main cause"
     - "Notes reported card balances rose to $1,410 of $3,000 in limits (47% utilization), up from $900 (30%) the month before"
@@ -24,7 +24,7 @@
   persona: high-util
   message: "I've never missed a payment, so why did my score go down 13 points?"
   intents: 1
-  skills: [score-changes]
+  skills: [score-changes, utilization]
   expected_facts:
     - "Says her profile shows no late payments or other negative items, so payment history is not the cause"
     - "Names higher reported card balances as the likely cause: $2,550 of $3,000 in limits (85% utilization), up from $2,100 (70%) the month before"

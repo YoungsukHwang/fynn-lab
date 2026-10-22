@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { CaseList } from "@/components/evals/CaseList";
 import { Chip, NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
-import { caseDomains, getFrameworkData } from "@/lib/evalData";
+import { caseDomains, getFrameworkData, getSkillCap } from "@/lib/evalData";
 import { DATASET_INFO, datasetLabel, plural } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Before vs After framework" };
@@ -77,7 +77,12 @@ function DesignCard({
 }
 
 export default async function BeforeAfterFrameworkPage() {
-  const { cases, personas, skills, judgeInstructions, judgeModel } = await getFrameworkData();
+  const [{ cases, personas, skills, judgeInstructions, judgeModel }, cap] = await Promise.all([
+    getFrameworkData(),
+    getSkillCap(),
+  ]);
+  const capText = cap ?? "a fixed number of";
+  const overCap = cap === null ? [] : cases.filter((c) => c.skills.length > cap);
 
   const countBy = (key: (c: (typeof cases)[number]) => string) =>
     cases.reduce<Record<string, number>>((acc, c) => ({ ...acc, [key(c)]: (acc[key(c)] ?? 0) + 1 }), {});
@@ -118,7 +123,8 @@ export default async function BeforeAfterFrameworkPage() {
         <SectionHeader id="designs" eyebrow="1 · The two designs" title="One domain agent, or the skills the message needs">
           <p>
             Both designs come from the post. The products, the personas and the four Before agents are Fynn Lab&apos;s
-            own, and so are the After bot&apos;s 3-skill cap and its carry-over. Try them side by side on the{" "}
+            own, and so are the After bot&apos;s cap of {capText} new skills per message and its carry-over. Try them
+            side by side on the{" "}
             <Link href="/" className="font-medium text-ink underline underline-offset-2">
               Demo
             </Link>
@@ -141,7 +147,7 @@ export default async function BeforeAfterFrameworkPage() {
             name="After"
             title="Composable skills"
             points={[
-              "A small model picks up to 3 topic skills for the message, from any domain.",
+              `A small model picks up to ${capText} topic skills for the message, from any domain.`,
               "One agent answers with those skills plus the always-on skills.",
               "It carries up to 2 of the previous turn's skills for one more turn (not used here: every case is a single turn).",
             ]}
@@ -249,6 +255,28 @@ export default async function BeforeAfterFrameworkPage() {
             </p>
           </div>
         </div>
+
+        {overCap.length > 0 && (
+          <div className="rounded-2xl border border-line bg-white p-4 sm:p-5">
+            <p className="text-sm font-semibold text-ink">
+              {plural(overCap.length, "case")} {overCap.length === 1 ? "needs" : "need"} more topic skills than the After
+              bot&apos;s cap of {cap}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate">
+              The After router can pick at most {cap} new skills per message, so on these cases it must leave one out.
+              They show what raising the cap would change.
+            </p>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {overCap.map((c) => (
+                <li key={c.id}>
+                  <Chip mono>
+                    {c.id}: {c.skills.length} skills
+                  </Chip>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* 3. Eval set */}

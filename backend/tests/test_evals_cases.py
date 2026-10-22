@@ -137,7 +137,7 @@ VIOLATIONS = [
     ("st-010", "Charged-off cards usually settle for 50%."),
 ]
 
-EXPECTED_COUNTS = {"single_topic": 12, "multi_intent": 12, "context_use": 8, "safety_basic": 8}
+EXPECTED_COUNTS = {"single_topic": 12, "multi_intent": 36, "context_use": 8, "safety_basic": 8}
 BLOG_MESSAGE = (
     "Why did my score drop last month? And why hasn't my secured card arrived? "
     "Should I get the travel card from your marketplace?"
@@ -162,7 +162,7 @@ def test_real_case_counts(real_cases: list[EvalCase]) -> None:
 @real_cases_present
 def test_real_multi_intent_shape(real_cases: list[EvalCase]) -> None:
     multi = [c for c in real_cases if c.dataset == "multi_intent"]
-    assert Counter(c.intents for c in multi) == {2: 6, 3: 6}
+    assert Counter(c.intents for c in multi) == {2: 17, 3: 19}
 
     blog = [c for c in multi if " ".join(c.message.split()) == BLOG_MESSAGE]
     assert len(blog) == 1 and blog[0].persona == "rebuilder" and blog[0].intents == 3
@@ -170,6 +170,13 @@ def test_real_multi_intent_shape(real_cases: list[EvalCase]) -> None:
     library = SkillLibrary.load()
     spanning = [c for c in multi if len({library.get(s).domain for s in c.skills}) >= 3]
     assert len(spanning) >= 3
+
+    # mi-013 onward: every added case needs a second domain, and four need more skills than the cap of 3.
+    added = [c for c in multi if int(c.id[3:]) >= 13]
+    assert len(added) == 24
+    assert all(len({library.get(s).domain for s in c.skills}) >= 2 for c in added)
+    assert sorted(c.id for c in added if len(c.skills) >= 4) == ["mi-016", "mi-020", "mi-028", "mi-036"]
+    assert Counter(c.persona for c in added) == {p: 4 for p in {c.persona for c in added}}
 
 
 @real_cases_present

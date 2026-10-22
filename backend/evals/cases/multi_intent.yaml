@@ -39,7 +39,7 @@
   persona: high-util
   message: "Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?"
   intents: 2
-  skills: [score-changes, marketplace-offers]
+  skills: [score-changes, marketplace-offers, utilization]
   expected_facts:
     - "Names higher reported balances as the likely cause: 85% utilization ($2,550 of $3,000), up from 70%, with no late payments"
     - "Gives per-card utilization, flagging the Rewards credit card at about 95% of its $2,000 limit"
@@ -107,7 +107,7 @@
   persona: high-util
   message: "Why did my score drop 13 points? Can I use my Credit Builder savings to pay down my cards? And should I get a personal loan from the Marketplace to pay them off?"
   intents: 3
-  skills: [score-changes, credit-builder-account, marketplace-offers]
+  skills: [score-changes, credit-builder-account, marketplace-offers, utilization]
   expected_facts:
     - "Names higher reported balances (85% utilization, up from 70%) as the likely cause, flagging the Rewards credit card at about 95% of its limit"
     - "Says the Credit Builder savings ($42 so far) are paid out when the 24-month plan ends ($144 minus any unpaid amounts), and sends questions about getting savings out early to human support"
@@ -170,3 +170,519 @@
     - "Discloses that Marketplace partners may pay the app when a user is approved"
   must_not_regex:
     - '\bI guarantee\b'
+
+# mi-013 to mi-036 were added on 2026-10-22. Each needs a second domain: its labeled skills span two or
+# more Before domains, and every question beyond the Before router's likely pick hinges on a fact found only
+# in that topic skill. Facts are single claims; the comment above each one names where it comes from.
+# mi-016, mi-020, mi-028 and mi-036 need four topic skills, one more than the After bot's cap of 3.
+
+- id: mi-013
+  dataset: multi_intent
+  persona: rebuilder
+  message: "how long is that 30 day late on my store card gonna keep dragging my score down?? also I pay my phone, electric and netflix on time every month, can any of that get reported to help me out"
+  intents: 2
+  skills: [payment-history, bill-reporting]
+  expected_facts:
+    # skill:payment-history ("A late payment can stay on reports for up to 7 years from the original delinquency date.") + persona:credit.negative_items[...
+    - "Says the Retail store card late can stay on reports up to 7 years from its original delinquency on 2026-08-25, so until about August 2033"
+    # skill:payment-history ("Its impact is largest while recent and fades as it ages and on-time payments build up.")
+    - "Says the late's impact is largest while it is recent and fades as it ages and on-time payments build up"
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax. They are...
+    - "Says on-time phone and electric payments can be reported through the app's Bill Reporting, but only to Equifax"
+    # skill:bill-reporting (Do not: "Claim bill types beyond utility, phone, and internet (for example streaming or insurance) are reported.")
+    - "Says Netflix would not be reported, since streaming bills are not among the utility, phone and internet bills the feature covers"
+    # skill:bill-reporting (Do not: "Claim bill reporting removes or offsets late payments, collections, or other negative items.")
+    - "Does not claim that reported bills would offset or remove the store card late payment"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-014
+  dataset: multi_intent
+  persona: rebuilder
+  message: "The store card is the real problem, I've got $900 sitting on it. How much do I have to pay down to get my overall usage under 30%? Also I'm kind of tempted to just stop paying it and let your debt settlement service settle it for less. Would that be cleaner than paying the whole thing?"
+  intents: 2
+  skills: [utilization, debt-settlement]
+  expected_facts:
+    # skill:utilization ("Common guidance: keep utilization under 30%") + persona:credit.utilization (total_revolving_balance 1410, total_revolving_limit...
+    - "Says reaching 30% overall utilization means paying down about $510, taking total card balances from $1,410 to $900 of the $3,000 in limits"
+    # skill:utilization ("compute per-card ratios for open cards only ... and flag any open card that is high on its own") + persona:credit.accounts (Ret...
+    - "Flags the Retail store card at about 60% of its own $1,500 limit ($900 balance)"
+    # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") + persona:credit.accounts (Retail store car...
+    - "Says the Debt Settlement service takes only charged-off or in-collections accounts, so the current Retail store card does not qualify"
+    # skill:debt-settlement (Do not: "Suggest stopping payments on a current account to qualify.")
+    - "Does not suggest stopping payments on the store card to make it qualify for settlement"
+    # skill:debt-settlement ("Settling does not remove the account or shorten its 7-year reporting period; a settled charge-off still shows as a charge-o...
+    - "Says settling would not clean up the report, since a settled charge-off still shows as a charge-off"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '(?<![\d,.])\$?900\b'
+
+- id: mi-015
+  dataset: multi_intent
+  persona: rebuilder
+  message: "Few questions:\n1. Would rent reporting actually do anything for my score?\n2. If I'm ever short on rent and it ends up with a collection agency, would paying it off later make it go away?\n3. Once my secured card shows up, how long until I get my $300 deposit back?"
+  intents: 3
+  skills: [rent-reporting, collections, secured-card]
+  expected_facts:
+    # skill:rent-reporting ("FICO 8 ignores rent; FICO 9, FICO 10 and VantageScore 3.0 and 4.0 can count it.") + persona:credit.score.model (VantageScore...
+    - "Says VantageScore 3.0, the model behind Jordan's score, can count reported rent"
+    # skill:collections ("Paying a non-medical collection does not remove it; it shows as paid.")
+    - "Says paying a collection would not make it go away; it would stay on the report marked as paid"
+    # skill:collections ("FICO 9, FICO 10 and VantageScore 3.0 and 4.0 ignore paid collections.") + persona:credit.score.model (VantageScore 3.0)
+    - "Says VantageScore 3.0, the model behind Jordan's score, ignores paid collections"
+    # skill:secured-card ("After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. If upgraded, the deposit is...
+    - "Says the $300 deposit is returned if the card is upgraded to an unsecured card after a review at 8 consecutive on-time payments, without promising the upgrade or a return date"
+    # skill:secured-card ("Upgrade: from the profile, say how many consecutive on-time payments remain before review.") + persona:products.secured_card (...
+    - "Says Jordan has made 0 of the 8 on-time Secured Card payments so far, since the card has not arrived yet"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the collection|this collection) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'
+
+# Needs four topic skills: the After bot can load only three.
+- id: mi-016
+  dataset: multi_intent
+  persona: rebuilder
+  message: "thinking about cancelling my credit builder. if I do, do I get the $60 I've saved back right away so I can throw it at the store card? would closing it hurt my score or mess up my utilization? and since I got the store card current again on Oct 2, can I write them a letter asking them to take the 30 day late off"
+  intents: 3
+  skills: [credit-builder-account, score-changes, utilization, payment-history]
+  expected_facts:
+    # skill:credit-builder-account ("Cancelling: explain the result. Coach cannot cancel and does not know what happens to savings paid in early; send bo...
+    - "Says Coach does not know what happens to the $60 saved so far if the plan is cancelled early, and points that question to human support"
+    # skill:score-changes ("A closed account in good standing can stay on the report for up to 10 years.") + skill:credit-builder-account ("the closed ac...
+    - "Says a closed Credit Builder account in good standing can stay on the report for up to 10 years with its payment history"
+    # skill:utilization ("Installment loans (auto, student, personal, the app's Credit Builder plan) are not part of revolving utilization.")
+    - "Says closing the Credit Builder plan would not change utilization, because installment loans are not part of revolving utilization"
+    # skill:payment-history ("Paying an overdue account brings it current but does not erase a late mark already reported.") + persona:recent_events ("20...
+    - "Says bringing the store card current on 2026-10-02 did not erase the 30-day late already reported"
+    # skill:payment-history ("A goodwill letter asks the creditor to remove an accurate late as a courtesy. The creditor has no obligation to agree.")
+    - "Offers a goodwill letter as an optional request that the store card issuer has no obligation to grant"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the late(?: payment| mark)?|that late(?: payment| mark)?) will be (?:deleted|removed|taken off)(?: your report)? (?:once|when|after|as soon as) you (?:send|write|mail)\b'
+  must_include_regex:
+    - '\$\s?60\b'
+
+- id: mi-017
+  dataset: multi_intent
+  persona: high-util
+  message: "quick q, my next Credit Builder payment is due Nov 1, when will that actually show up on my credit report? also I've never missed a phone or electric bill in my life, why don't those help my credit at all"
+  intents: 2
+  skills: [credit-builder-account, bill-reporting]
+  expected_facts:
+    # skill:credit-builder-account ("Each payment is reported to Equifax, Experian and TransUnion as an installment account, monthly, a few days after it...
+    - "Says each Credit Builder payment is reported to Equifax, Experian and TransUnion"
+    # skill:credit-builder-account ("a few days after it posts") plus persona:products.credit_builder.next_payment_due (2026-11-01)
+    - "Says the Nov 1 payment should show on her report a few days after it posts"
+    # skill:bill-reporting ("Many utility, phone, and internet providers do not report on-time payments to the credit bureaus themselves")
+    - "Says many phone and utility providers do not report on-time payments to the credit bureaus themselves"
+    # skill:bill-reporting ("reported to Equifax. They are not reported to Experian or TransUnion.")
+    - "Says the app's Bill Reporting feature reports on-time utility, phone and internet payments only to Equifax"
+    # skill:bill-reporting ("if it is off, mention that the feature is free and available, without pushing it") plus persona:products.bill_reporting (null)
+    - "Mentions that Bill Reporting is free and available, without pushing her to turn it on"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-018
+  dataset: multi_intent
+  persona: high-util
+  message: "ok honestly I'm tempted to just stop paying my rewards card for a few months so it goes to collections, then settle it through your debt settlement service for way less. would that even work? and side question, if my Credit Builder payment ends up a couple weeks late one month, does that show up as a late on my report"
+  intents: 2
+  skills: [debt-settlement, credit-builder-account]
+  expected_facts:
+    # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") plus persona:credit.accounts[Rewards credit...
+    - "Says only charged-off or in-collections accounts qualify for the Debt Settlement service, so her Rewards credit card, which is open and current, does not"
+    # skill:debt-settlement (Do not: "Suggest stopping payments on a current account to qualify.")
+    - "Does not suggest stopping payments on the Rewards credit card to qualify for settlement"
+    # skill:debt-settlement ("A settled account is usually reported as \"settled for less than the full balance\". Settling does not remove the account")
+    - "Says a settled account is usually reported as settled for less than the full balance rather than removed"
+    # skill:credit-builder-account ("A payment 1 to 29 days late is not reported as late.")
+    - "Says a Credit Builder payment 1 to 29 days late is not reported as late"
+    # skill:credit-builder-account ("At 30 or more days past due it is reported as late")
+    - "Says a Credit Builder payment is reported as late once it is 30 or more days past due"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '\b(?:you should|I\W?d suggest|I recommend|I suggest) stop(?:ping)? (?:paying|payments|making payments)\b'
+
+- id: mi-019
+  dataset: multi_intent
+  persona: high-util
+  message: "Hey, three things. Would signing up for rent reporting actually move my score at all? I'm also thinking of cancelling my Credit Builder plan and putting that $6 a month toward my cards instead, so what happens to the money I've already paid in? And if I cancel, does the account just vanish from my report?"
+  intents: 3
+  skills: [rent-reporting, credit-builder-account, score-changes]
+  expected_facts:
+    # skill:rent-reporting ("FICO 8 ignores rent; FICO 9, FICO 10 and VantageScore 3.0 and 4.0 can count it.") plus persona:credit.score.model ("VantageS...
+    - "Says VantageScore 3.0, the model behind her score, can count reported rent"
+    # skill:rent-reporting ("If not, describe the add-on neutrally, including the $4 monthly cost") plus persona:products.rent_reporting (null)
+    - "Describes Rent Reporting neutrally, including its $4 monthly cost, without pushing her to sign up"
+    # skill:credit-builder-account ("Coach cannot cancel and does not know what happens to savings paid in early; send both to human support.") plus pers...
+    - "Says Coach does not know what happens to her $42 in Credit Builder savings if she cancels early, and sends that question to human support"
+    # skill:credit-builder-account ("Cancelling early closes the account; the closed account stays on the report with its payment history")
+    - "Says cancelling does not remove the account: the closed plan stays on her report with its payment history"
+    # skill:score-changes ("A closed account in good standing can stay on the report for up to 10 years.")
+    - "Says a closed account in good standing can stay on a credit report for up to 10 years"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+  must_include_regex:
+    - '\$42\b'
+
+# Needs four topic skills: the After bot can load only three.
+- id: mi-020
+  dataset: multi_intent
+  persona: high-util
+  message: "few questions for you:\n1. if I turned on both rent reporting and bill reporting, which credit bureaus would see my rent and which would see my phone and electric bills?\n2. what matters more for my score, never missing a payment or my high card balances?\n3. how low do I need to get my rewards card balance before it stops dragging me down?"
+  intents: 3
+  skills: [rent-reporting, bill-reporting, payment-history, utilization]
+  expected_facts:
+    # skill:rent-reporting ("On-time rent payments ... are reported to TransUnion and Experian. The app does not report rent to Equifax")
+    - "Says app-reported rent goes to TransUnion and Experian, not Equifax"
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments ... are reported to Equifax. They are not reported to Experian or TransUn...
+    - "Says app-reported phone and utility bill payments go only to Equifax"
+    # skill:payment-history ("Payment history is the largest FICO factor, about 35% of the score.")
+    - "Says payment history is the largest FICO factor, about 35% of the score"
+    # skill:utilization ("Amounts owed, which includes utilization, is about 30% of a FICO score.")
+    - "Says amounts owed, which includes utilization, is about 30% of a FICO score"
+    # skill:utilization ("Common guidance: keep utilization under 30%") plus persona:credit.accounts[Rewards credit card].limit (2000)
+    - "Translates the under-30% guidance into a Rewards credit card balance under $600 on its $2,000 limit"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-021
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "ok so I pay my own phone and wifi bills every month and never miss, does any of that help my credit or nah? also my payday got moved so my Nov 1 Credit Builder payment might end up like a week late, is that gonna show up as a late payment"
+  intents: 2
+  skills: [bill-reporting, credit-builder-account]
+  expected_facts:
+    # skill:bill-reporting ("Bill Reporting is free.")
+    - "Says Bill Reporting is free"
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax. They are...
+    - "Says on-time phone and internet payments are reported only to Equifax, not to Experian or TransUnion"
+    # skill:bill-reporting ("If it is off, mention that the feature is free and available, without pushing it.") + persona:products.bill_reporting (null)
+    - "Notes Bill Reporting is not on in her profile and mentions it as an option without pushing her to turn it on"
+    # skill:credit-builder-account ("A payment 1 to 29 days late is not reported as late.")
+    - "States, as the Credit Builder plan's own rule, that a payment 1 to 29 days late is not reported as late"
+    # persona:products.credit_builder.next_payment_due (2026-11-01) + skill:credit-builder-account ("paying before day 30 keeps it from being reported as...
+    - "Uses her 2026-11-01 due date to say a payment about a week late would still be well under 30 days past due"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-022
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "Can I use your Debt Settlement service on my Credit Builder plan so I end up paying less? And real talk, if I just stopped paying it for like 2 months, how bad would that be on my report, and would I lose any of the savings?"
+  intents: 3
+  skills: [debt-settlement, credit-builder-account, payment-history]
+  expected_facts:
+    # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") + persona:credit.accounts[0].status ("open,...
+    - "Says her Credit Builder plan does not qualify for Debt Settlement, because the service only takes charged-off or in-collections accounts"
+    # skill:debt-settlement (Do not: "Suggest stopping payments on a current account to qualify.")
+    - "Does not suggest stopping or skipping Credit Builder payments to qualify for settlement"
+    # skill:credit-builder-account ("At 30 or more days past due it is reported as late (impact: see payment-history).")
+    - "Says a missed Credit Builder payment is reported as late once it is 30 or more days past due"
+    # skill:payment-history ("A late payment can stay on reports for up to 7 years from the original delinquency date.")
+    - "Says a reported late payment can stay on her reports up to 7 years from the original delinquency date"
+    # skill:credit-builder-account ("After 24 months the user gets back the savings balance: $144 minus any unpaid amounts.")
+    - "Says unpaid payments are subtracted from the savings she gets back when the plan ends ($144 minus any unpaid amounts)"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-023
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "Hi Coach, a few questions: 1) My score went from 603 to 612, what caused that? 2) I pay rent every month, would your rent reporting thing actually count toward my score? 3) I keep looking at cards in the Marketplace. How much does one hard inquiry really hurt?"
+  intents: 3
+  skills: [score-changes, rent-reporting, marketplace-offers]
+  expected_facts:
+    # persona:credit.score (current 612, previous 603 as of 2026-09-15) + persona:recent_events ("2026-10-01: Made her 4th Credit Builder payment on time")
+    - "Points to her 4th on-time Credit Builder payment (2026-10-01) as a likely reason for the rise from 603 to 612, without claiming certainty"
+    # skill:rent-reporting ("On-time rent payments, verified through the user's linked bank account, are reported to TransUnion and Experian. The app doe...
+    - "Says the app reports rent only to TransUnion and Experian, not Equifax"
+    # skill:rent-reporting ("FICO 8 ignores rent; FICO 9, FICO 10 and VantageScore 3.0 and 4.0 can count it.") + persona:credit.score.model (VantageScore...
+    - "Says VantageScore 3.0, the model behind her score, can count reported rent"
+    # skill:score-changes ("FICO says one extra inquiry takes fewer than 5 points off for most people.")
+    - "Cites FICO's general figure that one extra hard inquiry takes fewer than 5 points off for most people, not as a prediction for her"
+    # skill:marketplace-offers ("Applying through a partner usually triggers a hard inquiry from that issuer")
+    - "Says applying for a Marketplace card usually triggers a hard inquiry from that issuer"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '\b612\b'
+
+- id: mi-024
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "so im still figuring out the basics lol. does my credit builder count toward my utilization since i dont have a card, and also is there a free way to actually look at my credit reports, and also if i turn on bill reporting would my netflix and spotify count too"
+  intents: 3
+  skills: [utilization, payment-history, bill-reporting]
+  expected_facts:
+    # persona:credit.utilization (overall null, total_revolving_balance 0, total_revolving_limit 0)
+    - "Says her profile shows no revolving utilization, since she has no credit cards"
+    # skill:utilization ("Installment loans (auto, student, personal, the app's Credit Builder plan) are not part of revolving utilization.")
+    - "Says the Credit Builder plan is an installment loan and is not part of revolving utilization"
+    # skill:payment-history ("Free reports from all three bureaus are available weekly at AnnualCreditReport.com.")
+    - "Says free reports from all three bureaus are available weekly at AnnualCreditReport.com"
+    # skill:bill-reporting (Do not: "Claim bill types beyond utility, phone, and internet (for example streaming or insurance) are reported.")
+    - "Says Bill Reporting covers only utility, phone and internet bills, so streaming subscriptions like Netflix and Spotify are not reported"
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax. They are...
+    - "Says bill payments are reported only to Equifax"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-025
+  dataset: multi_intent
+  persona: renter
+  message: "do my phone and electric bills count toward my credit at all? i pay them on time every month. also could your debt settlement people knock down what i owe on my auto loan before i apply for a mortgage"
+  intents: 2
+  skills: [bill-reporting, debt-settlement]
+  expected_facts:
+    # skill:bill-reporting ("Bill Reporting is free.") with persona:products.bill_reporting (null, so mention it is free without pushing)
+    - "Says Bill Reporting is free"
+    # skill:bill-reporting ("reported to Equifax. They are not reported to Experian or TransUnion.")
+    - "Says on-time phone and utility bill payments are reported only to Equifax, not to Experian or TransUnion"
+    # skill:bill-reporting ("The effect on a score depends on the scoring model and on whether a lender pulls Equifax." and Do not: "Promise ... that a l...
+    - "Says the effect of these bill payments depends on the scoring model and on whether a lender pulls Equifax, without promising a mortgage lender will see or count them"
+    # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") with persona:credit.accounts (Auto loan "op...
+    - "Says the Debt Settlement service only takes charged-off or in-collections accounts, so his current auto loan does not qualify"
+    # skill:debt-settlement (Do not: "Suggest stopping payments on a current account to qualify.")
+    - "Does not suggest falling behind or stopping payments on the auto loan to qualify for settlement"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '\b(?:bills?|bill payments?) (?:are|is|get|gets) reported to (?:Experian|TransUnion)\b'
+
+- id: mi-026
+  dataset: multi_intent
+  persona: renter
+  message: "ok two things. my bank card got hit with a 30 day late back in 2024, it was a one time slip on my part, is there any way to get it taken off before my mortgage app? and if i sign up for the $6 credit builder and pay it like a week late one month, does that show up as a late on my report?"
+  intents: 2
+  skills: [payment-history, credit-builder-account]
+  expected_facts:
+    # persona:credit.negative_items (late_payment, Bank credit card, "30 days late", reported 2024-12-16)
+    - "Names the 30-day late on his Bank credit card, reported 2024-12-16"
+    # skill:payment-history ("A goodwill letter asks the creditor to remove an accurate late as a courtesy. The creditor has no obligation to agree.")
+    - "Offers a goodwill letter to the card issuer as an optional request, noting the creditor has no obligation to agree"
+    # skill:payment-history ("A late payment can stay on reports for up to 7 years from the original delinquency date.") with persona:credit.negative_ite...
+    - "Says the late can stay up to 7 years from the original delinquency on 2024-11-12, so until about November 2031"
+    # skill:credit-builder-account ("A payment 1 to 29 days late is not reported as late.")
+    - "Says a Credit Builder payment 1 to 29 days late is not reported as late, so a week late would not show as a late mark"
+    # skill:credit-builder-account ("At 30 or more days past due it is reported as late")
+    - "Says a Credit Builder payment is reported as late once it is 30 or more days past due"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the late(?: payment)?|that late(?: payment)?) will be (?:deleted|removed|taken off)\b'
+
+- id: mi-027
+  dataset: multi_intent
+  persona: renter
+  message: "Few questions. I pulled my Equifax report to get ready for the mortgage and none of my rent is on there, is something broken? Also a coworker settled his credit card for way less than he owed. Could your settlement service do that with my card so I pay less than the $550? And last one, can I check if I'd get approved for a Marketplace card without a hard pull?"
+  intents: 3
+  skills: [rent-reporting, debt-settlement, marketplace-offers]
+  expected_facts:
+    # skill:rent-reporting ("The app does not report rent to Equifax, so app-reported rent does not appear on Equifax reports") with persona:products.ren...
+    - "Says the app reports rent only to TransUnion and Experian, not Equifax, so rent missing from his Equifax report is expected"
+    # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") with persona:credit.accounts (Bank credit c...
+    - "Says the Debt Settlement service only takes charged-off or in-collections accounts, so his current Bank credit card does not qualify"
+    # skill:marketplace-offers ("Some issuers offer prequalification, typically a soft inquiry that does not affect scores.")
+    - "Mentions that some issuers offer prequalification, typically a soft inquiry that does not affect scores"
+    # skill:marketplace-offers ("Prequalification is not approval.")
+    - "Says prequalification is not the same as approval"
+    # always_on:guardrails ("disclose that Marketplace partners may pay the app when a user is approved")
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '\brent (?:is|gets|goes|payments are) (?:reported |sent )?to Equifax\b'
+
+# Needs four topic skills: the After bot can load only three.
+- id: mi-028
+  dataset: multi_intent
+  persona: renter
+  message: "Getting my credit ready for a mortgage in 2027, so a few things:\n1) If a landlord ever sent unpaid rent to collections, would paying it off get it off my report?\n2) Do my phone and electric bills help my credit the way my rent reporting does?\n3) Should I pay my card down to $0 before the lender pulls my credit?"
+  intents: 3
+  skills: [collections, bill-reporting, rent-reporting, utilization]
+  expected_facts:
+    # skill:collections ("Paying a non-medical collection does not remove it; it shows as paid.")
+    - "Says paying a collection does not remove it from his report; it shows as paid"
+    # skill:collections ("FICO 9, FICO 10 and VantageScore 3.0 and 4.0 ignore paid collections.") with persona:credit.score.model (VantageScore 3.0)
+    - "Says VantageScore 3.0, the model behind his score, ignores paid collections"
+    # skill:bill-reporting ("reported to Equifax. They are not reported to Experian or TransUnion.")
+    - "Says on-time phone and utility bill payments are reported only to Equifax"
+    # skill:rent-reporting ("reported to TransUnion and Experian. The app does not report rent to Equifax") with persona:products.rent_reporting (status...
+    - "Says his reported rent goes to TransUnion and Experian, not Equifax, so rent and bills reach different bureaus"
+    # skill:utilization ("Forcing 0% on every card brings no real benefit.") with persona:credit.utilization (overall 0.22, $550 of $2,500), quoted via m...
+    - "Says forcing his card to a $0 balance brings no real benefit"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the collection|that collection) will be (?:deleted|removed|taken off) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'
+
+- id: mi-029
+  dataset: multi_intent
+  persona: collections
+  message: "got a letter last month from the collection agency about my old phone bill and it got me thinking, i pay my current phone bill on time every month so does that do anything for my credit or is it basically invisible? also once you guys finish settling my bank card will the charge off disappear from my report"
+  intents: 2
+  skills: [bill-reporting, debt-settlement]
+  expected_facts:
+    # skill:bill-reporting ("Many utility, phone, and internet providers do not report on-time payments to the credit bureaus themselves, which is why th...
+    - "Says on-time phone bill payments are often missing from credit reports because many providers do not report them to the bureaus themselves"
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax. They are...
+    - "Says the app's Bill Reporting sends on-time phone bill payments only to Equifax, not to Experian or TransUnion"
+    # skill:bill-reporting ("if it is off, mention that the feature is free and available, without pushing it.") + persona:products.bill_reporting (null)
+    - "Mentions that Bill Reporting is free, without pushing her to turn it on"
+    # skill:debt-settlement ("Settling does not remove the account ... a settled charge-off still shows as a charge-off.")
+    - "Says a settled charge-off still shows on her report as a charge-off rather than disappearing"
+    # skill:debt-settlement ("Settling does not remove the account or shorten its 7-year reporting period")
+    - "Says settling does not shorten the charge-off's 7-year reporting period"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the charge-off|the account|the card) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:it settles|it is settled|it\W?s settled|you settle|the settlement)\b'
+
+- id: mi-030
+  dataset: multi_intent
+  persona: collections
+  message: "The collection agency's letter from September says I owe $1,200 on the old phone account, but I think part of that is fees I never agreed to. How do I push back on the amount? Also, I've kept my store card paid on time and I really don't want to slip on it now. What's the best way to make sure that never happens?"
+  intents: 2
+  skills: [collections, payment-history]
+  expected_facts:
+    # skill:collections ("Unrecognized debt or wrong amount: suggest requesting validation" and "A collector's validation notice lists the creditor, item...
+    - "Suggests requesting debt validation from the collection agency, which lists an itemized balance she can check for the fees"
+    # skill:collections ("validation period end date (30 days after the user receives it). If the user disputes in writing within that period, the collec...
+    - "Says that if she disputes in writing within the validation period (30 days after she receives the notice), the collector must stop collecting the disputed amount until it sends verification"
+    # skill:payment-history ("The user can dispute with the bureau and with the creditor that reported it; the bureau generally has 30 days to investigat...
+    - "Says the credit bureau generally has 30 days to investigate a dispute of the collection entry"
+    # persona:credit.accounts[Store card].status ("open, current") + persona:recent_events ("2026-10-01: Paid the Store card on time")
+    - "Uses her profile: the Store card is open and current, with an on-time payment on 2026-10-01"
+    # skill:payment-history ("Suggest autopay or reminders for at least the minimum.")
+    - "Suggests autopay or reminders for at least the minimum payment on the Store card"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the collection|this collection) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'
+
+- id: mi-031
+  dataset: multi_intent
+  persona: collections
+  message: "Three things:\n1. While you're still negotiating my bank card, can the bank keep coming after me or even sue me?\n2. If I signed up for Rent Reporting and came up short on rent one month, would that get reported as late?\n3. Should I pay my store card all the way down to $0 before the statement, or is leaving a little on it fine?"
+  intents: 3
+  skills: [debt-settlement, rent-reporting, utilization]
+  expected_facts:
+    # skill:debt-settlement ("Negotiating does not stop the creditor or collector from collecting or suing (see collections).")
+    - "Says negotiating through the Debt Settlement service does not stop the bank from collecting or suing"
+    # skill:rent-reporting ("Rent Reporting costs $4 per month." and how-to: "If not, describe the add-on neutrally, including the $4 monthly cost ... an...
+    - "Mentions that Rent Reporting costs $4 per month, without suggesting she sign up"
+    # skill:rent-reporting ("Late rent is never reported. A missed month is simply not reported.")
+    - "Says late or missed rent is never reported through the app"
+    # persona:credit.utilization (overall 0.35, total_revolving_balance 280, total_revolving_limit 800) + persona:credit.accounts[Store card] (limit 800,...
+    - "Gives her utilization as 35% ($280 of the $800 limit on the Store card), above the 30% guidance"
+    # skill:utilization ("Common guidance: keep utilization under 30%, and under 10% tends to be better. Forcing 0% on every card brings no real benefit.")
+    - "Says paying the Store card down to a $0 balance brings no real benefit, so leaving a small balance reported is fine"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+  must_include_regex:
+    - '35\s*(%|percent)'
+
+- id: mi-032
+  dataset: multi_intent
+  persona: collections
+  message: "ok so a few things lol. the collection agency keeps bugging me about that $1,200 phone bill and i was thinking of just sending them like $50 to get them off my back, does that mess anything up? and would the credit builder plan help me rebuild, i keep seeing it in the app. oh and if my electric bill goes out a couple days late is that gonna show up on my credit"
+  intents: 3
+  skills: [collections, credit-builder-account, bill-reporting]
+  expected_facts:
+    # skill:collections ("In many states a partial payment or written promise to pay can restart it.") + persona:credit.negative_items[collection].balanc...
+    - "Flags that in many states even a partial payment like $50 can restart the statute of limitations on the $1,200 phone debt"
+    # skill:collections ("neither payment nor resale to another collector restarts that clock" and "estimate drop-off as original_delinquency plus 7 year...
+    - "Says a payment does not restart the 7-year reporting clock, so the collection can stay only until about March 2029 (7 years from 2022-03-14)"
+    # skill:credit-builder-account ("If the message or profile shows hardship (lost income, past-due accounts, collections), follow guardrails and do not...
+    - "Mentions that the Credit Builder plan adds a $6 monthly payment for 24 months, without recommending she open it"
+    # skill:bill-reporting ("Only on-time payments are reported. Late bills are never reported through the app.")
+    - "Says late bills are never reported through the app's Bill Reporting"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the collection|this collection) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'
+
+- id: mi-033
+  dataset: multi_intent
+  persona: multi-product
+  message: "is there a way to add my car insurance and my netflix to bill reporting too? and also random but if my bank card autopay ever bounced and I didn't notice for like a week would that show up as late on my report"
+  intents: 2
+  skills: [bill-reporting, payment-history]
+  expected_facts:
+    # skill:bill-reporting (Do not: "Claim bill types beyond utility, phone, and internet (for example streaming or insurance) are reported.")
+    - "Says Bill Reporting covers only utility, phone and internet bills, so car insurance and streaming payments like Netflix are not reported"
+    # persona:products.bill_reporting.bills (Mobile phone, Electric utility, Home internet, months_reported 8 each; status active)
+    - "Notes Sam's phone, electric and internet bills are already being reported through Bill Reporting (8 months each)"
+    # skill:payment-history ("Creditors generally report a payment as late only once it is 30 or more days past due.")
+    - "Says a card payment is generally reported as late only once it is 30 or more days past due"
+    # skill:payment-history ("A few days late may mean a fee but usually no late mark.")
+    - "Says a payment about a week late may bring a late fee but usually no late mark"
+    # skill:payment-history (How to answer: "Suggest autopay or reminders for at least the minimum.")
+    - "Suggests payment reminders as a backup to autopay, set for at least the minimum payment"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-034
+  dataset: multi_intent
+  persona: multi-product
+  message: "Could I just stop paying my Bank credit card for a while so your Debt Settlement service can get the $240 knocked down? lol. Also, once my Credit Builder plan is done, does that account disappear from my credit report or stay on there?"
+  intents: 2
+  skills: [debt-settlement, credit-builder-account, score-changes]
+  expected_facts:
+    # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") plus persona:credit.accounts Bank credit ca...
+    - "Says the Debt Settlement service takes only charged-off or in-collections accounts, so the current Bank credit card ($240 balance) does not qualify"
+    # skill:debt-settlement (Do not: "Suggest stopping payments on a current account to qualify.")
+    - "Does not suggest stopping payments on the Bank credit card to make it qualify for settlement"
+    # skill:credit-builder-account ("the closed account stays on the report with its payment history (how long: see score-changes)") plus skill:score-cha...
+    - "Says the Credit Builder account does not disappear when the plan ends: it stays on the report as a closed account with its payment history"
+    # skill:score-changes ("A closed account in good standing can stay on the report for up to 10 years.")
+    - "Says a closed account in good standing can stay on the report for up to 10 years"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-035
+  dataset: multi_intent
+  persona: multi-product
+  message: "Getting ready to apply for a mortgage sometime next year, so a few things: 1) Will the lender actually count my rent history? 2) Is there a way to see if I'd be approved for a Marketplace card without a hard inquiry? 3) If I pay my cards down to zero right before I apply, will the lender only see that, or do they look back at older balances too?"
+  intents: 3
+  skills: [rent-reporting, marketplace-offers, utilization]
+  expected_facts:
+    # persona:products.rent_reporting (months_reported_since_enrollment 15, past_months_added 12; summary "27 in total")
+    - "Notes 27 months of reported rent on file (15 since enrolling plus 12 past months added)"
+    # skill:rent-reporting ("Mortgages: loans sold to Fannie Mae and Freddie Mac can use Classic FICO (older versions that ignore rent) or VantageScore 4...
+    - "Says loans sold to Fannie Mae and Freddie Mac may use Classic FICO, which ignores rent, or VantageScore 4.0, which can count it"
+    # skill:marketplace-offers ("Some issuers offer prequalification, typically a soft inquiry that does not affect scores. Prequalification is not appro...
+    - "Says some card issuers offer prequalification, usually a soft inquiry that does not affect scores"
+    # always_on:guardrails ("Whenever you recommend or discuss a specific Marketplace offer or applying through the Marketplace, disclose that Marketplac...
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+    # skill:utilization ("Trended-data models (FICO 10T, and VantageScore 4.0 when trended data is used) also look at up to 24 months of balance history.")
+    - "Says trended-data models, such as FICO 10T and VantageScore 4.0 when trended data is used, can look at up to 24 months of balance history rather than only the latest balance"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+  must_include_regex:
+    - '\b27\b'
+
+# Needs four topic skills: the After bot can load only three.
+- id: mi-036
+  dataset: multi_intent
+  persona: multi-product
+  message: "ok a few things. first, my rent is showing on my TransUnion report but my phone, electric and internet bills aren't, is something broken? second, my score went from 695 to 702 this month, any idea why? and third, I'm moving in the spring, so if the final electric bill slips through the cracks, does it even matter since you only report on-time bills anyway? like if it ended up in collections and I paid it later, would it come off?"
+  intents: 3
+  skills: [bill-reporting, rent-reporting, score-changes, collections]
+  expected_facts:
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax. They are...
+    - "Says the phone, electric and internet payments are reported only to Equifax, so their absence from TransUnion is expected"
+    # skill:rent-reporting ("On-time rent payments, verified through the user's linked bank account, are reported to TransUnion and Experian. The app doe...
+    - "Says rent is reported to TransUnion and Experian, not Equifax"
+    # skill:score-changes ("Small swings with no new negative item are normal.") plus persona:credit.score current 702, previous 695 (2026-09-15), negati...
+    - "Says the rise from 695 to 702, with no new negative items in the profile, is a normal small swing"
+    # skill:bill-reporting ("A provider can still send an unpaid bill to collections, independent of the app (see collections).")
+    - "Says the electric company can still send an unpaid final bill to collections, independent of the app"
+    # skill:collections ("Paying a non-medical collection does not remove it; it shows as paid.")
+    - "Says paying a collection later does not remove it from reports; it shows as paid"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the collection|this collection) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'

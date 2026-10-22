@@ -80,6 +80,18 @@ export default async function BeforeAfterResultsPage() {
         </p>
       </PageHero>
 
+      {data.pending.length > 0 && (
+        <NotGenerated title={`${plural(data.pending.length, "case")} not in these runs yet`}>
+          The eval set has grown since these results were written. {data.pending.length === 1 ? "This case" : "These cases"}{" "}
+          ({data.pending.length > 6 ? `${data.pending[0]} to ${data.pending[data.pending.length - 1]}` : data.pending.join(", ")})
+          {data.pending.length === 1 ? " is" : " are"} on the{" "}
+          <Link href="/before-after/framework#eval-set" className="font-medium text-ink underline underline-offset-2">
+            Framework tab
+          </Link>{" "}
+          and will show here once both bots are rerun.
+        </NotGenerated>
+      )}
+
       <OnThisPage links={SECTIONS} />
 
       {/* Headline */}

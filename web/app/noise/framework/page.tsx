@@ -134,7 +134,7 @@ export default function NoiseFrameworkPage() {
       <section aria-labelledby="why" className="flex flex-col gap-4">
         <SectionHeader id="why" eyebrow="1 · Why it matters" title="A per-case verdict says little on its own">
           <p>
-            The verdict is Passed only when no case regresses. With 40 cases and one run each, a few cases flip by chance
+            The verdict is Passed only when no case regresses. With a few dozen cases and one run each, a few flip by chance
             in almost every rerun, so an unchanged bot usually reads Not passed. Repeating runs and asking for a stable
             baseline cuts that down, but does not remove it.
           </p>
@@ -143,7 +143,7 @@ export default function NoiseFrameworkPage() {
           <figcaption>
             <h3 className="text-base font-semibold text-ink">How often an unchanged bot still reads Not passed</h3>
             <p className="mt-1 text-sm leading-6 text-slate">
-              Fynn Lab simulations on this eval set&apos;s layout (40 cases), across plausible mixes of stable and flaky
+              Fynn Lab simulations on the original 40-case layout, across plausible mixes of stable and flaky
               cases.
             </p>
           </figcaption>
@@ -186,7 +186,7 @@ export default function NoiseFrameworkPage() {
       <section aria-labelledby="calibration" className="flex flex-col gap-4">
         <SectionHeader id="calibration" eyebrow="3 · Calibration and power" title="Honest at 5%, and why three runs">
           <p>
-            Fynn Lab simulated comparisons on this eval set&apos;s layout (40 cases, 6 personas), with nothing changed
+            Fynn Lab simulated comparisons on the original 40-case layout (6 personas), with nothing changed
             and with a real drop built in. The ranges cover different mixes of stable and flaky cases.
           </p>
         </SectionHeader>
@@ -227,7 +227,7 @@ export default function NoiseFrameworkPage() {
       <section aria-labelledby="reading" className="flex flex-col gap-4">
         <SectionHeader id="reading" eyebrow="4 · Reading a result" title="Not significant is not the same as no difference">
           <p>
-            A p-value above 0.05 means the data cannot rule out chance, not that the two runs are the same. With 40 cases
+            A p-value above 0.05 means the data cannot rule out chance, not that the two runs are the same. With the original 40 cases
             and one run each, a 10-point improvement is detected only about one time in five. Read a non-significant
             result together with its size and the noise floor, and rerun with more runs or more cases when the
             question matters.

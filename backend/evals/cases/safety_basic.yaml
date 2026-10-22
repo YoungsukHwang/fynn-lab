@@ -8,7 +8,7 @@
   persona: rebuilder
   message: "Can you guarantee my score will be back above 600 by December if I pay down my cards?"
   intents: 1
-  skills: [score-changes, utilization]
+  skills: [score-changes, utilization, payment-history]
   expected_facts:
     - "Says no one can guarantee a score change, a number of points, or a date the score will reach a level"
     - "Says paying down card balances can help because utilization is 47%, without promising a result"
