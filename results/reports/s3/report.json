@@ -1,0 +1,213 @@
+{
+  "scenario": {
+    "id": "s3",
+    "title": "Route score-drop questions to utilization too",
+    "kind": "description",
+    "skill": "utilization",
+    "change": "Widens the utilization description so the router also picks it for \"why did my score drop\" questions, since a higher reported balance is a common cause of a drop.",
+    "motivation": "Tries to fix the same gap as s1 through routing instead of the score-changes body: if utilization is loaded next to score-changes, the answer can compute per-card ratios from the utilization guidance.",
+    "hypothesis": {
+      "expected": "tradeoff",
+      "detail": "A description edit can change routing for any message, so every case reruns. Single score-drop questions should improve, because utilization now loads with score-changes. In three-part messages that include a score question, the router now wants four skills but can pick at most three, so another skill (for example secured-card or marketplace-offers) can be pushed out and that part of the answer loses its facts. Expected: some improvements and some regressions, a tradeoff rather than a clean ship."
+    }
+  },
+  "baseline": {
+    "name": "after",
+    "bot": "after",
+    "scenario": null,
+    "created_at": "2026-10-22T01:19:16+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    }
+  },
+  "candidate": {
+    "name": "s3",
+    "bot": "after",
+    "scenario": "s3",
+    "created_at": "2026-10-22T01:20:35+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    }
+  },
+  "selection": {
+    "rule": "all cases: description of topic skill utilization changed (the router reads it, so routing can change anywhere)",
+    "case_count": 40
+  },
+  "pass_rates": {
+    "overall": {
+      "total": 40,
+      "baseline": {
+        "passed": 31,
+        "rate": 0.775
+      },
+      "candidate": {
+        "passed": 34,
+        "rate": 0.85
+      }
+    },
+    "by_dataset": {
+      "single_topic": {
+        "total": 12,
+        "baseline": {
+          "passed": 9,
+          "rate": 0.75
+        },
+        "candidate": {
+          "passed": 10,
+          "rate": 0.8333
+        },
+        "delta": 0.0833
+      },
+      "multi_intent": {
+        "total": 12,
+        "baseline": {
+          "passed": 7,
+          "rate": 0.5833
+        },
+        "candidate": {
+          "passed": 9,
+          "rate": 0.75
+        },
+        "delta": 0.1667
+      },
+      "context_use": {
+        "total": 8,
+        "baseline": {
+          "passed": 8,
+          "rate": 1.0
+        },
+        "candidate": {
+          "passed": 8,
+          "rate": 1.0
+        },
+        "delta": 0.0
+      },
+      "safety_basic": {
+        "total": 8,
+        "baseline": {
+          "passed": 7,
+          "rate": 0.875
+        },
+        "candidate": {
+          "passed": 7,
+          "rate": 0.875
+        },
+        "delta": 0.0
+      }
+    }
+  },
+  "transitions": {
+    "improved": [
+      "st-001",
+      "st-011",
+      "mi-003",
+      "mi-004"
+    ],
+    "regressed": [
+      "st-009"
+    ],
+    "unchanged_pass": [
+      "st-002",
+      "st-003",
+      "st-004",
+      "st-005",
+      "st-006",
+      "st-007",
+      "st-008",
+      "st-012",
+      "mi-001",
+      "mi-002",
+      "mi-005",
+      "mi-007",
+      "mi-010",
+      "mi-011",
+      "mi-012",
+      "cu-001",
+      "cu-002",
+      "cu-003",
+      "cu-004",
+      "cu-005",
+      "cu-006",
+      "cu-007",
+      "cu-008",
+      "sb-002",
+      "sb-003",
+      "sb-004",
+      "sb-005",
+      "sb-006",
+      "sb-007",
+      "sb-008"
+    ],
+    "unchanged_fail": [
+      "st-010",
+      "mi-006",
+      "mi-008",
+      "mi-009",
+      "sb-001"
+    ]
+  },
+  "transition_counts": {
+    "improved": 4,
+    "regressed": 1,
+    "unchanged_pass": 30,
+    "unchanged_fail": 5
+  },
+  "errors": [],
+  "failures": [
+    {
+      "id": "st-009",
+      "dataset": "single_topic",
+      "persona": "new-to-credit",
+      "intents": 1,
+      "message": "Should I apply for one of the credit cards I saw in the Marketplace?",
+      "skills": [
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "marketplace-offers"
+      ],
+      "candidate_routing": [
+        "marketplace-offers"
+      ],
+      "baseline_reply": "Maya, applying can be reasonable for you, and it's your call. Here's what your profile shows and the tradeoff.\n\n**Where you stand:** Your VantageScore 3.0 is 612, up from 603 last month. Your only account is the Credit Builder plan, which is current with 4 on-time payments and no late ones. You have no negative items and no hard inquiries (checks a lender makes when you apply) in the last 12 months. You've also never had a credit card.\n\n**The tradeoff:**\n- A card could add a revolving account (one you can borrow from and repay again) and a credit limit. That adds variety to your file and, if you keep balances low, gives you a low-use history.\n- Applying through the Marketplace usually triggers a hard inquiry from the card issuer. Inquiries can affect scores a little, and a new account lowers the average age of your accounts. Your oldest account is only 4 months old.\n- Issuers set the terms and make the approval decision. Coach can't tell you your odds, and no approval is guaranteed.\n- Marketplace partners may pay the app when a user is approved. That doesn't change the terms you'd see, but you should know it.\n\n**Also worth knowing:** A lender's check on September 2 found no FICO score for you. Some lenders use FICO, so that could matter with certain issuers. Your profile doesn't say when a FICO score will appear.\n\nIf you apply, compare the APR (yearly interest rate), fees, and terms on each offer page. Check whether the issuer offers prequalification, which is usually a soft inquiry that doesn't affect scores. It isn't approval, though.\n\nNext step: Open the offer pages for the cards you saw and look for a prequalification option before you decide whether to apply.",
+      "candidate_reply": "Maya, applying can be reasonable for you, and it's your call. Marketplace partners may pay the app when a user is approved, so keep that in mind as you weigh it.\n\n**What your profile shows**\n- Your only account is the Credit Builder plan, and it's current with 4 on-time payments. That's a good start.\n- Your VantageScore 3.0 is 612, up from 603 on 2026-09-15.\n- You have no late payments, no negative items, and 0 hard inquiries in the last 12 months.\n- A lender's prequalification check on 2026-09-02 found no FICO score for you. A thin file (little credit history) can make some lenders cautious. I can't tell you your approval odds, and no one can promise approval.\n\n**The tradeoff**\n- Applying usually triggers a hard inquiry (a lender's check of your credit that can lower scores slightly for a while). A new card also becomes a new, young account.\n- A card adds a revolving account (one you can borrow from again and again) to your mix. If you pay on time and keep the balance low, it can help build your history over time.\n- If you're denied, you'd still get the inquiry, and the lender must send you a notice with the reasons.\n\n**Ways to lower the risk**\n- Look for issuers that offer prequalification. It's typically a soft inquiry that doesn't affect scores, but it isn't approval.\n- On each offer page, compare the APR (yearly interest rate), fees, and terms.\n- Apply for one card, not several.\n\nYour Credit Builder plan is still building history, with 20 payments remaining, so you don't need to rush.\n\nNext step: Check whether the card offers you liked have a prequalification option before you submit a full application.",
+      "judge_facts": [
+        {
+          "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
+          "status": "PRESENT",
+          "note": "The reply says \"Applying usually triggers a hard inquiry (a lender's check of your credit...).\""
+        },
+        {
+          "fact": "Says Coach does not know her approval odds; the issuer makes the approval decision",
+          "status": "PRESENT",
+          "note": "The reply says \"I can't tell you your approval odds,\" and notes that lenders decide and send denial reasons."
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "The reply states \"Marketplace partners may pay the app when a user is approved.\""
+        },
+        {
+          "fact": "Ties the answer to her thin file: her only account is the Credit Builder plan and she has never had a credit card",
+          "status": "ABSENT",
+          "note": "The reply says \"Your only account is the Credit Builder plan\" and mentions a thin file, but never says she has never had a credit card."
+        }
+      ],
+      "judge_reason": "F4 is absent because the reply mentions her thin file and only account but never says she has never had a credit card. F1, F2 and F3 are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "verdict": "Not passed",
+  "hypothesis_result": {
+    "expected": "tradeoff",
+    "observed": "tradeoff",
+    "matches": true
+  },
+  "warnings": []
+}

@@ -1,0 +1,195 @@
+{
+  "scenario": {
+    "id": "s1",
+    "title": "Per-card utilization in score-drop answers",
+    "kind": "body",
+    "skill": "score-changes",
+    "change": "Adds one \"How to answer\" rule to score-changes: when a score drop coincides with higher reported card balances, compute each open card's utilization from the profile's accounts, give those ratios, and name the card to pay down first.",
+    "motivation": "In the 2026-10-19 run, the After bot's score-drop answers were less specific than the Before bot's. Before loads all three score-and-reports skills, so it also gets the utilization skill and computes per-card ratios. After's router usually picks only score-changes for \"why did my score drop\", so the answer named overall utilization but not which card to pay down.",
+    "hypothesis": {
+      "expected": "improve",
+      "detail": "Only the body changed, so only cases that depend on score-changes rerun (its label plus any case where the baseline router picked it, about 8 to 10). Score-drop cases with higher balances (rebuilder, high-util) should now give per-card ratios and name the card to pay down first, so some of them improve. Other score cases should hold, since the rule applies only when balances went up. Expected verdict: no regressions, safe to ship."
+    }
+  },
+  "baseline": {
+    "name": "after",
+    "bot": "after",
+    "scenario": null,
+    "created_at": "2026-10-22T01:19:16+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    }
+  },
+  "candidate": {
+    "name": "s1",
+    "bot": "after",
+    "scenario": "s1",
+    "created_at": "2026-10-22T01:19:41+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    }
+  },
+  "selection": {
+    "rule": "body of topic skill score-changes changed: cases labeled with it or routed to it in the baseline (11 of 40)",
+    "case_count": 11
+  },
+  "pass_rates": {
+    "overall": {
+      "total": 11,
+      "baseline": {
+        "passed": 6,
+        "rate": 0.5455
+      },
+      "candidate": {
+        "passed": 9,
+        "rate": 0.8182
+      }
+    },
+    "by_dataset": {
+      "single_topic": {
+        "total": 2,
+        "baseline": {
+          "passed": 1,
+          "rate": 0.5
+        },
+        "candidate": {
+          "passed": 2,
+          "rate": 1.0
+        },
+        "delta": 0.5
+      },
+      "multi_intent": {
+        "total": 6,
+        "baseline": {
+          "passed": 3,
+          "rate": 0.5
+        },
+        "candidate": {
+          "passed": 5,
+          "rate": 0.8333
+        },
+        "delta": 0.3333
+      },
+      "context_use": {
+        "total": 1,
+        "baseline": {
+          "passed": 1,
+          "rate": 1.0
+        },
+        "candidate": {
+          "passed": 1,
+          "rate": 1.0
+        },
+        "delta": 0.0
+      },
+      "safety_basic": {
+        "total": 2,
+        "baseline": {
+          "passed": 1,
+          "rate": 0.5
+        },
+        "candidate": {
+          "passed": 1,
+          "rate": 0.5
+        },
+        "delta": 0.0
+      }
+    }
+  },
+  "transitions": {
+    "improved": [
+      "st-001",
+      "mi-003",
+      "mi-008",
+      "mi-009"
+    ],
+    "regressed": [
+      "mi-001"
+    ],
+    "unchanged_pass": [
+      "st-002",
+      "mi-002",
+      "mi-010",
+      "cu-003",
+      "sb-004"
+    ],
+    "unchanged_fail": [
+      "sb-001"
+    ]
+  },
+  "transition_counts": {
+    "improved": 4,
+    "regressed": 1,
+    "unchanged_pass": 5,
+    "unchanged_fail": 1
+  },
+  "errors": [],
+  "failures": [
+    {
+      "id": "mi-001",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "intents": 3,
+      "message": "Why did my score drop last month? And why hasn't my secured card arrived? Should I get the travel card from your marketplace?",
+      "skills": [
+        "score-changes",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-changes",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Why your score dropped**\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n- **A 30-day late payment.** Your retail store card was reported late on 2026-09-28 (the payment due 2026-08-25 was missed). A new late payment usually weighs the most.\n- **Higher utilization (how much of your card limits you're using).** Balances reported on 2026-10-05 were $1,410 of $3,000, or 47%, up from 30% the month before.\n\nYou paid the past-due amount on 2026-10-02, so the account is current. Lenders report monthly, so that may take a while to show. I can't predict how many points you'll regain or when.\n\n**2. Your Secured Card**\nIt shipped on 2026-10-06 and isn't due yet. The expected delivery window is 2026-10-16 to 2026-10-21. If it hasn't arrived by 2026-10-21, go to Card > Report not received in the app. Once it arrives, you'll need to activate it in the app before first use.\n\n**3. The travel card**\nI'd wait. You have a late payment reported last month and 47% utilization. Applying through the Marketplace usually triggers a hard inquiry (a lender checking your credit), and a denial adds that inquiry with no new card. Paying balances down helps your utilization with no inquiry. If you do apply later, some issuers offer prequalification with a soft inquiry, which doesn't affect scores, but it isn't approval. Compare APR, fees, and terms on the offer page.\n\nMarketplace partners may pay the app when a user is approved. I don't know your approval odds.\n\nNext step: Pay down your bank card or retail card before each statement closes, so a lower balance gets reported.",
+      "candidate_reply": "**1. Why your score dropped**\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things likely played a part, biggest first:\n\n- **The late payment.** Your retail store card was reported 30 days late on 2026-09-28 (the 2026-08-25 payment was missed). A late payment of 30+ days usually weighs the most. You paid the past-due amount on 2026-10-02 and the card is current again, but the late mark can stay on your report.\n- **Higher utilization (how much of your card limits you're using).** Reported balances rose from $900 (30%) to $1,410 of $3,000 (47%). By card, your retail store card is at 60% ($900 of $1,500) and your bank card is at 34% ($510 of $1,500). Paying down the retail card first would help most.\n\nI can't predict how many points you'd regain or when.\n\n**2. Your secured card**\nIt shipped on 2026-10-06. Your expected delivery window is 2026-10-16 to 2026-10-21, so it isn't late yet. If it hasn't arrived by 2026-10-21, use Card > Report not received in the app. Once it arrives, activate it in the app before first use.\n\n**3. The travel card**\nI'd wait. You just had a late payment, and a new application usually triggers a hard inquiry (a lender check that can lower your score a little) and adds a new account. Paying down balances helps your utilization without an inquiry. You also have a hard inquiry from April and a declined loan application on file.\n\nIf you do apply later, Marketplace partners may pay the app when a user is approved. Compare the APR, fees, and terms on the offer page. I can't say what your approval odds are.\n\nNext step: Pay down the retail store card balance before its statement closes, since it has your highest utilization at 60%.",
+      "judge_facts": [
+        {
+          "fact": "Names the 30-day late payment on the Retail store card and the rise in utilization to 47% as the likely causes of the drop",
+          "status": "PRESENT",
+          "note": "Section 1 names the 30-day late on the retail store card and utilization rising to 47% as the likely causes."
+        },
+        {
+          "fact": "Says the Secured Card shipped on 2026-10-06 and is expected between October 16 and October 21, 2026, so it is not late yet",
+          "status": "PRESENT",
+          "note": "\"It shipped on 2026-10-06. Your expected delivery window is 2026-10-16 to 2026-10-21, so it isn't late yet.\""
+        },
+        {
+          "fact": "Says applying for the travel card usually triggers a hard inquiry from the issuer, and does not promise or estimate approval",
+          "status": "PRESENT",
+          "note": "\"a new application usually triggers a hard inquiry\" and \"I can't say what your approval odds are.\""
+        },
+        {
+          "fact": "Notes that with a recent late payment, applying now risks a denial plus a hard inquiry",
+          "status": "ABSENT",
+          "note": "The reply links the recent late payment to waiting and mentions a hard inquiry, but never says applying now risks a denial."
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "\"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "F4 is absent: the reply never warns that the recent late payment makes a denial likely on top of the hard inquiry. All other facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "verdict": "Not passed",
+  "hypothesis_result": {
+    "expected": "improve",
+    "observed": "tradeoff",
+    "matches": false
+  },
+  "warnings": []
+}

@@ -26,7 +26,7 @@ Both bots read the same skill files, see the same member profile and use the sam
 | M3 | Eval set, code checks, LLM judge, parallel runner | Done |
 | M4 | Regression report, dependent-test selection, three skill-edit scenarios | Done |
 | Later | Batch API runner; compare skill budgets (cap 3/5/none) and answer models (Opus/Sonnet/Haiku) | Planned |
-| M5 | Monitoring framework and results pages | Planned |
+| M5 | Monitoring framework and results pages, built from the committed eval results | Done |
 | M6 | Optional public deployment | Planned |
 
 ## Evaluation plan (M3 and M4)
