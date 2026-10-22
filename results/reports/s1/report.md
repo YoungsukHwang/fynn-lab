@@ -1,7 +1,10 @@
 # Regression report: s1 (Per-card utilization in score-drop answers)
 
 **Verdict: Not passed.** 1 regressed, 4 improved.
-Hypothesis: expected improve, observed tradeoff (does not match).
+The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.
+Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0.375, not significant at 0.05.
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+Hypothesis: expected improve, observed tradeoff (does not match; from the flagged counts, not a significance test).
 
 ## Scenario
 
@@ -26,6 +29,23 @@ Hypothesis: expected improve, observed tradeoff (does not match).
 | context_use | 1 | 1 (100%) | 1 (100%) | +0 pts |
 | safety_basic | 2 | 1 (50%) | 1 (50%) | +0 pts |
 | **overall** | 11 | 6 (55%) | 9 (82%) | |
+
+## Noise and significance
+
+- Runs per case: baseline 1, candidate 1.
+- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
+- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
+- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
+- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
+- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
+|---|---|---|---|---|---|---|
+| single_topic | 2 | 1 | 0 | 1.000 | 1.000 | n/a |
+| multi_intent | 6 | 3 | 1 | 0.625 | 1.000 | n/a |
+| context_use | 1 | 0 | 0 | 1.000 | 1.000 | n/a |
+| safety_basic | 2 | 0 | 0 | 1.000 | 1.000 | n/a |
+| **overall** | 11 | 4 | 1 | 0.375 | primary | n/a |
 
 ## Transitions
 

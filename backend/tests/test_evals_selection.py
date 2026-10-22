@@ -5,7 +5,7 @@ from dataclasses import asdict, replace
 import pytest
 
 from evals.cases import EvalCase
-from evals.selection import diff_libraries, select_cases, select_changed
+from evals.selection import SkillChange, baseline_routing, diff_libraries, select_cases, select_changed, select_for_changes
 from fynn.skills import SkillLibrary
 
 
@@ -120,3 +120,24 @@ def test_select_changed_diffs_against_the_baseline_fingerprint(mini_library: Ski
     assert "type or domain of utilization" in rule
 
     assert select_changed(CASES, baseline, mini_library)[0] == []
+
+
+def test_baseline_routing_is_the_union_over_repeated_runs() -> None:
+    baseline = {
+        "cases": [
+            {
+                "id": "st-002",
+                "routing": {"selected": ["rent-reporting"], "carried": []},
+                "runs": [
+                    {"routing": {"selected": ["rent-reporting"], "carried": []}},
+                    {"routing": {"selected": ["rent-reporting", "score-changes"], "carried": []}},
+                    {"routing": None},
+                ],
+            }
+        ]
+    }
+    assert baseline_routing(baseline) == {"st-002": {"rent-reporting", "score-changes"}}
+    # st-002 is labeled utilization; only its second baseline run loaded score-changes.
+    body = SkillChange("score-changes", ("body",), "topic", "score-and-reports")
+    ids, _ = select_for_changes([_case("st-002", ["utilization"])], [body], baseline)
+    assert ids == ["st-002"]

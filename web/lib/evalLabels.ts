@@ -98,3 +98,67 @@ export function excerpt(text: string, max = 480): { text: string; truncated: boo
   const space = cut.lastIndexOf(" ");
   return { text: `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`, truncated: true };
 }
+
+/* Statistics (see backend/evals/stats.py) */
+
+export const TEST_METHOD_LABELS: Record<string, string> = {
+  mcnemar_exact: "Exact McNemar test",
+  run_permutation: "Exact permutation test",
+};
+
+/**
+ * 0.0703 -> "0.070", 0.0004 -> "<0.001", null -> "n/a". More decimals when three would round
+ * onto alpha, so 0.0502 never reads as 0.050 next to "Not significant".
+ */
+export function pValue(p: number | null | undefined, alpha = 0.05): string {
+  if (typeof p !== "number") return "n/a";
+  if (p < 0.001) return "<0.001";
+  let digits = 3;
+  while (digits < 6 && p !== alpha && p.toFixed(digits) === alpha.toFixed(digits)) digits += 1;
+  return p.toFixed(digits);
+}
+
+/** 1 -> "1 run", 3 -> "3 runs". */
+export function plural(count: number, word: string, many = `${word}s`): string {
+  return `${count} ${count === 1 ? word : many}`;
+}
+
+/** A change in pass fraction as signed points with one decimal: -0.1667 -> "-16.7 pts". */
+export function signedPoints(diff: number | null | undefined): string {
+  if (typeof diff !== "number") return "n/a";
+  const points = Number((diff * 100).toFixed(1));
+  if (points === 0) return "0.0 pts";
+  return `${points > 0 ? "+" : "-"}${Math.abs(points).toFixed(1)} pts`;
+}
+
+/** A count that may be an expected value: 3 -> "3", 0.6667 -> "0.7". */
+export function countLabel(value: number | null | undefined): string {
+  if (typeof value !== "number") return "n/a";
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+/**
+ * "2 of 3 runs passed" when a case ran more than once or had errored runs, otherwise null.
+ * `runs` leaves out errored runs unless every run errored (as the flag rule counts them).
+ */
+export function runsLabel(
+  passes: number | null | undefined,
+  runs: number,
+  errored = 0,
+  allErrored = false,
+): string | null {
+  if (typeof passes !== "number" || (runs <= 1 && !errored)) return null;
+  const base = `${passes} of ${plural(runs, "run")} passed`;
+  if (allErrored) return `${base} (every run errored and counts as failing)`;
+  return errored ? `${base} (${plural(errored, "errored run")} left out)` : base;
+}
+
+/** "p = 0.070", "p < 0.001". */
+export function pPhrase(p: number | null | undefined, alpha = 0.05): string {
+  const text = pValue(p, alpha);
+  return text.startsWith("<") ? `p < ${text.slice(1)}` : `p = ${text}`;
+}
+
+export function runsPerCase(repeats: number): string {
+  return repeats === 1 ? "once" : `${repeats} times`;
+}

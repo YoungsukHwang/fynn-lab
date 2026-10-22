@@ -8,9 +8,11 @@ import {
   KIND_LABELS,
   OBSERVED_LABELS,
   pct,
+  runsPerCase,
 } from "@/lib/evalLabels";
 
 import { CaseChangeList } from "./CaseChangeList";
+import { NoiseCheck, TestBadge, VerdictNote } from "./NoiseCheck";
 import { Chip, NotGenerated } from "./ui";
 
 function Rate({ cell, total }: { cell: RateCell; total: number }) {
@@ -18,10 +20,17 @@ function Rate({ cell, total }: { cell: RateCell; total: number }) {
     <>
       <span className="font-semibold">{pct(cell.rate)}</span>
       <span className="block text-[11px] text-slate">
-        {cell.passed} of {total}
+        {cell.passed} of {cell.runs}
+        {cell.runs !== total && " runs"}
       </span>
     </>
   );
+}
+
+/** True when either side of the comparison ran each case more than once. */
+export function isRepeated(comparison: Comparison): boolean {
+  const rule = comparison.report.flagRule;
+  return rule !== null && Math.max(rule.baselineRepeats, rule.candidateRepeats) > 1;
 }
 
 function deltaClass(points: number | null): string {
@@ -107,6 +116,8 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: "goo
   );
 }
 
+export const UNSTABLE_LABEL = "Unstable";
+
 export function TransitionStats({
   comparison,
   labels,
@@ -115,12 +126,14 @@ export function TransitionStats({
   labels: { improved: string; regressed: string; unchanged_pass: string; unchanged_fail: string };
 }) {
   const { counts } = comparison.report;
+  const showUnstable = counts.unstable > 0 || isRepeated(comparison);
   return (
-    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <dl className={`grid grid-cols-2 gap-2 ${showUnstable ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
       <Stat label={labels.improved} value={counts.improved} tone="good" />
       <Stat label={labels.regressed} value={counts.regressed} tone="bad" />
       <Stat label={labels.unchanged_pass} value={counts.unchanged_pass} tone="neutral" />
       <Stat label={labels.unchanged_fail} value={counts.unchanged_fail} tone="neutral" />
+      {showUnstable && <Stat label={UNSTABLE_LABEL} value={counts.unstable} tone="neutral" />}
     </dl>
   );
 }
@@ -194,7 +207,13 @@ export function ScenarioCard({
               {scenario.title}
             </h3>
           </div>
-          {report && <Verdict verdict={report.verdict} />}
+          {report && (
+            <div className="flex flex-col items-start gap-1.5 sm:items-end">
+              <Verdict verdict={report.verdict} />
+              <TestBadge test={report.pairedTest} />
+              <VerdictNote note={report.verdictNote} />
+            </div>
+          )}
         </div>
 
         <dl className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -213,7 +232,10 @@ export function ScenarioCard({
               <Chip tone={hypothesis.matches ? "lime" : "neutral"}>
                 {hypothesis.matches ? "Matched the hypothesis" : "Did not match the hypothesis"}
               </Chip>
-              <span>Observed: {OBSERVED_LABELS[hypothesis.observed] ?? hypothesis.observed}.</span>
+              <span>
+                Observed: {OBSERVED_LABELS[hypothesis.observed] ?? hypothesis.observed}{" "}
+                <span className="text-slate">(from the flagged counts, not a significance test)</span>.
+              </span>
             </p>
           )}
         </div>
@@ -222,7 +244,7 @@ export function ScenarioCard({
           <div className="mt-4">
             <NotGenerated title={run ? "Regression report not generated yet" : "Results not generated yet"}>
               {run
-                ? `The rerun finished (${run.total} cases, written ${formatTimestamp(run.createdAt)}), but its report is not in results/reports/${scenario.id}/ yet.`
+                ? `The rerun finished (${run.cases} ${run.cases === 1 ? "case" : "cases"}${run.repeats > 1 ? `, ${run.repeats} runs each` : ""}, written ${formatTimestamp(run.createdAt)}), but its report is not in results/reports/${scenario.id}/ yet.`
                 : `This scenario has not been run yet. Its results will appear here after the run and its regression report.`}
             </NotGenerated>
           </div>
@@ -239,8 +261,10 @@ export function ScenarioCard({
                 <span className="text-slate">
                   Baseline: the &ldquo;{report.baseline.name || "unknown"}&rdquo; run (
                   {formatTimestamp(report.baseline.createdAt)}). With the edit: the &ldquo;
-                  {report.candidate.name || "unknown"}&rdquo; run ({formatTimestamp(report.candidate.createdAt)}). A
-                  case regresses when it passed in the baseline and fails with the edit.
+                  {report.candidate.name || "unknown"}&rdquo; run ({formatTimestamp(report.candidate.createdAt)}).{" "}
+                  {report.flagRule && isRepeated(comparison)
+                    ? `Each case ran ${runsPerCase(report.flagRule.baselineRepeats)} in the baseline and ${runsPerCase(report.flagRule.candidateRepeats)} with the edit.`
+                    : "A case regresses when it passed in the baseline and fails with the edit."}
                 </span>
               </Field>
             </dl>
@@ -253,9 +277,24 @@ export function ScenarioCard({
               <RatesTable comparison={comparison} labels={SCENARIO_COLUMNS} />
             </div>
 
-            {(report.warnings.length > 0 || comparison.notes.length > 0 || report.errors.length > 0) && (
+            <div className="mt-4">
+              <NoiseCheck
+                id={scenario.id}
+                label={scenario.id.toUpperCase()}
+                report={report}
+                flips={{ ...SCENARIO_TRANSITIONS, improvedShort: "Better", regressedShort: "Worse" }}
+              />
+            </div>
+
+            {(report.warnings.length > 0 ||
+              comparison.notes.length > 0 ||
+              report.errors.length > 0 ||
+              report.baselineErrors.length > 0) && (
               <ul className="mt-3 space-y-1 text-xs leading-5 text-slate">
                 {report.errors.length > 0 && <li>Cases that errored with the edit: {report.errors.join(", ")}.</li>}
+                {report.baselineErrors.length > 0 && (
+                  <li>Cases with an errored baseline run: {report.baselineErrors.join(", ")}.</li>
+                )}
                 {report.warnings.map((warning) => (
                   <li key={warning}>Warning: {warning}</li>
                 ))}
@@ -290,6 +329,23 @@ export function ScenarioCard({
                   <p className="mt-1 text-sm text-slate">No case improved.</p>
                 )}
               </section>
+              {comparison.unstable.length > 0 && (
+                <section aria-labelledby={`${scenario.id}-unstable`}>
+                  <h4 id={`${scenario.id}-unstable`} className="text-sm font-semibold text-ink">
+                    Unstable cases ({comparison.unstable.length})
+                  </h4>
+                  <p className="mt-1 text-xs leading-5 text-slate">
+                    The outcome varied across runs, but not enough for the flag rule, or the case was already unstable
+                    in the baseline, so it is not counted as regressed or improved. A case marked &ldquo;Dropped
+                    sharply&rdquo; or &ldquo;Rose sharply&rdquo; moved by at least {report.flagRule?.minFails ?? 1} of{" "}
+                    {report.flagRule?.candidateRepeats ?? 1} runs; the flag rule leaves it out only because its baseline
+                    was not stable.
+                  </p>
+                  <div className="mt-2">
+                    <CaseChangeList changes={comparison.unstable} labels={SCENARIO_LABELS} personaNames={personaNames} />
+                  </div>
+                </section>
+              )}
             </div>
           </>
         )}

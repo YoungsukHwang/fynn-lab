@@ -11,6 +11,7 @@ export interface BarSeries {
   label: string;
   tone: keyof typeof TONES;
   bucket: Bucket | null;
+  repeats?: number; // runs per case; buckets count runs
 }
 
 export interface BarGroup {
@@ -37,7 +38,8 @@ function Row({ series }: { series: BarSeries }) {
             <span className="font-semibold">{pct(bucket.rate)}</span>
             <span className="text-slate">
               {" "}
-              ({bucket.passed} of {bucket.total} passed{bucket.errors ? `, ${bucket.errors} errors` : ""})
+              ({bucket.passed} of {bucket.total}
+              {(series.repeats ?? 1) > 1 ? " runs" : ""} passed{bucket.errors ? `, ${bucket.errors} errors` : ""})
             </span>
           </>
         ) : (

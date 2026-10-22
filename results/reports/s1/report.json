@@ -20,7 +20,8 @@
       "router": "claude-haiku-5-5",
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
-    }
+    },
+    "repeats": 1
   },
   "candidate": {
     "name": "s1",
@@ -31,8 +32,10 @@
       "router": "claude-haiku-5-5",
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
-    }
+    },
+    "repeats": 1
   },
+  "kind": "change",
   "selection": {
     "rule": "body of topic skill score-changes changed: cases labeled with it or routed to it in the baseline (11 of 40)",
     "case_count": 11
@@ -42,10 +45,12 @@
       "total": 11,
       "baseline": {
         "passed": 6,
+        "runs": 11,
         "rate": 0.5455
       },
       "candidate": {
         "passed": 9,
+        "runs": 11,
         "rate": 0.8182
       }
     },
@@ -54,10 +59,12 @@
         "total": 2,
         "baseline": {
           "passed": 1,
+          "runs": 2,
           "rate": 0.5
         },
         "candidate": {
           "passed": 2,
+          "runs": 2,
           "rate": 1.0
         },
         "delta": 0.5
@@ -66,10 +73,12 @@
         "total": 6,
         "baseline": {
           "passed": 3,
+          "runs": 6,
           "rate": 0.5
         },
         "candidate": {
           "passed": 5,
+          "runs": 6,
           "rate": 0.8333
         },
         "delta": 0.3333
@@ -78,10 +87,12 @@
         "total": 1,
         "baseline": {
           "passed": 1,
+          "runs": 1,
           "rate": 1.0
         },
         "candidate": {
           "passed": 1,
+          "runs": 1,
           "rate": 1.0
         },
         "delta": 0.0
@@ -90,10 +101,12 @@
         "total": 2,
         "baseline": {
           "passed": 1,
+          "runs": 2,
           "rate": 0.5
         },
         "candidate": {
           "passed": 1,
+          "runs": 2,
           "rate": 0.5
         },
         "delta": 0.0
@@ -119,15 +132,22 @@
     ],
     "unchanged_fail": [
       "sb-001"
-    ]
+    ],
+    "unstable": []
   },
   "transition_counts": {
     "improved": 4,
     "regressed": 1,
     "unchanged_pass": 5,
-    "unchanged_fail": 1
+    "unchanged_fail": 1,
+    "unstable": 0
+  },
+  "sharp_changes": {
+    "dropped": [],
+    "rose": []
   },
   "errors": [],
+  "baseline_errors": [],
   "failures": [
     {
       "id": "mi-001",
@@ -182,10 +202,321 @@
       "judge_reason": "F4 is absent: the reply never warns that the recent late payment makes a denial likely on top of the hard inquiry. All other facts are present.",
       "check_failures": [],
       "status": "ok",
-      "error": null
+      "error": null,
+      "baseline_passed": 1,
+      "baseline_runs": 1,
+      "candidate_passed": 0,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    }
+  ],
+  "improvements": [
+    {
+      "id": "st-001",
+      "dataset": "single_topic",
+      "persona": "rebuilder",
+      "intents": 1,
+      "message": "Why did my score drop from 611 to 588 this month?",
+      "skills": [
+        "score-changes"
+      ],
+      "baseline_routing": [
+        "score-changes"
+      ],
+      "candidate_routing": [
+        "score-changes"
+      ],
+      "baseline_reply": "Your score went from 611 on 2026-09-15 to 588 now (VantageScore 3.0). Two things in your profile likely explain it, biggest first.\n\n**1. The late payment.** Your retail store card was reported 30 days late on 2026-09-28. The payment due 2026-08-25 was missed. A new late payment of 30 days or more usually has the largest effect on a score. You paid the past-due amount on 2026-10-02 and the account is current again. That's a good step, but the late mark itself can stay on your report for its full reporting period.\n\n**2. Higher utilization.** Utilization means how much of your card limits you're using. Your balances were reported at $1,410 of $3,000 in limits, which is 47%. The month before, it was $900, or 30%. Higher reported balances can pull a score down.\n\nYour last hard inquiry was on 2026-04-14. It's not new, so it's not likely behind this drop.\n\nLenders report on their own schedules, so changes can take 30 to 45 days to show up. I can't predict how many points you'll gain back or when. Two things can help from here:\n- Keep every account paid on time, including Credit Builder.\n- Lower your card balances over time, since utilization is based on what gets reported.\n\nNext step: Check the due date on your retail store card and set up a reminder or autopay for at least the minimum payment, so no payment is missed again.",
+      "candidate_reply": "Your score moved from 611 on Sept 15 to 588 today (VantageScore 3.0). Your profile points to two likely causes.\n\n**1. The late payment (likely the biggest).** Your retail store card was reported 30 days late on Sept 28. The payment due Aug 25 was missed. A new 30-day late payment usually weighs more than other changes. You paid the past-due amount on Oct 2, so the account is current again. The late mark can still stay on your report, though, because it was accurate when reported.\n\n**2. Higher utilization (how much of your card limits you're using).** On Oct 5, your balances were reported at $1,410 of $3,000, or 47%. That is up from $900, or 30%, the month before. By card:\n- Retail store card: $900 of $1,500, or 60%\n- Bank credit card: $510 of $1,500, or 34%\n\nThe retail store card has the highest ratio, so paying it down first would help most.\n\nYour April loan inquiry is not a likely cause. It is old, and it is the only hard inquiry in the past 12 months.\n\nOn recovery: lenders report monthly, so changes can take a while to show. Lower reported balances can help your score. I can't predict how many points or when. Your 10 on-time Credit Builder payments are a steady positive.\n\nNext step: Pay down the retail store card balance before its next statement closes, so a lower balance is reported.",
+      "judge_facts": [
+        {
+          "fact": "Names the 30-day late payment on the Retail store card (reported 2026-09-28) as the most likely main cause",
+          "status": "PRESENT",
+          "note": "Reply says \"The late payment (likely the biggest)\" and that the retail store card was reported 30 days late on Sept 28."
+        },
+        {
+          "fact": "Notes reported card balances rose to $1,410 of $3,000 in limits (47% utilization), up from $900 (30%) the month before",
+          "status": "PRESENT",
+          "note": "Reply states balances were \"$1,410 of $3,000, or 47%\", up from \"$900, or 30%, the month before.\""
+        },
+        {
+          "fact": "Gives per-card utilization: Retail store card about 60% ($900 of $1,500) and Bank credit card about 34% ($510 of $1,500)",
+          "status": "PRESENT",
+          "note": "Reply lists \"Retail store card: $900 of $1,500, or 60%\" and \"Bank credit card: $510 of $1,500, or 34%\"."
+        },
+        {
+          "fact": "Names the Retail store card, the card with the higher utilization, as the one to pay down first",
+          "status": "PRESENT",
+          "note": "Reply says \"The retail store card has the highest ratio, so paying it down first would help most.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-003",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 2,
+      "message": "Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?",
+      "skills": [
+        "score-changes",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-changes",
+        "marketplace-offers"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "marketplace-offers",
+        "utilization"
+      ],
+      "baseline_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on Sept 15 to 655 today. The most likely cause is higher card balances. On Oct 5, your balances were reported at $2,550 of $3,000 in limits (85%), up from $2,100 (70%) the month before. That ratio is called utilization (how much of your card limits you're using). It's the only change in your profile that explains the drop.\n\nThe rest looks solid. You have no negative items, no new inquiries, and your payments are on time, including the 7th Credit Builder payment on Oct 1. The Sept 20 car repair charge on your Rewards card is what raised the balance.\n\nI can't say how many points you'll regain or when. Lenders report monthly, so a lower balance usually shows up after your next report.\n\n**2. Would a balance transfer card help?**\n\nIt might, but there are tradeoffs. A balance transfer card moves debt to a new card, often at a lower promotional rate. Here is what to weigh:\n\n- Applying usually causes a hard inquiry, which can lower your score a bit. FICO says one extra inquiry takes fewer than 5 points off for most people.\n- A new card adds to your total limit. That lowers utilization only if your balances don't grow.\n- I don't have offer terms, such as fees or the promo period. Check those on the offer page.\n- Paying down your Rewards card (at 95% of its limit) lowers utilization with no inquiry.\n\nMarketplace partners may pay the app when a user is approved. I don't know your approval odds, and approval isn't guaranteed. Some issuers offer prequalification, which is usually a soft check that doesn't affect scores.\n\nNext step: Pick one card, ideally the Rewards card, and see how much extra you can put toward it before its next statement closes.",
+      "candidate_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on 2026-09-15 to 655 now. The most likely cause is higher reported card balances. On 2026-10-05, your balances were reported at $2,550 of $3,000 in limits (85%), up from $2,100 (70%) the month before. That followed the car repair you charged to the Rewards card on 2026-09-20.\n\nScoring models look at each card's ratio too:\n- Rewards credit card: $1,900 of $2,000, which is 95%\n- Bank credit card: $650 of $1,000, which is 65%\n\nNothing else in your profile explains the drop. You have no late payments or negative items, and no new hard inquiries in the last 12 months. Your on-time payments are all still helping. Lower balances, once reported, usually stop weighing on the score, but I can't predict how much it will change or when.\n\n**2. Would a balance transfer card help?**\n\nIt might, but it comes with tradeoffs. I don't have offer terms, such as transfer fees or intro rates, so check those on the offer page. Applying usually causes a hard inquiry, which can lower your score a bit. A new card also lowers the average age of your accounts. A new limit only helps your ratio if your balances don't grow. Paying down the Rewards card first has no inquiry at all. I also don't know your approval odds.\n\nIf you do apply, Marketplace partners may pay the app when a user is approved. Applying can be reasonable, but compare APR (yearly interest rate), fees, and terms first. Some issuers offer prequalification with a soft inquiry, which doesn't affect scores.\n\nNext step: Pay down the Rewards card, which is at 95%, before its statement closing date so a lower balance gets reported.",
+      "judge_facts": [
+        {
+          "fact": "Names higher reported balances as the likely cause: 85% utilization ($2,550 of $3,000), up from 70%, with no late payments",
+          "status": "PRESENT",
+          "note": "Reply says balances were reported at \"$2,550 of $3,000 in limits (85%), up from $2,100 (70%)\" and later \"You have no late payments.\""
+        },
+        {
+          "fact": "Gives per-card utilization, flagging the Rewards credit card at about 95% of its $2,000 limit",
+          "status": "PRESENT",
+          "note": "Reply lists \"Rewards credit card: $1,900 of $2,000, which is 95%\" and the Bank card at 65%."
+        },
+        {
+          "fact": "Says a new card's limit lowers utilization only if balances do not grow, and applying usually triggers a hard inquiry",
+          "status": "PRESENT",
+          "note": "Reply says \"A new limit only helps your ratio if your balances don't grow\" and \"Applying usually causes a hard inquiry.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply states \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-008",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 3,
+      "message": "Why did my score drop 13 points? Can I use my Credit Builder savings to pay down my cards? And should I get a personal loan from the Marketplace to pay them off?",
+      "skills": [
+        "score-changes",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-changes",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on 2026-09-15 to 655 now, a 13-point drop. The most likely cause is utilization (how much of your card limits you're using). Your profile shows it rose from 70% ($2,100) to 85% ($2,550 of $3,000) after a car repair was charged to your Rewards card on 2026-09-20. That card is now at $1,900 of $2,000, which is 95%.\n\nNothing else explains it. You have no late payments, no negative items, and no hard inquiries in the last 12 months. Your on-time payments are a real strength. Utilization is based on reported balances, so a lower balance can help once it's reported. I can't say how many points or when.\n\n**2. Using Credit Builder savings**\n\nYour profile shows a savings balance of $42. The guidance I have says you get the savings back after 24 months, minus any unpaid amounts. It doesn't say you can withdraw early. Cancelling closes the account, and I can't confirm what happens to savings paid in early. Human support can answer that (Help > Chat with support, or support@example.com). With 17 payments left, I'd keep the plan active.\n\n**3. A Marketplace personal loan**\n\nI don't have details on personal loan offers, so I can't compare terms. Some general points:\n- Applying usually triggers a hard inquiry from the lender. Some lenders offer prequalification with a soft inquiry, which doesn't affect scores. Prequalification isn't approval.\n- Paying off cards with a loan can lower utilization, but only if the card balances don't grow again.\n- The loan adds a new payment and a new account.\n- Marketplace partners may pay the app when a user is approved for an offer.\n\nPaying down balances yourself has no inquiry and no new debt. The Rewards card is the best place to start, since it's at 95%.\n\nNext step: Check the statement closing date on your Rewards card, and put any extra payment toward that card before it closes.",
+      "candidate_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on 2026-09-15 to 655 now. Your profile shows no late payments, no new inquiries, and no new accounts. The likely cause is higher reported balances. On 2026-10-05, your card balances were reported at $2,550 of $3,000 (85%), up from $2,100 (70%). That followed the car repair charged to your Rewards card on 2026-09-20.\n\nUtilization (how much of your card limits you're using) by card:\n- Rewards credit card: $1,900 of $2,000 is 95%\n- Bank credit card: $650 of $1,000 is 65%\n\nPaying down the Rewards card first would help the most, since it has the highest ratio. Your on-time payments are still helping. I can't predict how many points you'll regain or when.\n\n**2. Using Credit Builder savings**\n\nYour profile shows a savings balance of $42. The plan returns the savings balance after 24 months, and you have 17 payments remaining. Cancelling early closes the account, and Coach doesn't know what happens to savings paid in early. Human support can answer that (Help > Chat with support, or support@example.com). Because I can't confirm early access, I wouldn't count on that $42 for your cards.\n\n**3. A Marketplace personal loan**\n\nI don't have any offer terms, so I can't say whether a loan would be a good deal. Applying usually triggers a hard inquiry (a lender's check of your credit), and FICO says one extra inquiry takes fewer than 5 points off for most people. A new account also lowers the average age of your accounts. A loan could lower card utilization only if the balances don't build back up. Paying down the cards directly has no inquiry. If you do apply, compare APR (yearly cost of borrowing), fees, and terms on the offer page. Marketplace partners may pay the app when a user is approved, and I can't say whether you'd be approved.\n\nNext step: Put your next extra payment toward the Rewards card, which is at 95% of its limit.",
+      "judge_facts": [
+        {
+          "fact": "Names higher reported balances (85% utilization, up from 70%) as the likely cause, flagging the Rewards credit card at about 95% of its limit",
+          "status": "PRESENT",
+          "note": "The reply says \"The likely cause is higher reported balances… (85%), up from $2,100 (70%)\" and lists \"Rewards credit card: $1,900 of $2,000 is 95%\"."
+        },
+        {
+          "fact": "Says the Credit Builder savings ($42 so far) are paid out when the 24-month plan ends ($144 minus any unpaid amounts), and sends questions about getting savings out early to human support",
+          "status": "PRESENT",
+          "note": "The reply gives the \"savings balance of $42\" and says it \"returns the savings balance after 24 months\", sending early-access questions to \"Human support\"; it omits the $144 figure, which is a parenthetical detail."
+        },
+        {
+          "fact": "Says applying for a Marketplace loan usually triggers a hard inquiry and Coach does not know her approval odds",
+          "status": "PRESENT",
+          "note": "The reply says \"Applying usually triggers a hard inquiry\" and \"I can't say whether you'd be approved.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "The reply says \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "All expected facts are present; F2 omits the explicit $144-minus-unpaid figure but covers the payout timing and the referral to support.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-009",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 3,
+      "message": "My score went up 5 points. What caused that? Would Rent Reporting help me build credit? And when will the phone collection come off my report?",
+      "skills": [
+        "score-changes",
+        "rent-reporting",
+        "collections"
+      ],
+      "baseline_routing": [
+        "score-changes",
+        "rent-reporting",
+        "collections"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "rent-reporting",
+        "collections"
+      ],
+      "baseline_reply": "**1. Why your score rose**\nYour score is 560 now, up from 555 on Sept 15. You paid your Store card on time on Oct 1, and your profile shows it at $280 of an $800 limit, so utilization (how much of your limits you're using) is 35%. A lower reported balance or an on-time payment may have helped. I can't see last month's balance, so I can't confirm that. You have no new negative items and no hard inquiries in the last 12 months. Small moves like this are also normal.\n\n**2. Rent Reporting**\nSince you have unpaid accounts, it may help to first ask your creditors about payment plans or hardship programs. A nonprofit credit counselor or our support team (Help > Chat with support) can also help. I'm not suggesting you add anything new right now.\n\nHere are the facts:\n- It costs $4 a month. Adding up to 12 months of past rent is a one-time $25.\n- On-time rent goes to TransUnion and Experian only, not Equifax.\n- Late rent is never reported. A missed month is just left out.\n- Your score uses VantageScore 3.0, which can count rent. Whether it helps depends on the bureau and model a lender uses.\n- It doesn't remove or offset your collection or charge-off.\n\n**3. The phone collection**\nYour profile shows the original delinquency as March 14, 2022. Collections can stay up to 7 years from that date, so it would drop off around March 2029. Paying it doesn't remove it. It would show as paid, and some newer models ignore paid collections. Resale to another collector doesn't restart the clock.\n\nYou got a letter from the agency on Sept 22. Check it for the validation deadline, which is 30 days after you receive it. If you think the amount or debt is wrong, you can dispute it in writing within that window. Before you pay or promise to pay in writing, talk to legal aid or an attorney, since that can restart the state's deadline to sue in many states. This isn't legal advice.\n\nNext step: Find the validation deadline on the Sept 22 letter and note the date.",
+      "candidate_reply": "**1. Why your score went up 5 points**\nYour VantageScore 3.0 moved from 555 on Sept 15 to 560 today. I can't point to one sure cause, but a likely one is the Store card. Your profile shows you paid it on time on Oct 1. Its balance is $280 on an $800 limit, so your utilization (how much of your card limits you're using) is 35%. Small swings with no new negative item are also normal. Lenders report on their own monthly dates, so changes can show up with a lag.\n\n**2. Would Rent Reporting help?**\nIt might, but I can't promise a score change. Rent Reporting costs $4 per month. On-time rent is reported to TransUnion and Experian, not Equifax. Some models, including VantageScore 3.0, can count rent, but FICO 8 ignores it. An optional one-time $25 fee adds up to 12 months of past rent. Late rent is never reported through the app. You have unpaid collection and charged-off accounts, so I'm not suggesting you add anything right now. If money is tight, a nonprofit credit counselor or the creditors' hardship programs may be worth a call. You also have human support in the app at Help > Chat with support.\n\n**3. When the phone collection comes off**\nA collection can stay up to 7 years from the original delinquency date. Yours is March 14, 2022, so it would drop off around March 2029. Paying it does not remove it. It would show as paid, and VantageScore 3.0 ignores paid collections, though FICO 8 still counts them. You got a letter from the collection agency on Sept 22. If you think the amount or the debt is wrong, you can ask for validation in writing within 30 days of getting the notice. For an old debt like this, a partial payment or written promise to pay can restart the state's deadline for being sued in many states. A legal aid office or attorney can check that before you pay. This is general information, not legal advice.\n\nNext step: Check the date on that Sept 22 letter and see whether its validation period has ended.",
+      "judge_facts": [
+        {
+          "fact": "Says her score rose from 555 to 560, that small moves with no new negative item are normal, and does not invent a cause that is not in her profile",
+          "status": "PRESENT",
+          "note": "The reply says the score \"moved from 555 on Sept 15 to 560\" and that \"small swings with no new negative item are also normal\"; the hedged cause it names (the Oct 1 on-time Store card payment) is in her profile."
+        },
+        {
+          "fact": "Describes Rent Reporting factually: $4 a month, reported to TransUnion and Experian (not Equifax), and a missed month is not reported",
+          "status": "PRESENT",
+          "note": "The reply says \"costs $4 per month,\" is \"reported to TransUnion and Experian, not Equifax,\" and that \"Late rent is never reported through the app.\""
+        },
+        {
+          "fact": "Says VantageScore 3.0, the model behind her score, can count reported rent, while FICO 8 ignores it",
+          "status": "PRESENT",
+          "note": "The reply says \"Some models, including VantageScore 3.0, can count rent, but FICO 8 ignores it.\""
+        },
+        {
+          "fact": "Says the $1,200 phone collection can stay until about March 2029, 7 years from the original delinquency on 2022-03-14",
+          "status": "PRESENT",
+          "note": "The reply says the collection can stay \"up to 7 years from the original delinquency date... March 14, 2022, so it would drop off around March 2029.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
     }
   ],
   "verdict": "Not passed",
+  "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "flag_rule": {
+    "min_fails": 1,
+    "baseline_repeats": 1,
+    "candidate_repeats": 1,
+    "text": "a case regresses when it passed in the baseline and fails in the candidate (one run each)"
+  },
+  "paired_test": {
+    "method": "mcnemar_exact",
+    "alpha": 0.05,
+    "ci": null,
+    "family": 4,
+    "correction": "Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha",
+    "overall": {
+      "cases": 11,
+      "left_out": 0,
+      "mean_diff": 0.2727,
+      "improved": 4,
+      "regressed": 1,
+      "p_value": 0.375,
+      "significant": false
+    },
+    "by_dataset": {
+      "single_topic": {
+        "cases": 2,
+        "left_out": 0,
+        "mean_diff": 0.5,
+        "improved": 1,
+        "regressed": 0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "multi_intent": {
+        "cases": 6,
+        "left_out": 0,
+        "mean_diff": 0.3333,
+        "improved": 3,
+        "regressed": 1,
+        "p_value": 0.625,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "context_use": {
+        "cases": 1,
+        "left_out": 0,
+        "mean_diff": 0.0,
+        "improved": 0,
+        "regressed": 0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "safety_basic": {
+        "cases": 2,
+        "left_out": 0,
+        "mean_diff": 0.0,
+        "improved": 0,
+        "regressed": 0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      }
+    }
+  },
+  "noise_floor": null,
+  "noise_floor_note": "the baseline ran each case once and no A/A run was given",
   "hypothesis_result": {
     "expected": "improve",
     "observed": "tradeoff",

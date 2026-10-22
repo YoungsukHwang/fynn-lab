@@ -9,7 +9,8 @@
       "router": "claude-haiku-5-5",
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
-    }
+    },
+    "repeats": 1
   },
   "candidate": {
     "name": "after",
@@ -20,8 +21,10 @@
       "router": "claude-haiku-5-5",
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
-    }
+    },
+    "repeats": 1
   },
+  "kind": "change",
   "selection": {
     "rule": "no selection: the candidate ran every case it lists",
     "case_count": 40
@@ -31,10 +34,12 @@
       "total": 40,
       "baseline": {
         "passed": 29,
+        "runs": 40,
         "rate": 0.725
       },
       "candidate": {
         "passed": 31,
+        "runs": 40,
         "rate": 0.775
       }
     },
@@ -43,10 +48,12 @@
         "total": 12,
         "baseline": {
           "passed": 7,
+          "runs": 12,
           "rate": 0.5833
         },
         "candidate": {
           "passed": 9,
+          "runs": 12,
           "rate": 0.75
         },
         "delta": 0.1667
@@ -55,10 +62,12 @@
         "total": 12,
         "baseline": {
           "passed": 6,
+          "runs": 12,
           "rate": 0.5
         },
         "candidate": {
           "passed": 7,
+          "runs": 12,
           "rate": 0.5833
         },
         "delta": 0.0833
@@ -67,10 +76,12 @@
         "total": 8,
         "baseline": {
           "passed": 8,
+          "runs": 8,
           "rate": 1.0
         },
         "candidate": {
           "passed": 8,
+          "runs": 8,
           "rate": 1.0
         },
         "delta": 0.0
@@ -79,10 +90,12 @@
         "total": 8,
         "baseline": {
           "passed": 8,
+          "runs": 8,
           "rate": 1.0
         },
         "candidate": {
           "passed": 7,
+          "runs": 8,
           "rate": 0.875
         },
         "delta": -0.125
@@ -137,15 +150,22 @@
       "st-011",
       "mi-008",
       "mi-009"
-    ]
+    ],
+    "unstable": []
   },
   "transition_counts": {
     "improved": 6,
     "regressed": 4,
     "unchanged_pass": 25,
-    "unchanged_fail": 5
+    "unchanged_fail": 5,
+    "unstable": 0
+  },
+  "sharp_changes": {
+    "dropped": [],
+    "rose": []
   },
   "errors": [],
+  "baseline_errors": [],
   "failures": [
     {
       "id": "mi-003",
@@ -191,7 +211,17 @@
       "judge_reason": "F2 is missing: the reply flags the Rewards card at 95% but does not give per-card utilization or its $2,000 limit. All other facts are present.",
       "check_failures": [],
       "status": "ok",
-      "error": null
+      "error": null,
+      "baseline_passed": 1,
+      "baseline_runs": 1,
+      "candidate_passed": 0,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
     },
     {
       "id": "mi-004",
@@ -237,7 +267,17 @@
       "judge_reason": "F2 is absent because the reply cites the open date and the 4th payment but does not say the payments were on time. F1, F3 and F4 are present.",
       "check_failures": [],
       "status": "ok",
-      "error": null
+      "error": null,
+      "baseline_passed": 1,
+      "baseline_runs": 1,
+      "candidate_passed": 0,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
     },
     {
       "id": "mi-006",
@@ -288,7 +328,17 @@
       "judge_reason": "F2 is absent because the reply only vaguely says other models may count paid collections and does not say FICO 8 still counts them; all other facts are present.",
       "check_failures": [],
       "status": "ok",
-      "error": null
+      "error": null,
+      "baseline_passed": 1,
+      "baseline_runs": 1,
+      "candidate_passed": 0,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
     },
     {
       "id": "sb-001",
@@ -329,10 +379,429 @@
       "judge_reason": "F3 is only partly covered: the reply notes the late payment weighs on the score but omits that its impact fades over time. F1 and F2 are present.",
       "check_failures": [],
       "status": "ok",
-      "error": null
+      "error": null,
+      "baseline_passed": 1,
+      "baseline_runs": 1,
+      "candidate_passed": 0,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    }
+  ],
+  "improvements": [
+    {
+      "id": "st-006",
+      "dataset": "single_topic",
+      "persona": "collections",
+      "intents": 1,
+      "message": "When will the phone company collection come off my credit report?",
+      "skills": [
+        "collections"
+      ],
+      "baseline_routing": [
+        "debt-and-collections"
+      ],
+      "candidate_routing": [
+        "collections"
+      ],
+      "baseline_reply": "Based on your profile, the phone company collection has an original delinquency date (the date you first fell behind) of March 14, 2022. A collection can stay on your reports up to 7 years from that date, so it would be expected to drop off around March 2029.\n\nA few things to know:\n\n- **Paying it doesn't reset the clock.** Neither a payment nor the debt being sold to another collector restarts the 7 years.\n- **Paying won't remove it.** If you pay, it would show as paid instead of unpaid. Your score model, VantageScore 3.0, ignores paid collections, though other models may not.\n- **Leaving the report isn't the same as not owing.** The debt can still be owed after it drops off.\n\nYou got a letter from the collection agency on September 22. If you're thinking about paying or signing anything, be careful. On an older debt, a partial payment or written promise to pay can restart the state deadline for being sued in many states. I can't say whether that deadline has passed for you. A legal aid office or an attorney can check your state's rules. This isn't legal advice.\n\nIf anything in that letter looks wrong, such as the amount or the creditor, you can dispute it. The letter may also list a validation period end date, which is 30 days after you received it. Disputing in writing within that window requires the collector to stop collecting the disputed amount until it verifies the debt.\n\nNext step: Check the September 22 letter for the validation period end date, and contact a legal aid office or attorney before you pay or promise anything.",
+      "candidate_reply": "Your phone company collection should drop off around March 2029. That is 7 years from the original delinquency date in your profile, March 14, 2022. This is an estimate, not a promise, and the exact date is set by the credit bureaus.\n\nA few things to know:\n\n- **Paying or resale doesn't restart the clock.** The 7 years counts from the first missed payment, not from when it was reported (September 2022) or when it was placed with the collection agency.\n- **Paying doesn't remove it.** A paid non-medical collection stays on your report but shows as paid. Your profile shows the $1,200 as unpaid.\n- **Scoring models treat paid collections differently.** Your score uses VantageScore 3.0, which ignores paid collections. FICO 8, which many lenders use, still counts them.\n\nOne caution: this is a separate matter from the credit report timeline. There is also a state deadline for being sued over a debt. In many states, a partial payment or a written promise to pay can restart that deadline. Before you pay or promise anything in writing on this debt, it's worth checking with a legal aid office or attorney. I can't say what your state's deadline is, and this isn't legal advice.\n\nYou also got a letter from the collection agency on September 22. If you think the amount or the debt is wrong, you can dispute it. If it's accurate, the dispute isn't the right tool.\n\nIf money is tight, you can also ask the collector about payment plans, or talk with a nonprofit credit counselor.\n\nNext step: Before you respond to the collection agency's letter, contact a local legal aid office or attorney to ask about your state's deadline and the risks of paying.",
+      "judge_facts": [
+        {
+          "fact": "Identifies the $1,200 unpaid non-medical collection from the mobile phone carrier",
+          "status": "PRESENT",
+          "note": "The reply refers to 'your phone company collection' and says 'Your profile shows the $1,200 as unpaid,' in the context of non-medical collections."
+        },
+        {
+          "fact": "Says a collection can stay up to 7 years from the original delinquency date (2022-03-14), so until about March 2029",
+          "status": "PRESENT",
+          "note": "The reply says it 'should drop off around March 2029. That is 7 years from the original delinquency date... March 14, 2022.'"
+        },
+        {
+          "fact": "Says paying the collection would not change when it comes off: the 7-year period stays tied to the original delinquency date",
+          "status": "PRESENT",
+          "note": "The reply says 'Paying or resale doesn't restart the clock. The 7 years counts from the first missed payment.'"
+        }
+      ],
+      "judge_reason": "All three expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "st-009",
+      "dataset": "single_topic",
+      "persona": "new-to-credit",
+      "intents": 1,
+      "message": "Should I apply for one of the credit cards I saw in the Marketplace?",
+      "skills": [
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "marketplace-offers"
+      ],
+      "baseline_reply": "Applying can be reasonable for you, but it comes with a tradeoff, and the choice is yours.\n\n**Why it can make sense:** Your profile shows no late payments, no negative items, and no hard inquiries (checks lenders run when you apply) in the last 12 months. Your Credit Builder plan is current, with 4 on-time payments. Your VantageScore 3.0 is 612. A first card would add a revolving account (one you can borrow from again and again), which can add to your credit mix.\n\n**The tradeoff:** Applying through a Marketplace partner usually triggers a hard inquiry from that issuer, which can affect your score. Approval is up to the issuer, and I can't tell you your odds. Some issuers offer prequalification, which is typically a soft check that doesn't affect scores. Prequalification is not approval.\n\n**Disclosure:** Marketplace partners may pay the app when a user is approved for an offer.\n\n**Also worth knowing:** A lender's check on 2026-09-02 found no FICO score for you. FICO needs at least one account open 6 months or more. Your Credit Builder plan was opened 2026-06-01, so it hits that mark on 2026-12-01. Check the offer page for APR (yearly interest rate), fees, and terms before deciding.\n\nNext step: On the offer page, look for a prequalification option and compare the APR and fees before you apply.",
+      "candidate_reply": "Maya, applying can be reasonable for you, and it's your call. Here's what your profile shows and the tradeoff.\n\n**Where you stand:** Your VantageScore 3.0 is 612, up from 603 last month. Your only account is the Credit Builder plan, which is current with 4 on-time payments and no late ones. You have no negative items and no hard inquiries (checks a lender makes when you apply) in the last 12 months. You've also never had a credit card.\n\n**The tradeoff:**\n- A card could add a revolving account (one you can borrow from and repay again) and a credit limit. That adds variety to your file and, if you keep balances low, gives you a low-use history.\n- Applying through the Marketplace usually triggers a hard inquiry from the card issuer. Inquiries can affect scores a little, and a new account lowers the average age of your accounts. Your oldest account is only 4 months old.\n- Issuers set the terms and make the approval decision. Coach can't tell you your odds, and no approval is guaranteed.\n- Marketplace partners may pay the app when a user is approved. That doesn't change the terms you'd see, but you should know it.\n\n**Also worth knowing:** A lender's check on September 2 found no FICO score for you. Some lenders use FICO, so that could matter with certain issuers. Your profile doesn't say when a FICO score will appear.\n\nIf you apply, compare the APR (yearly interest rate), fees, and terms on each offer page. Check whether the issuer offers prequalification, which is usually a soft inquiry that doesn't affect scores. It isn't approval, though.\n\nNext step: Open the offer pages for the cards you saw and look for a prequalification option before you decide whether to apply.",
+      "judge_facts": [
+        {
+          "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
+          "status": "PRESENT",
+          "note": "Reply says \"Applying through the Marketplace usually triggers a hard inquiry from the card issuer.\""
+        },
+        {
+          "fact": "Says Coach does not know her approval odds; the issuer makes the approval decision",
+          "status": "PRESENT",
+          "note": "Reply says \"Issuers set the terms and make the approval decision. Coach can't tell you your odds.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
+        },
+        {
+          "fact": "Ties the answer to her thin file: her only account is the Credit Builder plan and she has never had a credit card",
+          "status": "PRESENT",
+          "note": "Reply says \"Your only account is the Credit Builder plan\" and \"You've also never had a credit card.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-001",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "intents": 3,
+      "message": "Why did my score drop last month? And why hasn't my secured card arrived? Should I get the travel card from your marketplace?",
+      "skills": [
+        "score-changes",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n\n- **A 30-day late payment.** Your retail store card was reported late on 2026-09-28 for the payment due 2026-08-25. Paying it on 2026-10-02 brought the account current, but it does not erase the late mark already reported.\n- **Higher utilization (how much of your card limits you're using).** Reported balances rose from $900 (30%) to $1,410 of $3,000 (47%).\n\nI can't say how many points each one cost.\n\n**2. Your Secured Card**\n\nIt shipped on 2026-10-06 and hasn't been delivered. Your expected delivery window is 2026-10-16 to 2026-10-21, so it's not late yet. If it hasn't come by 2026-10-21, contact support in the app at Help > Chat with support, or email support@example.com.\n\n**3. The travel card**\n\nI wouldn't apply now. A new card usually means a hard inquiry (a lender checking your credit), and one is likely to be recorded if you apply. It also lowers the average age of your accounts. You have a recent late payment, and your Secured Card is still on its way. If you do apply later, know that Marketplace partners may pay the app when a user is approved.\n\nA better use of this time is lowering your card balances. Paying them down before each statement closing date lowers the balance that gets reported. Under 30% is a common target.\n\nNext step: Pay down your retail store card, which has a $900 balance on a $1,500 limit (60%), before its next statement closes.",
+      "candidate_reply": "**1. Why your score dropped**\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n- **A 30-day late payment.** Your retail store card was reported late on 2026-09-28 (the payment due 2026-08-25 was missed). A new late payment usually weighs the most.\n- **Higher utilization (how much of your card limits you're using).** Balances reported on 2026-10-05 were $1,410 of $3,000, or 47%, up from 30% the month before.\n\nYou paid the past-due amount on 2026-10-02, so the account is current. Lenders report monthly, so that may take a while to show. I can't predict how many points you'll regain or when.\n\n**2. Your Secured Card**\nIt shipped on 2026-10-06 and isn't due yet. The expected delivery window is 2026-10-16 to 2026-10-21. If it hasn't arrived by 2026-10-21, go to Card > Report not received in the app. Once it arrives, you'll need to activate it in the app before first use.\n\n**3. The travel card**\nI'd wait. You have a late payment reported last month and 47% utilization. Applying through the Marketplace usually triggers a hard inquiry (a lender checking your credit), and a denial adds that inquiry with no new card. Paying balances down helps your utilization with no inquiry. If you do apply later, some issuers offer prequalification with a soft inquiry, which doesn't affect scores, but it isn't approval. Compare APR, fees, and terms on the offer page.\n\nMarketplace partners may pay the app when a user is approved. I don't know your approval odds.\n\nNext step: Pay down your bank card or retail card before each statement closes, so a lower balance gets reported.",
+      "judge_facts": [
+        {
+          "fact": "Names the 30-day late payment on the Retail store card and the rise in utilization to 47% as the likely causes of the drop",
+          "status": "PRESENT",
+          "note": "Reply lists \"A 30-day late payment\" on the retail store card and \"Higher utilization... 47%\" as the likely causes."
+        },
+        {
+          "fact": "Says the Secured Card shipped on 2026-10-06 and is expected between October 16 and October 21, 2026, so it is not late yet",
+          "status": "PRESENT",
+          "note": "Reply says \"It shipped on 2026-10-06 and isn't due yet\" with a window of 2026-10-16 to 2026-10-21."
+        },
+        {
+          "fact": "Says applying for the travel card usually triggers a hard inquiry from the issuer, and does not promise or estimate approval",
+          "status": "PRESENT",
+          "note": "Reply says applying \"usually triggers a hard inquiry\" and \"I don't know your approval odds.\""
+        },
+        {
+          "fact": "Notes that with a recent late payment, applying now risks a denial plus a hard inquiry",
+          "status": "PRESENT",
+          "note": "Reply cites \"a late payment reported last month\" and says \"a denial adds that inquiry with no new card.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply states \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-010",
+      "dataset": "multi_intent",
+      "persona": "renter",
+      "intents": 3,
+      "message": "My score went up 7 points this month. Why? Should I pay to add my past rent? And should I open a new card from the Marketplace before I apply for a mortgage next year?",
+      "skills": [
+        "score-changes",
+        "rent-reporting",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "rent-reporting",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Why your score rose**\nYour VantageScore 3.0 went from 634 on 2026-09-15 to 641 now. Nothing in your profile points to one clear cause, and small swings are normal. These things may have helped:\n- Your utilization (how much of your card limit you're using) is 22%, with $550 owed on a $2,500 limit. That is under the common 30% guideline.\n- You have no hard inquiries (credit checks from applications) in the last 12 months.\n- Your 30-day late payment on the bank card, reported 2024-12-16, gets older each month. Its impact fades with time, though it can stay on your report for up to 7 years from 2024-11-12.\n\nI can't say how many points any one factor added. Your rent payments may also be reported, but I can't tell from your profile whether they affected this change.\n\n**2. Adding past rent**\nI don't have any cost for adding past rent, so check in the app or ask support for the price. Your profile shows your lease started 2024-09-01 and you haven't added past rent. Adding it would put more on-time history on file, but I can't promise it would change your score. Lenders also may not use or weigh rent data the same way, so ask your mortgage lender what they consider.\n\n**3. A new Marketplace card before your mortgage**\nIt's not required. A new card brings a hard inquiry, lowers the average age of your accounts, and may not help much when your history is already building. If you do apply, Marketplace partners may pay the app when a user is approved. Since you plan to apply for a mortgage in 2027, it is usually safer to avoid new applications close to that date unless you have a clear need.\n\nNext step: Keep paying rent and your card on time, and ask support or check in the app what adding past rent would cost before deciding.",
+      "candidate_reply": "**1. Why your score went up 7 points**\n\nYour VantageScore 3.0 went from 634 on 2026-09-15 to 641 today. Nothing in your profile points to one clear cause, so I can't say for sure. Small moves with no new negative item are normal. Some things that may have helped:\n- Your utilization (how much of your card limit you're using) is 22%, with $550 owed on a $2,500 limit. A lower reported balance can help.\n- Your rent payments are now being reported. VantageScore 3.0 can count rent.\n- You have no new hard inquiries in the last 12 months.\n- The 30-day late payment from 2024 is getting older.\n\n**2. Adding past rent**\n\nIt costs a one-time $25. You can add up to 12 months of past rent. Your profile shows 4 reported months and no past rent added, though your lease started 2024-09-01. Adding it would give you more positive history on file. It can't promise a score change. Rent goes only to TransUnion and Experian, not Equifax. Whether it counts for a mortgage depends on the score model and bureaus your lender picks.\n\n**3. A Marketplace card before your mortgage**\n\nYou don't need a new card to get ready. Applying usually causes a hard inquiry, and a new account lowers the average age of your accounts. Your profile is steady, so applying can be reasonable, but it's your call. Marketplace partners may pay the app when a user is approved, and the app doesn't know your approval odds. Offer terms are on each offer page.\n\nKeeping your card balance low and paying on time does not cost anything.\n\nNext step: Ask a mortgage lender which credit score model and bureaus they use, so you know whether your rent history will count.",
+      "judge_facts": [
+        {
+          "fact": "Gives the rise from 634 to 641 and points only to causes found in his profile (such as on-time rent being reported and no new negative items), without claiming certainty",
+          "status": "PRESENT",
+          "note": "The reply says the score went \"from 634 on 2026-09-15 to 641 today\" and lists profile-based possible causes (rent reported, no new negatives or inquiries, aging late payment) while stating \"I can't say for sure.\""
+        },
+        {
+          "fact": "Says he can add up to 12 months of past rent for a one-time $25 fee, as added positive history rather than a guaranteed score change",
+          "status": "PRESENT",
+          "note": "The reply says \"It costs a one-time $25. You can add up to 12 months of past rent... more positive history... It can't promise a score change.\""
+        },
+        {
+          "fact": "Says applying for a new card usually brings a hard inquiry, and a new account lowers the average age of accounts",
+          "status": "PRESENT",
+          "note": "The reply says \"Applying usually causes a hard inquiry, and a new account lowers the average age of your accounts.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "The reply says \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-011",
+      "dataset": "multi_intent",
+      "persona": "multi-product",
+      "intents": 3,
+      "message": "1. Is my secured card being reviewed for an upgrade? 2. Do my phone and internet bills help my score? 3. Is my utilization OK?",
+      "skills": [
+        "secured-card",
+        "bill-reporting",
+        "utilization"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "secured-card",
+        "bill-reporting",
+        "utilization"
+      ],
+      "baseline_reply": "**1. Secured Card upgrade review**\nYour profile shows the Secured Card is eligible for upgrade review. You have 9 on-time payments in a row, and the review starts after 8. I can't see whether a review is under way or what the result will be, and an upgrade isn't promised. If you are upgraded, your $500 deposit is returned. Human support can tell you the review status (Help > Chat with support).\n\n**2. Phone and internet bills**\nThey may help. Bill Reporting is active, and your mobile phone ($65 a month) and home internet ($60 a month) have each been reported for 8 months. On-time payments are part of your payment history, which is a major part of a score. I can't say how many points they add, since that depends on the scoring model a lender uses. They only help if you keep paying on time.\n\n**3. Utilization**\nYour utilization (how much of your card limits you're using) is 12%. That comes from $300 in balances on $2,500 in total limits. Lower is generally better, and 12% is on the low side. You have no late payments or negative items on file. Paying a card down before its statement date lowers the balance that gets reported.\n\nNext step: Ask human support about your upgrade review status through Help > Chat with support.",
+      "candidate_reply": "**1. Secured card upgrade review**\nYour profile shows the upgrade review status as \"eligible.\" You have 9 consecutive on-time payments, past the 8 needed for review. Eligible does not mean approved, and I can't promise an upgrade or a date. If you are upgraded, your $500 deposit is returned. Your profile doesn't show a review result, so check the Secured Card section of the app or ask human support (Help > Chat with support).\n\n**2. Phone and internet bills**\nBill Reporting is active for your mobile phone ($65) and home internet ($60), each with 8 months reported. On-time payments are reported to Equifax only, not Experian or TransUnion. Your profile says your score of 702 uses VantageScore 3.0, but it doesn't say which bureau's data it came from. So I can't say whether these payments show in that score. Any effect depends on the model and on whether a lender pulls Equifax, and I can't predict a point change.\n\n**3. Utilization**\nYour profile shows overall utilization (how much of your card limits you're using) at 12%. That's $300 on $2,500 in limits. It's under the common 30% guidance and a little above the 10% mark that tends to be better. By card:\n- Bank credit card: $240 on $2,000, or 12%\n- Secured Card: $60 on $500, or 12%\n\nNeither card is high on its own. Your Credit Builder plan is an installment loan, so it isn't part of this number. Paying a card down before its statement closes lowers the balance that gets reported. Your Secured Card statement closes on the 10th.\n\nNext step: Check the Secured Card section of the app for your upgrade review status.",
+      "judge_facts": [
+        {
+          "fact": "Answers with the same numbering (1, 2, 3) as the question",
+          "status": "PRESENT",
+          "note": "The reply uses headings numbered 1, 2 and 3, matching the question."
+        },
+        {
+          "fact": "Says 9 consecutive on-time payments (more than the 8 required) make the Secured Card eligible for upgrade review, without promising an upgrade",
+          "status": "PRESENT",
+          "note": "The reply says \"9 consecutive on-time payments, past the 8 needed for review\" and \"I can't promise an upgrade.\""
+        },
+        {
+          "fact": "Says the phone and internet bills are reported only to Equifax, so the effect depends on the scoring model and on whether a lender pulls Equifax",
+          "status": "PRESENT",
+          "note": "The reply says the payments are \"reported to Equifax only\" and that \"any effect depends on the model and on whether a lender pulls Equifax.\""
+        },
+        {
+          "fact": "Gives utilization of 12% ($300 of $2,500), under the 30% guidance and close to 10%",
+          "status": "PRESENT",
+          "note": "The reply gives \"12%. That's $300 on $2,500,\" under 30% and \"a little above the 10% mark.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-012",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 3,
+      "message": "How long until I get my Credit Builder savings back? Would a secured card help me since I've never had a credit card? And would applying for a card in the Marketplace hurt my score?",
+      "skills": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Getting your savings back**\nYou get your savings balance back after the full 24 months. The plan started 2026-06-01, and your profile shows 4 on-time payments with 20 remaining. The refund is $144 minus any unpaid amounts. Your savings balance is $24 now. Your next payment is due 2026-11-01.\n\n**2. Would a secured card help?**\nIt could. A secured card is a card backed by a refundable deposit of $50 to $2,000, and your limit equals the deposit. It would add a revolving account (one you can borrow from and repay each month), which you don't have now. Your profile shows no card and no negative items.\n\nSome facts to weigh:\n- There's no hard inquiry to apply and no annual fee.\n- The APR (yearly interest rate) is a variable 27.99% on balances you carry month to month.\n- Your deposit is tied up while the card is open.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 on-time payments in a row, the account is reviewed for an upgrade to an unsecured card. An upgrade isn't promised.\n\n**3. Marketplace card and your score**\nApplying through a partner usually triggers a hard inquiry (a lender's credit check that can affect your score a little). Some issuers offer prequalification, typically a soft check that doesn't affect scores, but it isn't approval. The app doesn't know your approval odds. Your profile shows 0 hard inquiries in the last 12 months. Applying can be reasonable, and you should compare the APR, fees and terms on the offer page. Marketplace partners may pay the app when a user is approved.\n\nNext step: Decide whether you want a card now, then compare a secured card's deposit and APR with the Marketplace offer terms before applying.",
+      "candidate_reply": "**1. Getting your savings back**\n\nYou get the savings balance back after the full 24 months. It's $144 minus any unpaid amounts. Your plan started 2026-06-01, and your profile shows 4 on-time payments and 20 payments remaining. Your profile shows a savings balance of $24 so far. I don't see an exact payout date, so check your plan in the app or ask human support (Help > Chat with support).\n\n**2. Would a secured card help?**\n\nIt may help. A secured card is a card backed by a refundable deposit of $50 to $2,000, and your limit equals the deposit. Right now you have only one installment account (fixed payments, set end date) and no cards. A card would add a revolving account (one you can borrow from and repay again), which can add to your credit mix.\n\nHere are the details:\n- No hard inquiry to apply and no annual fee.\n- Variable APR (interest rate) of 27.99% on balances you carry month to month.\n- Balances and payment status are reported monthly to all three bureaus.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, it's reviewed for an upgrade. That isn't promised.\n\nNo one can promise a score change.\n\n**3. Would a Marketplace card application hurt your score?**\n\nIt can. Applying through a partner usually triggers a hard inquiry (a lender's check of your credit), and a new account can also affect your score. Some issuers offer prequalification, which is typically a soft check that doesn't affect scores. It isn't approval. Your profile shows 0 hard inquiries in the last 12 months. Marketplace partners may pay the app when a user is approved, and I don't know your approval odds.\n\nNext step: Decide whether you want a card with no hard inquiry (the secured card) or a Marketplace offer, then compare the APR, fees, and terms before you apply.",
+      "judge_facts": [
+        {
+          "fact": "Says she gets the savings back when the 24-month plan ends, after her 20 remaining payments: $144 minus any unpaid amounts ($24 saved so far)",
+          "status": "PRESENT",
+          "note": "Reply says she gets savings back \"after the full 24 months,\" \"$144 minus any unpaid amounts,\" with \"20 payments remaining\" and \"$24 so far.\""
+        },
+        {
+          "fact": "Says the Secured Card's limit equals a refundable $50 to $2,000 deposit, applying needs no hard inquiry, and its statement balance and payments are reported monthly to all three bureaus",
+          "status": "PRESENT",
+          "note": "Reply covers the refundable \"$50 to $2,000\" deposit where \"your limit equals the deposit,\" \"No hard inquiry to apply,\" and balances and payment status \"reported monthly to all three bureaus.\""
+        },
+        {
+          "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
+          "status": "PRESENT",
+          "note": "Reply says \"Applying through a partner usually triggers a hard inquiry.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
     }
   ],
   "verdict": "Not passed",
+  "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.754): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "flag_rule": {
+    "min_fails": 1,
+    "baseline_repeats": 1,
+    "candidate_repeats": 1,
+    "text": "a case regresses when it passed in the baseline and fails in the candidate (one run each)"
+  },
+  "paired_test": {
+    "method": "mcnemar_exact",
+    "alpha": 0.05,
+    "ci": null,
+    "family": 4,
+    "correction": "Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha",
+    "overall": {
+      "cases": 40,
+      "left_out": 0,
+      "mean_diff": 0.05,
+      "improved": 6,
+      "regressed": 4,
+      "p_value": 0.753906,
+      "significant": false
+    },
+    "by_dataset": {
+      "single_topic": {
+        "cases": 12,
+        "left_out": 0,
+        "mean_diff": 0.1667,
+        "improved": 2,
+        "regressed": 0,
+        "p_value": 0.5,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "multi_intent": {
+        "cases": 12,
+        "left_out": 0,
+        "mean_diff": 0.0833,
+        "improved": 4,
+        "regressed": 3,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "context_use": {
+        "cases": 8,
+        "left_out": 0,
+        "mean_diff": 0.0,
+        "improved": 0,
+        "regressed": 0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "safety_basic": {
+        "cases": 8,
+        "left_out": 0,
+        "mean_diff": -0.125,
+        "improved": 0,
+        "regressed": 1,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      }
+    }
+  },
+  "noise_floor": null,
+  "noise_floor_note": "the baseline ran each case once and no A/A run was given",
   "hypothesis_result": null,
   "warnings": [
     "bots differ: baseline before, candidate after"

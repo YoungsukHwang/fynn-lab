@@ -27,6 +27,7 @@ Both bots read the same skill files, see the same member profile and use the sam
 | M4 | Regression report, dependent-test selection, three skill-edit scenarios | Done |
 | Later | Batch API runner; compare skill budgets (cap 3/5/none) and answer models (Opus/Sonnet/Haiku) | Planned |
 | M5 | Monitoring framework and results pages, built from the committed eval results | Done |
+| Stats | Repeated runs, A/A noise floor, paired tests, flag rule, Holm correction (see Noise and significance) | Built; the committed results are still single runs |
 | M6 | Optional public deployment | Planned |
 
 ## Evaluation plan (M3 and M4)
@@ -53,6 +54,7 @@ Both bots read the same skill files, see the same member profile and use the sam
   - a topic-skill body edit;
   - an always-on edit;
   - a description edit.
+- **Noise and significance.** LLM replies vary from run to run, so a case can flip with nothing changed. Each report adds a paired test of the net change, an A/A noise floor when one can be measured and, with repeated runs, a stricter flag rule (see below).
 
 The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
 
@@ -65,14 +67,14 @@ The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
 ```bash
 cd backend
 
-# Full runs on both bots
-.venv/bin/python -m evals.run --bot before --out ../results/before.json
-.venv/bin/python -m evals.run --bot after --out ../results/after.json
+# Full runs on both bots. --repeats 3 runs every case three times (default 1).
+.venv/bin/python -m evals.run --bot before --repeats 3 --out ../results/before.json
+.venv/bin/python -m evals.run --bot after --repeats 3 --out ../results/after.json
 
 # Skill-edit scenarios on the After bot. --baseline turns on dependent-test selection.
-.venv/bin/python -m evals.run --bot after --scenario s1 --baseline ../results/after.json --out ../results/scenarios/s1.json
-.venv/bin/python -m evals.run --bot after --scenario s2 --baseline ../results/after.json --out ../results/scenarios/s2.json
-.venv/bin/python -m evals.run --bot after --scenario s3 --baseline ../results/after.json --out ../results/scenarios/s3.json
+.venv/bin/python -m evals.run --bot after --repeats 3 --scenario s1 --baseline ../results/after.json --out ../results/scenarios/s1.json
+.venv/bin/python -m evals.run --bot after --repeats 3 --scenario s2 --baseline ../results/after.json --out ../results/scenarios/s2.json
+.venv/bin/python -m evals.run --bot after --repeats 3 --scenario s3 --baseline ../results/after.json --out ../results/scenarios/s3.json
 
 # Regression reports: report.json (for the site) and report.md in each directory
 .venv/bin/python -m evals.report --baseline ../results/before.json --candidate ../results/after.json --out ../results/reports/before-vs-after
@@ -85,7 +87,42 @@ cd backend
 - **Selection.** With `--baseline`, a body edit to a topic skill (s1) reruns only the cases labeled with that skill or routed to it in the baseline. An always-on edit (s2) or a description edit (s3) reruns every case.
 - **Baseline freshness.** Run the scenarios against an `after.json` made from the current `skills/`. The runner warns when the baseline's skill hashes differ.
 - **Reports.** A report compares only the cases in the candidate. The verdict is Passed when no case regressed. A scenario report also says whether the result matches the hypothesis in `scenario.yaml`.
-- **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, and `--workers N` sets parallel cases (default 8).
+- **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, and `--workers N` sets parallel case runs (default 8).
+- **Cost.** The token usage recorded in the committed results comes to at most about $1.30 for a full single-run round (40 cases; Sonnet 5.5 answering and an Opus 5.5 judge, at list prices). `--repeats K` multiplies that by K, so the set of commands above with K=3 is roughly 13 full rounds, about $16. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
+
+## Noise and significance
+
+The first real run had several scenario flips that could be run-to-run variation rather than an effect of the edit. The statistics layer in `backend/evals/stats.py` separates the two. It never calls the API; it only reads results files.
+
+- **Repeated runs.** `run.py --repeats K` runs each case K times. A case keeps every run under `runs`, its pass count `passes` and its `pass_fraction`. Its top-level fields come from a run with the majority outcome. Summary buckets count runs, so a rate is the mean pass fraction. K=1 writes the same files as before, plus `repeats`, `passes` and `pass_fraction`.
+- **Flag rule.** A case regresses only when it fails at least m of its K runs and passed every baseline run; it improves when it passes at least m and failed every baseline run. m defaults to a strict majority (2 of 3) and is set with `report.py --min-fails M`. Anything else that varied is listed as unstable and is not counted; unstable cases that still moved by at least m of K (for example 2 of 3 to 0 of 3) are listed separately as sharp drops or rises. With one run per side this is the plain flip, so the verdict means what it did before.
+- **Errored runs.** An API error says nothing about the bot, so a report leaves errored runs out of a case's counts (flag rule, test, rates, noise floor) whenever that side of the case has other runs. This applies to the baseline, the candidate and an A/A run alike, so partly errored cases on both sides do not read as a regression. When every run on a side errored (always the case for an errored run at K=1), the flag rule counts that side as failing, as before, so it can still flag the case; the paired test and the noise floor leave such a case out and say so. Reports list and warn about cases with errored runs on either side. A results file's own summary still counts errored runs as failures and shows how many errored.
+- **Paired test of the net change.** Cases are paired with their baseline.
+  - With one run per side: an exact McNemar test, a binomial test of the flipped cases against a 50/50 split.
+  - With repeated runs: an exact permutation test of the mean per-case change in pass fraction. If the change did nothing, a case's baseline and candidate runs are interchangeable, so the test shuffles each case's runs between the two sides and computes the exact null distribution (no resampling, no seed). With one run each it gives exactly the McNemar p-value. It does not depend on how many personas there are.
+  - P-values are exact fractions, so a p of exactly 0.05 counts as significant. The JSON keeps 6 decimals.
+  - A persona-cluster bootstrap interval (95%, 10,000 resamples, fixed seed, at least 3 personas) of the same mean change is shown next to it. It describes how much the change varies between personas and is not a test: with 6 personas it can sit entirely on one side of zero by chance.
+  - Both tests ask whether the overall pass rate moved. A balanced tradeoff, with as many cases fixed as broken, can read as not significant.
+- **Verdict and test.** The verdict (Passed only when no case is flagged as regressed) is unchanged. When it and the paired test tell different stories, the report adds a sentence next to it: for example a Not passed verdict with a net change that is not significant, or a Passed verdict next to a significant net regression hidden in unstable cases. Hypothesis matches come from the flagged counts and are not a significance test.
+- **A/A noise floor.** How many cases flip between two runs of the baseline with nothing changed.
+  - With K of at least 2 it comes free from the baseline's own repeats: the expected number of flips between two single runs is the sum over cases of 2k(K-k)/(K(K-1)), where k is the case's passing runs. That is single-run noise. The flag rule needs a stable baseline and m failing runs, so far fewer cases are flagged by chance, and the report labels the two differently.
+  - A second baseline run passed as `report.py --aa PATH` gives an observed count under the flag rule instead. It should have the candidate's K; when it does not, the report warns and says which rule it used instead.
+  - A report whose two runs share the bot, skills and models is marked as an A/A report. Code, the judge and the cases are not fingerprinted, so it is only pure noise if nothing else changed.
+- **Multiplicity.** The per-dataset p-values are Holm-corrected together, which controls the chance of any false positive among them. The overall test is the primary one at 0.05 and is not adjusted, so across every row of the table that chance can reach 0.10. Significant means p at or below 0.05.
+- **Calibration.** In A/A simulations on this eval set's layout (40 cases, 6 personas, K=3), the permutation test flags about 3% of no-change runs at 0.05, and 0 to 4% depending on how noisy the cases are. It never went above 5%, because an exact test on coarse pass fractions is a little conservative. When 8 cases really drop (from passing 95% of the time to 30%), the overall test catches it roughly 75 to 95% of the time at K=3 and 20 to 30% at K=1, depending on how noisy the other cases are. That gap is the case for K=3.
+- **Caveats.** 40 cases cannot detect small effects, and a non-significant result is not evidence of no change.
+
+```bash
+# A/A: a second baseline run with nothing changed and the same --repeats, then a report against it
+.venv/bin/python -m evals.run --bot after --repeats 3 --out ../results/aa/after.json
+.venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/aa/after.json --out ../results/reports/aa-after
+
+# Use it as the noise floor of a scenario report, with a stricter flag rule
+.venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s2.json \
+    --aa ../results/aa/after.json --min-fails 3 --out ../results/reports/s2
+```
+
+`report.json` gains `flag_rule`, `paired_test` (with `by_dataset`, `p_holm`, `family` and the descriptive `ci`), `noise_floor` (with its `unit`), `noise_floor_note`, `verdict_note`, `kind`, `improvements`, `sharp_changes`, `baseline_errors` and an `unstable` transition. `report.md` gives the test, the noise floor and any verdict note next to the verdict, plus a "Noise and significance" section.
 
 ## Layout
 
@@ -155,5 +192,5 @@ npm run dev                 # http://localhost:3000
 - **Pages.** `/` is the demo: pick a synthetic member, then send one message to both bots. Each column shows the reply, the router's decision and reason, and the architecture diagram with the agent or skills that were used.
 - **Different backend.** To point the site at a different backend, set `NEXT_PUBLIC_API_URL`. It is read at build time.
 - **CORS.** The API allows `localhost:3000` and `127.0.0.1:3000`. Set `FYNN_CORS_ORIGINS` in `backend/.env` for any other origin.
-- **Placeholders.** `/framework` and `/results` stay placeholders until M5.
+- **Eval pages.** `/framework` describes the eval set, the scoring and the regression loop; `/results` shows the committed results and reports, including each comparison's noise check.
 - **Checks.** `npm run typecheck` (generates route types, then runs `tsc`) and `npm run lint`.

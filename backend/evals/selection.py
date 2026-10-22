@@ -17,6 +17,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from evals.cases import EvalCase
+from evals.stats import case_runs
 from fynn.skills import Skill, SkillLibrary, SkillType
 
 # Parts a change can touch. "meta" is used when only hashes are known (type or domain changed).
@@ -102,11 +103,17 @@ def _reason_for_all(change: SkillChange) -> str | None:
 
 
 def baseline_routing(baseline_results: Mapping[str, Any] | None) -> dict[str, set[str]]:
-    """Case id -> what the baseline router actually loaded (skill names for After, domains for Before)."""
+    """Case id -> what the baseline router actually loaded (skill names for After, domains for Before).
+
+    With repeated runs this is the union over the runs: a skill loaded in any run can change the answer.
+    """
     routed: dict[str, set[str]] = {}
     for case in (baseline_results or {}).get("cases", []):
-        routing = case.get("routing") or {}
-        routed[case["id"]] = set(routing.get("selected") or []) | set(routing.get("carried") or [])
+        loaded: set[str] = set()
+        for run in case_runs(case):
+            routing = run.get("routing") or {}
+            loaded |= set(routing.get("selected") or []) | set(routing.get("carried") or [])
+        routed[case["id"]] = loaded
     return routed
 
 

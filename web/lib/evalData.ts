@@ -47,7 +47,8 @@ function resultsDir(): string {
 export const DATASETS = ["single_topic", "multi_intent", "context_use", "safety_basic"] as const;
 export type Dataset = (typeof DATASETS)[number];
 
-export const TRANSITIONS = ["improved", "regressed", "unchanged_pass", "unchanged_fail"] as const;
+// "unstable" is only ever non-empty when a side ran each case more than once.
+export const TRANSITIONS = ["improved", "regressed", "unchanged_pass", "unchanged_fail", "unstable"] as const;
 export type Transition = (typeof TRANSITIONS)[number];
 
 export type FactStatus = "PRESENT" | "ABSENT" | "CONTRADICTED";
@@ -87,6 +88,7 @@ export interface Scenario {
   hypothesis: { expected: string; detail: string };
 }
 
+// Counts runs: with K runs per case, total is K times the case count and rate the mean pass fraction.
 export interface Bucket {
   passed: number;
   total: number;
@@ -125,7 +127,10 @@ export interface CaseResult {
   checkFailures: string[];
   judgeFacts: FactGrade[];
   judgeReason: string;
-  passed: boolean;
+  passed: boolean; // with K > 1 runs, the majority outcome; the fields above come from a run with it
+  passes: number; // runs passed
+  repeats: number; // runs of this case
+  errored: number; // runs that errored
   status: string; // "ok" | "error"
   error: string | null;
 }
@@ -134,6 +139,7 @@ export interface Run {
   name: string;
   bot: string;
   scenario: string | null;
+  repeats: number; // runs per case
   createdAt: string;
   models: Models | null;
   selection: { rule: string; caseIds: string[] } | null;
@@ -147,10 +153,12 @@ export interface RunInfo {
   scenario: string | null;
   createdAt: string;
   models: Models | null;
+  repeats: number;
 }
 
 export interface RateCell {
-  passed: number;
+  passed: number; // passing runs
+  runs: number; // runs (the case count when each case ran once)
   rate: number | null;
 }
 
@@ -177,10 +185,76 @@ export interface ReportFailure {
   checkFailures: string[];
   status: string;
   error: string | null;
+  // Runs as the flag rule counted them: errored runs left out unless every run on that side errored.
+  baselinePassed: number;
+  baselineRuns: number;
+  candidatePassed: number;
+  candidateRuns: number;
+  baselineErrored: number;
+  candidateErrored: number;
+  baselineAllErrored: boolean;
+  candidateAllErrored: boolean;
+  baselineError: string | null; // of the baseline run shown
+}
+
+export interface FlagRule {
+  minFails: number;
+  baselineRepeats: number;
+  candidateRepeats: number;
+  text: string;
+}
+
+// One row of the paired test of the net change (backend/evals/stats.py). McNemar rows have the
+// flip counts; run-permutation rows the number of cases whose runs disagreed and a descriptive
+// persona interval. The other fields are null.
+export interface PairedTestRow {
+  cases: number;
+  meanDiff: number | null;
+  improved: number | null;
+  regressed: number | null;
+  informative: number | null;
+  leftOut: number; // pairs left out because one side had only errored runs
+  clusters: number | null;
+  ciLow: number | null;
+  ciHigh: number | null;
+  pValue: number | null;
+  pHolm: number | null; // per-dataset rows only
+  significant: boolean | null; // null when no test ran
+}
+
+export interface PairedTest {
+  method: string; // "mcnemar_exact" | "run_permutation"
+  alpha: number;
+  // The persona-cluster bootstrap interval: a description, never a test. Null for McNemar.
+  ci: { confidence: number; resamples: number; minClusters: number } | null;
+  family: number; // per-dataset p-values in the Holm family
+  overall: PairedTestRow;
+  byDataset: Record<string, PairedTestRow>;
+}
+
+export interface NoiseRow {
+  cases: number;
+  flips: number | null; // flagged in an A/A run, or expected single-run flips from the baseline's repeats
+  regressed: number | null;
+  improved: number | null;
+}
+
+export interface NoiseFloor {
+  source: string; // "aa_run" | "baseline_repeats"
+  unit: string; // "flag_rule" | "single_run_flips"
+  repeats: number;
+  minFails: number | null; // the m the A/A run was flagged with
+  sameRule: boolean; // false when the A/A run had a different K than the candidate
+  overall: NoiseRow;
+  byDataset: Record<string, NoiseRow>;
+  unstable: string[];
+  unmeasured: string[]; // baseline cases left with fewer than 2 runs once errored runs are taken out
+  run: RunInfo | null; // the A/A run, for source "aa_run"
 }
 
 export interface Report {
   scenarioId: string | null;
+  kind: string; // "change" | "aa"
   baseline: RunInfo;
   candidate: RunInfo;
   selection: { rule: string; caseCount: number };
@@ -191,6 +265,15 @@ export interface Report {
   errors: string[];
   failures: ReportFailure[];
   verdict: string; // "Passed" | "Not passed"
+  verdictNote: string | null; // when the verdict and the paired test disagree, or for an A/A report
+  improvements: ReportFailure[]; // flagged improvements, each with a passing candidate run
+  sharpChanges: { dropped: string[]; rose: string[] }; // unstable cases that moved by m of K or more
+  baselineErrors: string[];
+  // Null in reports written before the statistics layer.
+  flagRule: FlagRule | null;
+  pairedTest: PairedTest | null;
+  noiseFloor: NoiseFloor | null;
+  noiseFloorNote: string | null; // why there is no noise floor
   hypothesisResult: { expected: string; observed: string; matches: boolean } | null;
   warnings: string[];
 }
@@ -208,6 +291,7 @@ const num = (value: unknown, fallback = 0): number =>
   typeof value === "number" && Number.isFinite(value) ? value : fallback;
 const numOrNull = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
+const repeatsOf = (value: unknown): number => Math.max(1, Math.round(num(value, 1)));
 const strList = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 const strListOrNull = (value: unknown): string[] | null => (Array.isArray(value) ? strList(value) : null);
@@ -281,6 +365,14 @@ function toCaseResult(value: Obj): CaseResult {
   const routing = isObj(value.routing) ? value.routing : null;
   const checks = isObj(value.checks) ? value.checks : null;
   const judge = isObj(value.judge) ? value.judge : null;
+  const runs = objList(value.runs);
+  const repeats = runs.length || repeatsOf(value.repeats);
+  const passes = runs.length ? runs.filter((run) => run.passed === true).length : value.passed === true ? 1 : 0;
+  const errored = runs.length
+    ? runs.filter((run) => run.status === "error").length
+    : value.status === "error"
+      ? 1
+      : 0;
   return {
     id: str(value.id),
     dataset: str(value.dataset),
@@ -295,6 +387,9 @@ function toCaseResult(value: Obj): CaseResult {
     judgeFacts: judge ? toFacts(judge.facts) : [],
     judgeReason: judge ? str(judge.reason) : "",
     passed: value.passed === true,
+    passes: num(value.passes, passes),
+    repeats,
+    errored,
     status: str(value.status, "ok"),
     error: strOrNull(value.error),
   };
@@ -308,12 +403,94 @@ function toRunInfo(value: unknown): RunInfo {
     scenario: strOrNull(obj.scenario),
     createdAt: str(obj.created_at),
     models: toModels(obj.models),
+    repeats: repeatsOf(obj.repeats),
   };
 }
 
-function toRateCell(value: unknown): RateCell {
+/** `cases` is the fallback run count for reports written before cells had one. */
+function toRateCell(value: unknown, cases: number): RateCell {
   const obj = isObj(value) ? value : {};
-  return { passed: num(obj.passed), rate: numOrNull(obj.rate) };
+  return { passed: num(obj.passed), runs: num(obj.runs, cases), rate: numOrNull(obj.rate) };
+}
+
+function toFlagRule(value: unknown): FlagRule | null {
+  if (!isObj(value)) return null;
+  return {
+    minFails: num(value.min_fails, 1),
+    baselineRepeats: repeatsOf(value.baseline_repeats),
+    candidateRepeats: repeatsOf(value.candidate_repeats),
+    text: str(value.text),
+  };
+}
+
+function toTestRow(value: unknown): PairedTestRow {
+  const obj = isObj(value) ? value : {};
+  return {
+    cases: num(obj.cases),
+    meanDiff: numOrNull(obj.mean_diff),
+    improved: numOrNull(obj.improved),
+    regressed: numOrNull(obj.regressed),
+    informative: numOrNull(obj.informative),
+    leftOut: num(obj.left_out),
+    clusters: numOrNull(obj.clusters),
+    ciLow: numOrNull(obj.ci_low),
+    ciHigh: numOrNull(obj.ci_high),
+    pValue: numOrNull(obj.p_value),
+    pHolm: numOrNull(obj.p_holm),
+    significant: typeof obj.significant === "boolean" ? obj.significant : null,
+  };
+}
+
+function mapRows<T>(value: unknown, toRow: (row: Obj) => T): Record<string, T> {
+  if (!isObj(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, Obj] => isObj(entry[1]))
+      .map(([key, row]) => [key, toRow(row)]),
+  );
+}
+
+function toPairedTest(value: unknown): PairedTest | null {
+  if (!isObj(value)) return null;
+  const ci = isObj(value.ci) ? value.ci : null;
+  const byDataset = mapRows(value.by_dataset, toTestRow);
+  return {
+    method: str(value.method),
+    alpha: num(value.alpha, 0.05),
+    ci: ci
+      ? { confidence: num(ci.confidence, 0.95), resamples: num(ci.resamples), minClusters: num(ci.min_clusters, 3) }
+      : null,
+    family: num(value.family, Object.values(byDataset).filter((row) => row.pValue !== null).length),
+    overall: toTestRow(value.overall),
+    byDataset,
+  };
+}
+
+function toNoiseRow(value: unknown): NoiseRow {
+  const obj = isObj(value) ? value : {};
+  return {
+    cases: num(obj.cases),
+    flips: numOrNull(obj.flips),
+    regressed: numOrNull(obj.regressed),
+    improved: numOrNull(obj.improved),
+  };
+}
+
+function toNoiseFloor(value: unknown): NoiseFloor | null {
+  if (!isObj(value)) return null;
+  const source = str(value.source);
+  return {
+    source,
+    unit: str(value.unit, source === "aa_run" ? "flag_rule" : "single_run_flips"),
+    repeats: repeatsOf(value.repeats),
+    minFails: numOrNull(value.min_fails),
+    sameRule: value.same_rule !== false,
+    overall: toNoiseRow(value.overall),
+    byDataset: mapRows(value.by_dataset, toNoiseRow),
+    unstable: strList(value.unstable),
+    unmeasured: strList(value.unmeasured),
+    run: isObj(value.run) ? toRunInfo(value.run) : null,
+  };
 }
 
 /* ----------------------------------------------------------------------------------------------
@@ -471,6 +648,7 @@ export async function getRun(relativePath: string): Promise<Run | null> {
     name: str(raw.name),
     bot: str(raw.bot),
     scenario: strOrNull(raw.scenario),
+    repeats: repeatsOf(raw.repeats),
     createdAt: str(raw.created_at),
     models: toModels(raw.models),
     selection: selection ? { rule: str(selection.rule), caseIds: strList(selection.case_ids) } : null,
@@ -509,50 +687,73 @@ export async function getReport(name: string): Promise<Report | null> {
   const hypothesis = isObj(raw.hypothesis_result) ? raw.hypothesis_result : null;
   const scenario = isObj(raw.scenario) ? raw.scenario : null;
 
+  const overallTotal = num(overall.total);
   return {
     scenarioId: scenario ? strOrNull(scenario.id) : null,
+    kind: str(raw.kind, "change"),
     baseline: toRunInfo(raw.baseline),
     candidate: toRunInfo(raw.candidate),
     selection: { rule: str(selection.rule), caseCount: num(selection.case_count) },
-    overall: { total: num(overall.total), baseline: toRateCell(overall.baseline), candidate: toRateCell(overall.candidate) },
-    byDataset: Object.fromEntries(
-      Object.entries(byDataset)
-        .filter((entry): entry is [string, Obj] => isObj(entry[1]))
-        .map(([dataset, row]) => [
-          dataset,
-          {
-            total: num(row.total),
-            baseline: toRateCell(row.baseline),
-            candidate: toRateCell(row.candidate),
-            delta: numOrNull(row.delta),
-          },
-        ]),
-    ),
+    overall: {
+      total: overallTotal,
+      baseline: toRateCell(overall.baseline, overallTotal),
+      candidate: toRateCell(overall.candidate, overallTotal),
+    },
+    byDataset: mapRows(byDataset, (row) => ({
+      total: num(row.total),
+      baseline: toRateCell(row.baseline, num(row.total)),
+      candidate: toRateCell(row.candidate, num(row.total)),
+      delta: numOrNull(row.delta),
+    })),
     transitions,
     counts,
     errors: strList(raw.errors),
-    failures: objList(raw.failures).map((failure) => ({
-      id: str(failure.id),
-      dataset: str(failure.dataset),
-      persona: str(failure.persona),
-      intents: numOrNull(failure.intents),
-      message: str(failure.message),
-      skills: strList(failure.skills),
-      baselineRouting: strListOrNull(failure.baseline_routing),
-      candidateRouting: strListOrNull(failure.candidate_routing),
-      baselineReply: strOrNull(failure.baseline_reply),
-      candidateReply: strOrNull(failure.candidate_reply),
-      judgeFacts: toFacts(failure.judge_facts),
-      judgeReason: str(failure.judge_reason),
-      checkFailures: strList(failure.check_failures),
-      status: str(failure.status, "ok"),
-      error: strOrNull(failure.error),
-    })),
+    failures: objList(raw.failures).map(toReportFailure),
+    improvements: objList(raw.improvements).map(toReportFailure),
+    sharpChanges: {
+      dropped: isObj(raw.sharp_changes) ? strList(raw.sharp_changes.dropped) : [],
+      rose: isObj(raw.sharp_changes) ? strList(raw.sharp_changes.rose) : [],
+    },
+    baselineErrors: strList(raw.baseline_errors),
     verdict: str(raw.verdict),
+    verdictNote: strOrNull(raw.verdict_note),
+    flagRule: toFlagRule(raw.flag_rule),
+    pairedTest: toPairedTest(raw.paired_test),
+    noiseFloor: toNoiseFloor(raw.noise_floor),
+    noiseFloorNote: strOrNull(raw.noise_floor_note),
     hypothesisResult: hypothesis
       ? { expected: str(hypothesis.expected), observed: str(hypothesis.observed), matches: hypothesis.matches === true }
       : null,
     warnings: strList(raw.warnings),
+  };
+}
+
+function toReportFailure(failure: Obj): ReportFailure {
+  return {
+    id: str(failure.id),
+    dataset: str(failure.dataset),
+    persona: str(failure.persona),
+    intents: numOrNull(failure.intents),
+    message: str(failure.message),
+    skills: strList(failure.skills),
+    baselineRouting: strListOrNull(failure.baseline_routing),
+    candidateRouting: strListOrNull(failure.candidate_routing),
+    baselineReply: strOrNull(failure.baseline_reply),
+    candidateReply: strOrNull(failure.candidate_reply),
+    judgeFacts: toFacts(failure.judge_facts),
+    judgeReason: str(failure.judge_reason),
+    checkFailures: strList(failure.check_failures),
+    status: str(failure.status, "ok"),
+    error: strOrNull(failure.error),
+    baselinePassed: num(failure.baseline_passed, 1),
+    baselineRuns: repeatsOf(failure.baseline_runs),
+    candidatePassed: num(failure.candidate_passed, 0),
+    candidateRuns: repeatsOf(failure.candidate_runs),
+    baselineErrored: num(failure.baseline_errored),
+    candidateErrored: num(failure.candidate_errored),
+    baselineAllErrored: failure.baseline_all_errored === true,
+    candidateAllErrored: failure.candidate_all_errored === true,
+    baselineError: strOrNull(failure.baseline_error),
   };
 }
 
@@ -567,8 +768,10 @@ export interface RunMeta {
   scenario: string | null;
   createdAt: string;
   models: Models | null;
-  total: number;
-  passed: number;
+  repeats: number;
+  cases: number;
+  total: number; // runs
+  passed: number; // passing runs
   rate: number | null;
   errors: number;
   selectionRule: string | null;
@@ -577,7 +780,11 @@ export interface RunMeta {
 export interface CaseSide {
   routed: string[] | null;
   reply: string | null;
-  passed: boolean | null;
+  passed: boolean | null; // of the run shown
+  passes: number | null; // runs passed, out of `runs`
+  runs: number;
+  errored: number; // runs that errored, left out of `runs` unless `allErrored`
+  allErrored: boolean;
   judgeReason: string;
   notPresent: FactGrade[]; // facts the judge did not grade PRESENT
   checkFailures: string[];
@@ -591,15 +798,17 @@ export interface CaseChange {
   intents: number | null;
   message: string;
   skills: string[];
-  transition: "improved" | "regressed";
+  transition: "improved" | "regressed" | "unstable";
+  sharp: "dropped" | "rose" | null; // an unstable case that moved by at least m of K runs
   baseline: CaseSide | null;
   candidate: CaseSide | null;
 }
 
 export interface Comparison {
-  report: Omit<Report, "failures">;
+  report: Omit<Report, "failures" | "improvements">;
   regressed: CaseChange[];
   improved: CaseChange[];
+  unstable: CaseChange[];
   // Why some case details may be partial (e.g. a results file newer than the report).
   notes: string[];
 }
@@ -628,6 +837,8 @@ function runMeta(file: string, run: Run): RunMeta {
     scenario: run.scenario,
     createdAt: run.createdAt,
     models: run.models,
+    repeats: run.repeats,
+    cases: run.cases.length,
     total: run.summary.overall.total,
     passed: run.summary.overall.passed,
     rate: run.summary.overall.rate,
@@ -647,6 +858,10 @@ function side(result: CaseResult): CaseSide {
     routed: result.routed,
     reply: result.reply,
     passed: result.passed,
+    passes: result.passes,
+    runs: result.repeats,
+    errored: result.errored,
+    allErrored: result.errored > 0 && result.errored === result.repeats,
     judgeReason: result.judgeReason,
     notPresent: result.judgeFacts.filter((fact) => fact.status !== "PRESENT"),
     checkFailures: result.checkFailures,
@@ -675,16 +890,50 @@ async function buildComparison(report: Report, cases: EvalCase[]): Promise<Compa
   const notes: string[] = [];
   const baselineRun = await matchingRun(report.baseline, "baseline", notes);
   const candidateRun = await matchingRun(report.candidate, "candidate", notes);
-  const { failures, ...rest } = report;
+  const { failures, improvements, ...rest } = report;
   const baseById = new Map<string, CaseResult>((baselineRun?.cases ?? []).map((c) => [c.id, c]));
   const candById = new Map<string, CaseResult>((candidateRun?.cases ?? []).map((c) => [c.id, c]));
-  const failureById = new Map<string, ReportFailure>(failures.map((f) => [f.id, f]));
+  const detailById = new Map<string, ReportFailure>([...failures, ...improvements].map((f) => [f.id, f]));
   const caseById = new Map<string, EvalCase>(cases.map((c) => [c.id, c]));
+  const dropped = new Set(report.sharpChanges.dropped);
+  const rose = new Set(report.sharpChanges.rose);
 
   const change = (id: string, transition: CaseChange["transition"]): CaseChange => {
-    const base = baseById.get(id);
-    const cand = candById.get(id);
-    const failure = failureById.get(id);
+    const failure = transition === "unstable" ? undefined : detailById.get(id);
+    // A flagged case should show runs with the flagged outcomes: for a regression a passing baseline
+    // run and a failing candidate run, for an improvement the other way round. The results files
+    // keep each side's majority run, which a lenient flag rule or errored runs can leave on the other
+    // side; the report's entry always holds runs with the flagged outcomes.
+    const flaggedPass = transition === "improved";
+    const baseMajority = baseById.get(id);
+    const candMajority = candById.get(id);
+    const base =
+      failure && baseMajority && (baseMajority.passed === flaggedPass || baseMajority.status === "error")
+        ? undefined
+        : baseMajority;
+    const cand =
+      failure && candMajority && (candMajority.passed !== flaggedPass || candMajority.status === "error")
+        ? undefined
+        : candMajority;
+    // A flagged case shows the run counts the flag rule used, from the report entry, on both sides.
+    const counted = (sideFrom: CaseSide, which: "baseline" | "candidate"): CaseSide => {
+      if (!failure) return sideFrom;
+      return which === "baseline"
+        ? {
+            ...sideFrom,
+            passes: failure.baselinePassed,
+            runs: failure.baselineRuns,
+            errored: failure.baselineErrored,
+            allErrored: failure.baselineAllErrored,
+          }
+        : {
+            ...sideFrom,
+            passes: failure.candidatePassed,
+            runs: failure.candidateRuns,
+            errored: failure.candidateErrored,
+            allErrored: failure.candidateAllErrored,
+          };
+    };
     const source = cand ?? base;
     const evalCase = caseById.get(id);
     return {
@@ -695,28 +944,37 @@ async function buildComparison(report: Report, cases: EvalCase[]): Promise<Compa
       message: source?.message ?? failure?.message ?? evalCase?.message ?? "",
       skills: source?.skills ?? failure?.skills ?? evalCase?.skills ?? [],
       transition,
+      sharp: dropped.has(id) ? "dropped" : rose.has(id) ? "rose" : null,
       baseline: base
-        ? side(base)
+        ? counted(side(base), "baseline")
         : failure
           ? {
               routed: failure.baselineRouting,
               reply: failure.baselineReply,
-              passed: true,
+              passed: !flaggedPass,
+              passes: failure.baselinePassed,
+              runs: failure.baselineRuns,
+              errored: failure.baselineErrored,
+              allErrored: failure.baselineAllErrored,
               judgeReason: "",
               notPresent: [],
               checkFailures: [],
-              error: null,
+              error: failure.baselineError,
             }
           : null,
       candidate: cand
-        ? side(cand)
+        ? counted(side(cand), "candidate")
         : failure
           ? {
               routed: failure.candidateRouting,
               reply: failure.candidateReply,
-              passed: false,
-              judgeReason: failure.judgeReason,
-              notPresent: failure.judgeFacts.filter((fact) => fact.status !== "PRESENT"),
+              passed: flaggedPass,
+              passes: failure.candidatePassed,
+              runs: failure.candidateRuns,
+              errored: failure.candidateErrored,
+              allErrored: failure.candidateAllErrored,
+              judgeReason: flaggedPass ? "" : failure.judgeReason,
+              notPresent: flaggedPass ? [] : failure.judgeFacts.filter((fact) => fact.status !== "PRESENT"),
               checkFailures: failure.checkFailures,
               error: failure.error,
             }
@@ -728,6 +986,7 @@ async function buildComparison(report: Report, cases: EvalCase[]): Promise<Compa
     report: rest,
     regressed: report.transitions.regressed.map((id) => change(id, "regressed")),
     improved: report.transitions.improved.map((id) => change(id, "improved")),
+    unstable: report.transitions.unstable.map((id) => change(id, "unstable")),
     notes,
   };
 }
@@ -771,6 +1030,7 @@ export async function getResultsData(): Promise<ResultsData> {
 }
 
 export interface FrameworkData {
+  repeats: { before: number | null; after: number | null }; // runs per case in the latest full runs
   cases: EvalCase[];
   personas: PersonaInfo[];
   skills: SkillInfo[];
@@ -800,5 +1060,6 @@ export async function getFrameworkData(): Promise<FrameworkData> {
     : configured.judge
       ? { model: configured.judge, source: "config" as const }
       : null;
-  return { cases, personas, skills, scenarios, judgeInstructions, judgeModel };
+  const repeats = { before: before?.repeats ?? null, after: after?.repeats ?? null };
+  return { repeats, cases, personas, skills, scenarios, judgeInstructions, judgeModel };
 }

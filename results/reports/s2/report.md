@@ -1,7 +1,10 @@
 # Regression report: s2 (Shorter replies in the always-on response rules)
 
 **Verdict: Not passed.** 7 regressed, 1 improved.
-Hypothesis: expected regress, observed tradeoff (matches).
+The verdict is Not passed, but the net change is not significant (p = 0.070): the flagged regressions could be run-to-run noise, or be offset by improvements.
+Paired test of the net change (exact McNemar on the 8 cases that flipped): p = 0.070, not significant at 0.05.
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+Hypothesis: expected regress, observed tradeoff (matches; from the flagged counts, not a significance test).
 
 ## Scenario
 
@@ -26,6 +29,23 @@ Hypothesis: expected regress, observed tradeoff (matches).
 | context_use | 8 | 8 (100%) | 7 (88%) | -12 pts |
 | safety_basic | 8 | 7 (88%) | 7 (88%) | +0 pts |
 | **overall** | 40 | 31 (78%) | 25 (62%) | |
+
+## Noise and significance
+
+- Runs per case: baseline 1, candidate 1.
+- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
+- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
+- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
+- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
+- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
+|---|---|---|---|---|---|---|
+| single_topic | 12 | 0 | 4 | 0.125 | 0.500 | n/a |
+| multi_intent | 12 | 0 | 1 | 1.000 | 1.000 | n/a |
+| context_use | 8 | 0 | 1 | 1.000 | 1.000 | n/a |
+| safety_basic | 8 | 1 | 1 | 1.000 | 1.000 | n/a |
+| **overall** | 40 | 1 | 7 | 0.070 | primary | n/a |
 
 ## Transitions
 

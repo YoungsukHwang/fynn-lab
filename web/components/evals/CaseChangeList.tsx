@@ -1,6 +1,6 @@
 import { Markdown } from "@/components/Markdown";
 import type { CaseChange, CaseSide } from "@/lib/evalData";
-import { datasetLabel, excerpt, questionsLabel } from "@/lib/evalLabels";
+import { datasetLabel, excerpt, questionsLabel, runsLabel } from "@/lib/evalLabels";
 
 import { Chip, type ChipTone, Expander } from "./ui";
 
@@ -16,11 +16,17 @@ function ReplyPanel({ label, side }: { label: string; side: CaseSide | null }) {
   }
   const reply = side.reply ? excerpt(side.reply) : null;
   const failed = side.passed === false;
+  const runs = runsLabel(side.passes, side.runs, side.errored, side.allErrored);
   return (
     <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-line bg-canvas px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <h5 className="text-sm font-semibold text-ink">{label}</h5>
-        {side.passed !== null && <Chip tone={failed ? "bad" : "lime"}>{failed ? "Not passed" : "Passed"}</Chip>}
+        {side.passed !== null && (
+          <Chip tone={failed ? "bad" : "lime"}>
+            {runs ? (failed ? "Shown run failed" : "Shown run passed") : failed ? "Not passed" : "Passed"}
+          </Chip>
+        )}
+        {runs && <span className="text-xs text-slate">{runs}</span>}
       </div>
       {side.routed && (
         <p className="text-xs text-slate">
@@ -104,6 +110,13 @@ export function CaseChangeList({
               <span className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-3">
                 <span className="shrink-0 font-mono text-xs leading-5 text-slate">{change.id}</span>
                 <span className="min-w-0 flex-1 text-sm leading-5 text-ink">{change.message || "(message not found)"}</span>
+                {change.sharp && (
+                  <span className="shrink-0">
+                    <Chip tone={change.sharp === "dropped" ? "bad" : "lime"}>
+                      {change.sharp === "dropped" ? "Dropped sharply" : "Rose sharply"}
+                    </Chip>
+                  </span>
+                )}
               </span>
             }
           >

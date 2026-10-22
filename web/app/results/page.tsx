@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 
 import { CaseChangeList } from "@/components/evals/CaseChangeList";
+import { NoiseCheck } from "@/components/evals/NoiseCheck";
 import { type BarGroup, RateBars } from "@/components/evals/RateBars";
-import { ScenarioCard, TransitionStats } from "@/components/evals/ScenarioCard";
+import { ScenarioCard, TransitionStats, UNSTABLE_LABEL } from "@/components/evals/ScenarioCard";
 import { NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
 import { type Bucket, getPersonas, getResultsData, type Models, type RunMeta } from "@/lib/evalData";
-import { DATASET_INFO, datasetLabel, formatTimestamp, pct, questionsLabel } from "@/lib/evalLabels";
+import { DATASET_INFO, datasetLabel, formatTimestamp, pct, questionsLabel, runsPerCase } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Monitoring results" };
 
@@ -22,15 +23,32 @@ const BOT_TRANSITIONS = {
   unchanged_pass: "Pass on both",
   unchanged_fail: "Fail on both",
 };
+const BOT_FLIPS = { improved: "After only", regressed: "Before only" };
 
-function casesNote(...buckets: (Bucket | undefined)[]): string | undefined {
-  const total = buckets.find((b) => b && b.total > 0)?.total;
+// Buckets count runs, so a bucket's case count is its total over the runs per case.
+function caseCount(bucket: Bucket | undefined, repeats: number): number {
+  return bucket ? Math.round(bucket.total / repeats) : 0;
+}
+
+function casesNote(...sides: [Bucket | undefined, number][]): string | undefined {
+  const total = sides.map(([bucket, repeats]) => caseCount(bucket, repeats)).find((n) => n > 0);
   return total ? `${total} ${total === 1 ? "case" : "cases"}` : undefined;
 }
 
-function OverallTile({ label, tone, bucket }: { label: string; tone: "before" | "after"; bucket: Bucket | null }) {
+function OverallTile({
+  label,
+  tone,
+  bucket,
+  repeats,
+}: {
+  label: string;
+  tone: "before" | "after";
+  bucket: Bucket | null;
+  repeats: number;
+}) {
   const colors = tone === "before" ? { bar: "bg-peach", text: "text-ember" } : { bar: "bg-fynn", text: "text-cobalt" };
   const width = bucket && typeof bucket.rate === "number" ? bucket.rate * 100 : 0;
+  const errors = bucket?.errors ? `, ${bucket.errors} errors` : "";
   return (
     <div className="rounded-xl border border-line bg-white p-4">
       <p className={`text-sm font-semibold ${colors.text}`}>{label}</p>
@@ -38,7 +56,9 @@ function OverallTile({ label, tone, bucket }: { label: string; tone: "before" | 
         <>
           <p className="mt-1 text-4xl font-semibold tracking-tight text-ink">{pct(bucket.rate)}</p>
           <p className="text-sm text-slate">
-            {bucket.passed} of {bucket.total} cases passed{bucket.errors ? `, ${bucket.errors} errors` : ""}
+            {repeats > 1
+              ? `${bucket.passed} of ${bucket.total} runs passed (${caseCount(bucket, repeats)} cases, ${repeats} runs each)${errors}`
+              : `${bucket.passed} of ${bucket.total} cases passed${errors}`}
           </p>
           <span aria-hidden="true" className="mt-3 block h-3 overflow-hidden rounded-full bg-mist">
             <span className={`block h-full rounded-full ${colors.bar}`} style={{ width: `${width}%` }} />
@@ -84,28 +104,41 @@ export default async function ResultsPage() {
   const [data, personas] = await Promise.all([getResultsData(), getPersonas()]);
   const personaNames = Object.fromEntries(personas.map((p) => [p.id, p.name]));
   const { before, after, beforeVsAfter } = data;
+  const beforeK = before?.meta.repeats ?? 1;
+  const afterK = after?.meta.repeats ?? 1;
+  const allRepeats = [...new Set(data.runs.map((run) => run.repeats))].sort((a, b) => a - b);
+  const barsRepeated = beforeK > 1 || afterK > 1;
+  const repeatsText =
+    allRepeats.length === 0
+      ? null
+      : allRepeats.length === 1
+        ? `Each case ran ${runsPerCase(allRepeats[0] ?? 1)} per run.`
+        : `Runs per case differ between the results files (${allRepeats.join(", ")}).`;
+  // The scenario intro follows the scenario reports' own flag rules, not the results files.
+  const scenarioRules = data.scenarios.flatMap((s) => (s.comparison?.report.flagRule ? [s.comparison.report.flagRule] : []));
+  const scenariosRepeated = scenarioRules.some((rule) => Math.max(rule.baselineRepeats, rule.candidateRepeats) > 1);
 
   const intentGroups: BarGroup[] = ["1", "2", "3"].map((n) => ({
     key: n,
     label: questionsLabel(n),
-    note: casesNote(after?.summary.byIntents[n], before?.summary.byIntents[n]),
+    note: casesNote([after?.summary.byIntents[n], afterK], [before?.summary.byIntents[n], beforeK]),
     series: [
-      { label: "Before", tone: "before", bucket: before?.summary.byIntents[n] ?? null },
-      { label: "After", tone: "after", bucket: after?.summary.byIntents[n] ?? null },
+      { label: "Before", tone: "before", bucket: before?.summary.byIntents[n] ?? null, repeats: beforeK },
+      { label: "After", tone: "after", bucket: after?.summary.byIntents[n] ?? null, repeats: afterK },
     ],
   }));
   const datasetKeys = Object.keys(DATASET_INFO);
   const datasetGroups: BarGroup[] = datasetKeys.map((dataset) => ({
     key: dataset,
     label: datasetLabel(dataset),
-    note: casesNote(after?.summary.byDataset[dataset], before?.summary.byDataset[dataset]),
+    note: casesNote([after?.summary.byDataset[dataset], afterK], [before?.summary.byDataset[dataset], beforeK]),
     series: [
-      { label: "Before", tone: "before", bucket: before?.summary.byDataset[dataset] ?? null },
-      { label: "After", tone: "after", bucket: after?.summary.byDataset[dataset] ?? null },
+      { label: "Before", tone: "before", bucket: before?.summary.byDataset[dataset] ?? null, repeats: beforeK },
+      { label: "After", tone: "after", bucket: after?.summary.byDataset[dataset] ?? null, repeats: afterK },
     ],
   }));
   const groupSizes = [...intentGroups, ...datasetGroups]
-    .flatMap((group) => group.series.map((series) => series.bucket?.total ?? 0))
+    .flatMap((group) => group.series.map((series) => caseCount(series.bucket ?? undefined, series.repeats ?? 1)))
     .filter((total) => total > 0);
   const smallest = groupSizes.length ? Math.min(...groupSizes) : null;
   const largest = groupSizes.length ? Math.max(...groupSizes) : null;
@@ -118,8 +151,8 @@ export default async function ResultsPage() {
       <PageHero eyebrow="Monitoring results" title="What the regression tests found">
         <p>
           Offline regression testing on a fixed eval set of {data.caseCount || "the"} cases: first the Before bot
-          against the After bot, then three skill edits to the After bot. Each case runs once per bot, and there are no
-          significance tests yet, so read small differences with care.
+          against the After bot, then three skill edits to the After bot. {repeatsText} Every comparison pairs each case
+          with its baseline and tests whether the overall pass rate moved more than LLM run-to-run noise would explain.
         </p>
       </PageHero>
 
@@ -148,8 +181,18 @@ export default async function ResultsPage() {
         ) : (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
-              <OverallTile label="Before: single-agent router" tone="before" bucket={before?.summary.overall ?? null} />
-              <OverallTile label="After: skill-based" tone="after" bucket={after?.summary.overall ?? null} />
+              <OverallTile
+                label="Before: single-agent router"
+                tone="before"
+                bucket={before?.summary.overall ?? null}
+                repeats={beforeK}
+              />
+              <OverallTile
+                label="After: skill-based"
+                tone="after"
+                bucket={after?.summary.overall ?? null}
+                repeats={afterK}
+              />
             </div>
 
             <div className="grid gap-3 lg:grid-cols-2">
@@ -163,9 +206,11 @@ export default async function ResultsPage() {
             </div>
 
             <p className="rounded-xl border border-dashed border-line bg-white px-4 py-3 text-xs leading-5 text-slate">
-              Single run per case, with no repeated runs or significance testing yet.
+              {barsRepeated
+                ? `Rates are the mean pass fraction over each case's runs (Before ${runsPerCase(beforeK)}, After ${runsPerCase(afterK)} per case).`
+                : "Single run per case, so the bars show one draw of each reply."}
               {smallest !== null &&
-                ` With ${smallest === largest ? smallest : `${smallest} to ${largest}`} cases per group, a difference of one or two cases can be noise.`}
+                ` With ${smallest === largest ? smallest : `${smallest} to ${largest}`} cases per group, a difference of one or two cases can be noise; the paired test below checks the net change.`}
             </p>
 
             {beforeVsAfter ? (
@@ -177,16 +222,20 @@ export default async function ResultsPage() {
                 <div className="mt-3">
                   <TransitionStats comparison={beforeVsAfter} labels={BOT_TRANSITIONS} />
                 </div>
+                <div className="mt-4">
+                  <NoiseCheck id="before-vs-after" label="Before vs After" report={beforeVsAfter.report} flips={BOT_FLIPS} />
+                </div>
                 {(
                   [
                     ["improved", beforeVsAfter.improved],
                     ["regressed", beforeVsAfter.regressed],
+                    ["unstable", beforeVsAfter.unstable],
                   ] as const
                 ).map(([key, changes]) =>
                   changes.length > 0 ? (
                     <div key={key} className="mt-4">
                       <h4 className="text-sm font-semibold text-ink">
-                        {BOT_TRANSITIONS[key]} ({changes.length})
+                        {key === "unstable" ? UNSTABLE_LABEL : BOT_TRANSITIONS[key]} ({changes.length})
                       </h4>
                       <div className="mt-2">
                         <CaseChangeList changes={changes} labels={BOT_LABELS} personaNames={personaNames} />
@@ -224,8 +273,11 @@ export default async function ResultsPage() {
           </p>
           {data.scenarios.some((s) => s.comparison) && (
             <p>
-              Each case ran once on each side, so a single case that flips either way may be run-to-run variation
-              rather than an effect of the edit. Read the verdicts as what this one run showed.
+              {scenariosRepeated
+                ? "With repeated runs, a case counts as regressed only when it fails at least m of its K runs (a majority unless set otherwise; each card states its rule) after passing every baseline run. "
+                : "Each case ran once on each side, so a single case that flips either way may be run-to-run variation rather than an effect of the edit. "}
+              Each card also gives a paired test of the net change, with the per-dataset tests Holm-corrected
+              together, and the A/A noise floor when one was measured.
             </p>
           )}
         </SectionHeader>
@@ -278,7 +330,9 @@ export default async function ResultsPage() {
                     <dd className="text-ink">{formatTimestamp(run.createdAt)}</dd>
                     <dt className="text-slate">Cases</dt>
                     <dd className="text-ink">
-                      {run.total} run, {run.passed} passed ({pct(run.rate)}), {run.errors} errors
+                      {run.repeats > 1
+                        ? `${run.cases} cases, ${run.repeats} runs each: ${run.passed} of ${run.total} runs passed (${pct(run.rate)}), ${run.errors} errors`
+                        : `${run.total} run, ${run.passed} passed (${pct(run.rate)}), ${run.errors} errors`}
                     </dd>
                     {run.selectionRule && (
                       <>

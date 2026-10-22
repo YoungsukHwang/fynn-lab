@@ -5,7 +5,7 @@ import { CaseList } from "@/components/evals/CaseList";
 import { LoopDiagram } from "@/components/evals/LoopDiagram";
 import { Chip, NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
 import { getFrameworkData } from "@/lib/evalData";
-import { DATASET_INFO, datasetLabel, EXPECTED_LABELS, KIND_LABELS } from "@/lib/evalLabels";
+import { DATASET_INFO, datasetLabel, EXPECTED_LABELS, KIND_LABELS, runsPerCase } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Monitoring framework" };
 
@@ -75,8 +75,23 @@ function StepCard({ n, title, children }: { n: number; title: string; children: 
   );
 }
 
+function runsSentence(repeats: { before: number | null; after: number | null }): string {
+  const { before, after } = repeats;
+  if (before === null && after === null) return "The runner can run each case several times (three is recommended).";
+  if (before !== null && after !== null && before !== after) {
+    return `In the latest full runs each case ran ${runsPerCase(before)} on the Before bot and ${runsPerCase(after)} on the After bot.`;
+  }
+  if (before === null || after === null) {
+    const [bot, k] = after !== null ? ["After", after] : ["Before", before ?? 1];
+    return `In the latest ${bot} run each case ran ${runsPerCase(k)}; the ${bot === "After" ? "Before" : "After"} bot has no full run yet.`;
+  }
+  return after === 1
+    ? "In the latest full runs each case ran once per bot; the runner can repeat cases (three times is recommended)."
+    : `In the latest full runs each case ran ${after} times per bot.`;
+}
+
 export default async function FrameworkPage() {
-  const { cases, personas, skills, scenarios, judgeInstructions, judgeModel } = await getFrameworkData();
+  const { repeats, cases, personas, skills, scenarios, judgeInstructions, judgeModel } = await getFrameworkData();
 
   const countBy = (key: (c: (typeof cases)[number]) => string) =>
     cases.reduce<Record<string, number>>((acc, c) => ({ ...acc, [key(c)]: (acc[key(c)] ?? 0) + 1 }), {});
@@ -203,8 +218,17 @@ export default async function FrameworkPage() {
       <section aria-labelledby="scoring" className="flex flex-col gap-5">
         <SectionHeader id="scoring" eyebrow="3 · Scoring" title="Code checks, then an LLM judge">
           <p>
-            Every reply is scored in two steps. A case passes only if both pass. Each case runs once per bot; there
-            are no repeated runs yet.
+            Every reply is scored in two steps. A case passes only if both pass.{" "}
+            {runsSentence(repeats)}
+          </p>
+          <p>
+            Replies vary from run to run, so every regression report also tests whether the overall pass rate moved
+            more than that noise would explain: an exact McNemar test on the cases that flipped (one run per case) or
+            an exact permutation test that shuffles each case&apos;s runs between the two sides (repeated runs). The
+            per-dataset tests are Holm-corrected together, and an A/A noise floor is shown when one was measured.
+            These test the net change, so a balanced tradeoff can read as not significant. With repeated runs, a case
+            is flagged as regressed only when it fails at least m of its K runs (a majority by default) after passing
+            every baseline run.
           </p>
         </SectionHeader>
 
