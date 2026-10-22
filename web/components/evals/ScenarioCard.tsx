@@ -255,7 +255,7 @@ export function ScenarioCard({
             <dl className="mt-4 grid gap-4 lg:grid-cols-2">
               <Field label="Selection">
                 <span className="font-semibold">
-                  {report.selection.caseCount} of {caseCount || "?"} cases rerun.
+                  {report.selection.caseCount} of {comparison.baselineCases ?? (caseCount || "?")} cases rerun.
                 </span>{" "}
                 <span className="text-slate">Rule: {capitalize(report.selection.rule)}.</span>
               </Field>

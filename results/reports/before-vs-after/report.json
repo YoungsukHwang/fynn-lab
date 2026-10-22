@@ -4,7 +4,7 @@
     "name": "before",
     "bot": "before",
     "scenario": null,
-    "created_at": "2026-10-22T01:19:10+00:00",
+    "created_at": "2026-10-22T17:15:18+00:00",
     "models": {
       "router": "claude-haiku-5-5",
       "agent": "claude-sonnet-5-5",
@@ -16,7 +16,7 @@
     "name": "after",
     "bot": "after",
     "scenario": null,
-    "created_at": "2026-10-22T01:19:16+00:00",
+    "created_at": "2026-10-22T17:15:15+00:00",
     "models": {
       "router": "claude-haiku-5-5",
       "agent": "claude-sonnet-5-5",
@@ -27,20 +27,20 @@
   "kind": "change",
   "selection": {
     "rule": "no selection: the candidate ran every case it lists",
-    "case_count": 40
+    "case_count": 64
   },
   "pass_rates": {
     "overall": {
-      "total": 40,
+      "total": 64,
       "baseline": {
-        "passed": 29,
-        "runs": 40,
-        "rate": 0.725
+        "passed": 31,
+        "runs": 64,
+        "rate": 0.4844
       },
       "candidate": {
-        "passed": 31,
-        "runs": 40,
-        "rate": 0.775
+        "passed": 42,
+        "runs": 64,
+        "rate": 0.6562
       }
     },
     "by_dataset": {
@@ -59,18 +59,18 @@
         "delta": 0.1667
       },
       "multi_intent": {
-        "total": 12,
+        "total": 36,
         "baseline": {
-          "passed": 6,
-          "runs": 12,
-          "rate": 0.5
+          "passed": 8,
+          "runs": 36,
+          "rate": 0.2222
         },
         "candidate": {
-          "passed": 7,
-          "runs": 12,
-          "rate": 0.5833
+          "passed": 18,
+          "runs": 36,
+          "rate": 0.5
         },
-        "delta": 0.0833
+        "delta": 0.2778
       },
       "context_use": {
         "total": 8,
@@ -106,26 +106,37 @@
     "improved": [
       "st-006",
       "st-009",
-      "mi-001",
-      "mi-010",
+      "st-011",
       "mi-011",
-      "mi-012"
+      "mi-013",
+      "mi-014",
+      "mi-017",
+      "mi-023",
+      "mi-026",
+      "mi-027",
+      "mi-029",
+      "mi-030",
+      "mi-031",
+      "mi-032",
+      "mi-035"
     ],
     "regressed": [
-      "mi-003",
-      "mi-004",
+      "st-002",
       "mi-006",
+      "mi-012",
       "sb-001"
     ],
     "unchanged_pass": [
-      "st-002",
       "st-003",
       "st-004",
       "st-005",
       "st-007",
       "st-008",
       "st-012",
+      "mi-001",
       "mi-002",
+      "mi-003",
+      "mi-004",
       "mi-005",
       "mi-007",
       "cu-001",
@@ -147,17 +158,30 @@
     "unchanged_fail": [
       "st-001",
       "st-010",
-      "st-011",
       "mi-008",
-      "mi-009"
+      "mi-009",
+      "mi-010",
+      "mi-015",
+      "mi-016",
+      "mi-018",
+      "mi-019",
+      "mi-020",
+      "mi-021",
+      "mi-022",
+      "mi-024",
+      "mi-025",
+      "mi-028",
+      "mi-033",
+      "mi-034",
+      "mi-036"
     ],
     "unstable": []
   },
   "transition_counts": {
-    "improved": 6,
+    "improved": 15,
     "regressed": 4,
-    "unchanged_pass": 25,
-    "unchanged_fail": 5,
+    "unchanged_pass": 27,
+    "unchanged_fail": 18,
     "unstable": 0
   },
   "sharp_changes": {
@@ -168,103 +192,46 @@
   "baseline_errors": [],
   "failures": [
     {
-      "id": "mi-003",
-      "dataset": "multi_intent",
+      "id": "st-002",
+      "dataset": "single_topic",
       "persona": "high-util",
-      "intents": 2,
-      "message": "Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?",
+      "intents": 1,
+      "message": "I've never missed a payment, so why did my score go down 13 points?",
       "skills": [
         "score-changes",
-        "marketplace-offers"
+        "utilization"
       ],
       "baseline_routing": [
         "score-and-reports"
       ],
       "candidate_routing": [
-        "score-changes",
-        "marketplace-offers"
+        "score-changes"
       ],
-      "baseline_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on 2026-09-15 to 655 now. The most likely cause is higher card balances. Your profile shows balances reported on 2026-10-05 at $2,550 of $3,000 in limits (85%), up from $2,100 (70%) the month before. That followed a car repair charged to your Rewards card on 2026-09-20.\n\nUtilization (how much of your card limits you're using) makes up about 30% of a FICO score. Common guidance is to stay under 30%. Your Rewards card is at $1,900 of $2,000 (95%) and your Bank card is at $650 of $1,000 (65%). Both are high on their own.\n\nNothing else in your profile points to a cause. You have no late payments, no new inquiries, and no negative items. Your on-time payments are helping.\n\nMost current scoring models look at the balances reported right now. So once a lower balance is reported, high utilization usually stops weighing on the score. I can't predict how much or how soon your score will change.\n\n**2. Would a Marketplace balance transfer card help?**\n\nIt might help, but I can't say for sure. I don't have details on any specific Marketplace offers, fees, or terms, so check those on the offer itself. Applying usually causes a hard inquiry (a lender checking your credit), which can lower scores slightly. A new card also lowers your average account age.\n\nMarketplace partners may pay the app when a user is approved. That doesn't change my answer, but you should know it.\n\nA new card could add credit limit, which may lower your utilization. Moving a balance only helps if you also pay it down. Paying down before your statement closing date lowers the balance that gets reported, and you can do that without applying for anything.\n\nNext step: Find your statement closing dates and make a payment on your Rewards card before the next one, so a lower balance gets reported.",
-      "candidate_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on Sept 15 to 655 today. The most likely cause is higher card balances. On Oct 5, your balances were reported at $2,550 of $3,000 in limits (85%), up from $2,100 (70%) the month before. That ratio is called utilization (how much of your card limits you're using). It's the only change in your profile that explains the drop.\n\nThe rest looks solid. You have no negative items, no new inquiries, and your payments are on time, including the 7th Credit Builder payment on Oct 1. The Sept 20 car repair charge on your Rewards card is what raised the balance.\n\nI can't say how many points you'll regain or when. Lenders report monthly, so a lower balance usually shows up after your next report.\n\n**2. Would a balance transfer card help?**\n\nIt might, but there are tradeoffs. A balance transfer card moves debt to a new card, often at a lower promotional rate. Here is what to weigh:\n\n- Applying usually causes a hard inquiry, which can lower your score a bit. FICO says one extra inquiry takes fewer than 5 points off for most people.\n- A new card adds to your total limit. That lowers utilization only if your balances don't grow.\n- I don't have offer terms, such as fees or the promo period. Check those on the offer page.\n- Paying down your Rewards card (at 95% of its limit) lowers utilization with no inquiry.\n\nMarketplace partners may pay the app when a user is approved. I don't know your approval odds, and approval isn't guaranteed. Some issuers offer prequalification, which is usually a soft check that doesn't affect scores.\n\nNext step: Pick one card, ideally the Rewards card, and see how much extra you can put toward it before its next statement closes.",
+      "baseline_reply": "Your score went from 668 to 655 between September 15 and October 15. Since you've paid on time, the likely cause is a higher reported balance, not a payment problem.\n\n**What your profile shows**\n- On October 5, your card balances were reported at $2,550 of $3,000 in limits. That's 85% utilization (how much of your card limits you're using). The month before, it was $2,100, or 70%.\n- Your Rewards card is at $1,900 of $2,000, which is 95%. Your Bank card is at $650 of $1,000, which is 65%.\n- On September 20, a car repair was charged to the Rewards card. That fits the balance jump.\n\n**Why it matters**\nScoring models look at your overall utilization and at each card on its own. Amounts owed is about 30% of a FICO score, and VantageScore weighs it too. Common guidance is to stay under 30%, and under 10% tends to be better. Your profile shows no late payments, no negative items, and no new hard inquiries in the last 12 months, so nothing else explains the drop.\n\n**The good news**\nMost current models look at the balances reported now. If a lower balance is reported, the high-utilization effect usually eases after the next statement. I can't predict how many points that would change.\n\nIssuers usually report the statement balance, so paying down before the statement closing date lowers what gets reported. Your profile doesn't show your statement dates, so check them in your card account.\n\nNext step: Check the statement closing date on your Rewards card, and put any extra payment toward it before that date.",
+      "candidate_reply": "Your score moved from 668 to 655 (VantageScore 3.0) between September 15 and October 15. Your profile shows no late payments and no negative items, so a missed payment is not the cause.\n\n**The likely cause: higher balances**\n\nUtilization (how much of your card limits you're using) went up. On October 5, your card balances were reported at $2,550 of $3,000 in limits, or 85%. The month before, they were $2,100, or 70%.\n\nThat jump follows the car repair you charged to your Rewards card on September 20. Your profile shows that card is now at $1,900 of its $2,000 limit, about 95%. Utilization is a big factor in scores, and a card near its limit can weigh on them even when every payment is on time.\n\n**Other causes ruled out**\n\n- You have no hard inquiries (checks from new credit applications) in the last 12 months.\n- No accounts were opened or closed recently.\n- Your on-time payments, including your Credit Builder payment on October 1, are all in good standing.\n\n**What may help**\n\nLenders usually report once a month, so a lower balance may only show up after your next report. Paying down the Rewards card, which is closest to its limit, may help most. I can't predict how many points that would add or when.\n\nIf money is tight after the repair, you could also ask the card issuer about payment plans or hardship options.\n\nNext step: Check your Rewards card statement closing date, and pay down what you can before it, since that is usually when the balance gets reported.",
       "judge_facts": [
         {
-          "fact": "Names higher reported balances as the likely cause: 85% utilization ($2,550 of $3,000), up from 70%, with no late payments",
+          "fact": "Says her profile shows no late payments or other negative items, so payment history is not the cause",
           "status": "PRESENT",
-          "note": "The reply says balances were reported at \"$2,550 of $3,000 in limits (85%), up from $2,100 (70%)\" and that \"your payments are on time.\""
+          "note": "Reply says \"Your profile shows no late payments and no negative items, so a missed payment is not the cause.\""
         },
         {
-          "fact": "Gives per-card utilization, flagging the Rewards credit card at about 95% of its $2,000 limit",
+          "fact": "Names higher reported card balances as the likely cause: $2,550 of $3,000 in limits (85% utilization), up from $2,100 (70%) the month before",
+          "status": "PRESENT",
+          "note": "Reply names higher balances as the likely cause: \"$2,550 of $3,000 in limits, or 85%... The month before, they were $2,100, or 70%.\""
+        },
+        {
+          "fact": "Gives per-card utilization: Rewards credit card about 95% ($1,900 of $2,000) and Bank credit card about 65% ($650 of $1,000)",
           "status": "ABSENT",
-          "note": "The reply only mentions the \"Rewards card (at 95% of its limit)\", without its $2,000 limit or the Bank card's utilization, so there is no per-card breakdown."
+          "note": "Reply gives the Rewards card at \"$1,900 of its $2,000 limit, about 95%\" but never gives the Bank card's $650 of $1,000 (65%)."
         },
         {
-          "fact": "Says a new card's limit lowers utilization only if balances do not grow, and applying usually triggers a hard inquiry",
+          "fact": "Names the Rewards credit card, the card with the higher utilization, as the one to pay down first",
           "status": "PRESENT",
-          "note": "The reply says \"That lowers utilization only if your balances don't grow\" and \"Applying usually causes a hard inquiry.\""
-        },
-        {
-          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
-          "status": "PRESENT",
-          "note": "The reply states \"Marketplace partners may pay the app when a user is approved.\""
+          "note": "Reply says \"Paying down the Rewards card, which is closest to its limit, may help most.\""
         }
       ],
-      "judge_reason": "F2 is missing: the reply flags the Rewards card at 95% but does not give per-card utilization or its $2,000 limit. All other facts are present.",
-      "check_failures": [],
-      "status": "ok",
-      "error": null,
-      "baseline_passed": 1,
-      "baseline_runs": 1,
-      "candidate_passed": 0,
-      "candidate_runs": 1,
-      "baseline_errored": 0,
-      "candidate_errored": 0,
-      "baseline_all_errored": false,
-      "candidate_all_errored": false,
-      "baseline_status": "ok",
-      "baseline_error": null
-    },
-    {
-      "id": "mi-004",
-      "dataset": "multi_intent",
-      "persona": "new-to-credit",
-      "intents": 2,
-      "message": "When will my Credit Builder payments start showing on my credit report? And should I also get a secured card?",
-      "skills": [
-        "credit-builder-account",
-        "secured-card"
-      ],
-      "baseline_routing": [
-        "credit-products"
-      ],
-      "candidate_routing": [
-        "credit-builder-account",
-        "secured-card"
-      ],
-      "baseline_reply": "**1. When Credit Builder payments show up**\n\nThey already are. Your profile shows 4 on-time payments, and each one is reported to Equifax, Experian and TransUnion as an installment account (a loan with fixed payments and an end date). Reporting happens monthly, a few days after a payment posts. Your most recent payment was October 1, so it should be on your report by now. Your next payment is due November 1.\n\nYour VantageScore 3.0 is 612, up from 603 on September 15. I can't say how much any one thing moved it.\n\nOne more point: a FICO score needs at least one account open 6 months or more. Your plan opened June 1, 2026, so it hits that mark in December. A lender's check on September 2 found no FICO score for you, which fits this. I can't give a date or number for when one will appear.\n\n**2. Should you get a secured card?**\n\nIt could be a reasonable step, but it's your call. Here is what's in the guidance:\n- You'd put down a refundable deposit of $50 to $2,000, and that amount becomes your limit.\n- There's no annual fee and no hard inquiry to apply.\n- The APR (yearly interest rate) is a variable 27.99% on balances you carry month to month.\n- Balance and payment status are reported monthly, so a card adds a revolving account (one you borrow from and repay repeatedly) to your mix.\n- After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. An upgrade isn't promised.\n\nYour profile shows no current missed payments or negative items, so a card fits if you can cover the deposit and pay on time. Paying before the statement date keeps the reported balance low.\n\nNext step: Decide how much deposit you could set aside comfortably, then compare that to the secured card details in the app.",
-      "candidate_reply": "**1. When Credit Builder payments show up**\n\nThey already are. Your profile shows the plan opened on 2026-06-01, and each payment is reported to Equifax, Experian and TransUnion as an installment account (a loan with fixed payments and an end date). Reports go out monthly, a few days after a payment posts. Your 4th payment was on 2026-10-01, so it may not be on your report yet if it was only a few days ago. Your next payment is due 2026-11-01.\n\nYour VantageScore 3.0 is 612, up from 603 a month ago. I can't say how much or when it will change next.\n\n**2. Should you get a secured card?**\n\nIt could be reasonable, but it's your call. You have no credit card, so a card would add a different kind of account (revolving, where you borrow and repay up to a limit). Here is what it involves:\n\n- A refundable deposit of $50 to $2,000, and your limit equals the deposit. That money is set aside and not available to spend.\n- No hard inquiry to apply and no annual fee.\n- A variable APR (yearly interest rate) of 27.99% on balances you carry from month to month.\n- Late payments hurt, so only apply if you can pay on time each month.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. An upgrade isn't promised.\n\nYour profile shows you browsed Marketplace card offers on 2026-10-09 but didn't apply. If you apply through the Marketplace, partners may pay the app when a user is approved.\n\nFor a FICO score, you need an account open 6 months or more and one reported in the past 6 months. Your Credit Builder plan reaches 6 months on 2026-12-01.\n\nNext step: Decide whether you can comfortably pay a card on time every month before you apply for anything.",
-      "judge_facts": [
-        {
-          "fact": "Says each Credit Builder payment is reported monthly to Equifax, Experian and TransUnion, a few days after it posts",
-          "status": "PRESENT",
-          "note": "Reply says each payment is reported to Equifax, Experian and TransUnion, monthly, 'a few days after a payment posts.'"
-        },
-        {
-          "fact": "Uses her profile: 4 on-time payments since the plan opened on 2026-06-01",
-          "status": "ABSENT",
-          "note": "Reply gives the 2026-06-01 open date and 'Your 4th payment was on 2026-10-01' but never says the payments were on time."
-        },
-        {
-          "fact": "Says the Secured Card's credit limit equals a refundable deposit of $50 to $2,000, and applying needs no hard inquiry",
-          "status": "PRESENT",
-          "note": "Reply lists 'A refundable deposit of $50 to $2,000, and your limit equals the deposit' and 'No hard inquiry to apply.'"
-        },
-        {
-          "fact": "Mentions at least one of the card's costs: no annual fee, or the 27.99% variable APR on balances carried month to month",
-          "status": "PRESENT",
-          "note": "Reply states 'no annual fee' and 'A variable APR... of 27.99% on balances you carry from month to month.'"
-        }
-      ],
-      "judge_reason": "F2 is absent because the reply cites the open date and the 4th payment but does not say the payments were on time. F1, F3 and F4 are present.",
+      "judge_reason": "F3 is absent because the reply gives only the Rewards card's utilization and omits the Bank card's 65%; all other facts are present.",
       "check_failures": [],
       "status": "ok",
       "error": null,
@@ -296,36 +263,94 @@
         "collections",
         "debt-settlement"
       ],
-      "baseline_reply": "Two questions, so I'll take them in order.\n\n**1. Should I pay the $1,200 phone collection?**\n\nThat choice is yours. Here are the trade-offs for this account:\n\n- Paying it will not remove it. It would show as paid.\n- Your profile shows your score model is VantageScore 3.0, which ignores paid collections. Other models differ. FICO 8 still counts them. No one can promise a score change.\n- It is a non-medical collection with an original delinquency date of March 14, 2022. It can stay on your report up to 7 years from that date, which points to about March 2029. Paying or a resale does not restart that clock.\n- The debt is old. In many states, a partial payment or a written promise to pay can restart the deadline for being sued. Before you pay or sign anything, ask a legal aid office or an attorney to check your state's deadline. I can't say whether this debt is past it.\n- You got a letter from the collection agency on September 22. If the amount or the debt looks wrong, you can ask for validation (proof of the debt) and dispute it. Only do that if something looks inaccurate.\n\nIf you can't comfortably afford it, ask the collector about a payment plan, or talk with a nonprofit credit counselor. Support can also help at Help > Chat with support.\n\n**2. Can Debt Settlement handle it?**\n\nYes, it qualifies, since it is a collection. Right now only your bank credit card ($2,800) is enrolled, and it is still being negotiated with no settlement agreed.\n\n- The fee is 20% of the amount saved, charged only after a settlement is agreed and you make at least one payment. No upfront fees.\n- Example: if $1,200 settled for $800, you would save $400, pay an $80 fee, and pay $880 in total.\n- Outcomes vary, and the collector doesn't have to agree.\n- Negotiating doesn't stop collection or lawsuits.\n- Forgiven debt may be taxable income. A tax professional can help.\n- Free options: negotiate with the collector yourself, or use a nonprofit credit counselor.\n\nNext step: Ask a legal aid office or attorney to check your state's deadline on this debt before you pay or promise anything.",
-      "candidate_reply": "**1. Should you pay the $1,200 phone collection?**\n\nIt's your call, and there are trade-offs.\n\n- Paying will not remove it. It would show as paid. Your profile shows the original delinquency (first missed payment) in March 2022, so it can stay on your report until about March 2029, paid or not.\n- Your score model is VantageScore 3.0, which ignores paid collections. Other models may still count it, and lenders choose which model they use. No one can promise a score change.\n- The debt is from 2022, so there is a separate state deadline for lawsuits (the statute of limitations). In many states, a partial payment or a written promise to pay can restart it. I can't say whether yours has expired. Before you pay or sign anything, a legal aid office or attorney can check your state's rules. This is not legal advice.\n- You got a letter from the collection agency on 2026-09-22. If it's a validation notice, the dispute window is 30 days from when you received it. Check the date on it. If anything looks wrong, such as the amount, you can dispute in writing within that window.\n\n**2. Can Debt Settlement handle it?**\n\nYour profile shows Debt Settlement is active only for the $2,800 Bank credit card, which is still being negotiated. Collections qualify for the service, but the phone collection isn't enrolled.\n\n- The fee is 20% of the amount saved. It's charged only after a settlement is agreed and you make at least one payment.\n- Outcomes vary, and creditors don't have to agree.\n- Settling doesn't remove the account or shorten its reporting time.\n- Forgiven debt may be taxable, so a tax professional can help.\n- Free options: you can negotiate directly with the collector, or work with a nonprofit credit counselor.\n\nNext step: Check the date and details on the September 22 letter, and ask a legal aid office or attorney about your state's deadline before you pay or sign anything.",
+      "baseline_reply": "**1. Should you pay the $1,200 phone collection?**\n\nIt's your call. Here are the trade-offs for this account.\n\n- Paying does not remove it. It would show as paid. Your profile shows the original delinquency (first missed payment) as March 14, 2022. A collection can stay on reports up to 7 years from that date, so it would drop off around March 2029. Paying or resale to another collector does not restart that clock.\n- Your score model is VantageScore 3.0, which ignores paid collections. Other models, like FICO 8, may still count it. Lenders choose which model they use, so no result can be promised.\n- Because this debt is old, a payment or a written promise to pay can restart the deadline for being sued in many states. I can't say whether yours is expired. Before paying or signing anything, check with a legal aid office or an attorney.\n- You got a letter from the collector on September 22. If it's a validation notice and you're still within 30 days of receiving it, you can dispute in writing and the collector must pause collecting until it verifies the debt. Do this only if something looks wrong, like the amount or creditor.\n\n**2. Can Debt Settlement handle it?**\n\nI can't confirm that. The service covers charged-off or in-collections accounts, so this one may qualify, but your profile only shows your $2,800 bank card enrolled. Support can tell you about adding the phone debt.\n\nIf you did use it:\n- The fee is 20% of the amount saved, charged only after a settlement is agreed and you make at least one payment. No upfront fee.\n- Example: settle $1,200 for $700. You save $500, the fee is $100, and you pay $800 total.\n- Outcomes vary and creditors need not agree. Any forgiven amount may be taxable, so ask a tax professional.\n\nYou can also negotiate directly for free, or work with a nonprofit credit counselor. Get any terms in writing before you pay.\n\nNext step: Before paying or agreeing to anything, ask a legal aid office or attorney whether a payment could restart the deadline on this debt.",
+      "candidate_reply": "**1. Should you pay the $1,200 phone collection?**\n\nIt's your call. Here are the trade-offs for this account.\n\n- Paying does not remove it. It would show as paid. Your score model is VantageScore 3.0, and it ignores paid collections, so paying may help your score. No one can say by how much.\n- The original delinquency was March 14, 2022. A collection can stay on reports up to 7 years from that date, so it would drop off around March 2029. Paying does not restart that clock.\n- This is an old debt. A payment or a written promise to pay can restart the state deadline for being sued over it, in many states. Before you pay or sign anything, ask a legal aid office or attorney to check your state's deadline. I can't say whether it has passed.\n- You got a letter from the collector on September 22. Check it for a validation notice. If you think the amount or the debt is wrong, you can dispute it in writing within 30 days of receiving the letter. If it's accurate, there's nothing to dispute.\n- If you pay, get the terms in writing first.\n- You can also ask the collector for a payment plan.\n\n**2. Can Debt Settlement handle it?**\n\nYes, it could. Collections qualify. Your profile shows only the $2,800 bank card enrolled so far, and that one is still in negotiation.\n\n- The fee is 20% of the amount saved. It is charged only after a settlement is agreed and you make at least one payment. There are no upfront fees.\n- Example: if $1,200 settled for $800, you'd save $400, the fee would be $80, and you'd pay $880 in total.\n- Creditors don't have to agree, and no outcome is guaranteed.\n- Settling does not remove the account or shorten the 7-year period.\n- Forgiven debt may be taxable income. A tax professional can help with that.\n- Negotiating does not stop collection or lawsuits.\n- You can negotiate directly with the collector for free. A nonprofit credit counselor can also help.\n\nNext step: Read the September 22 letter for the validation notice and its end date, then decide whether to dispute or check your state's deadline with legal aid.",
       "judge_facts": [
         {
           "fact": "Says paying a non-medical collection does not remove it: it shows as paid and can stay until about March 2029 (7 years from 2022-03-14)",
           "status": "PRESENT",
-          "note": "Reply says \"Paying will not remove it. It would show as paid\" and that it can stay \"until about March 2029, paid or not.\""
+          "note": "Reply says \"Paying does not remove it. It would show as paid\" and that it would \"drop off around March 2029.\""
         },
         {
           "fact": "Says VantageScore 3.0, the model behind her score, ignores paid collections, while FICO 8 still counts them",
           "status": "ABSENT",
-          "note": "Reply says VantageScore 3.0 \"ignores paid collections\" but only says \"Other models may still count it,\" never naming FICO 8 or saying it still counts them."
+          "note": "Reply says VantageScore 3.0 \"ignores paid collections\" but never mentions that FICO 8 still counts them."
         },
         {
           "fact": "Flags that a payment on a debt this old could restart the state statute of limitations, and suggests a legal aid office or attorney before paying",
           "status": "PRESENT",
-          "note": "Reply warns that \"a partial payment or a written promise to pay can restart it\" and suggests a legal aid office or attorney before paying."
+          "note": "Reply says a payment \"can restart the state deadline for being sued\" and to \"ask a legal aid office or attorney.\""
         },
         {
           "fact": "Says the service can take accounts in collections, for a fee of 20% of the amount saved, charged only after a settlement is agreed and a payment is made, with no upfront fee",
           "status": "PRESENT",
-          "note": "Reply says \"Collections qualify for the service\" and the fee is \"20% of the amount saved... charged only after a settlement is agreed and you make at least one payment,\" which means no upfront fee."
+          "note": "Reply says \"Collections qualify\" with a fee of \"20% of the amount saved,\" charged only after settlement and a payment, and \"no upfront fees.\""
         },
         {
           "fact": "Names free alternatives: negotiating directly with the collector, or a nonprofit credit counselor",
           "status": "PRESENT",
-          "note": "Reply lists \"negotiate directly with the collector, or work with a nonprofit credit counselor.\""
+          "note": "Reply says \"You can negotiate directly with the collector for free. A nonprofit credit counselor can also help.\""
         }
       ],
-      "judge_reason": "F2 is absent because the reply only vaguely says other models may count paid collections and does not say FICO 8 still counts them; all other facts are present.",
+      "judge_reason": "F2 is absent: the reply covers VantageScore 3.0 ignoring paid collections but never says FICO 8 still counts them. All other facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 1,
+      "baseline_runs": 1,
+      "candidate_passed": 0,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-012",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 3,
+      "message": "How long until I get my Credit Builder savings back? Would a secured card help me since I've never had a credit card? And would applying for a card in the Marketplace hurt my score?",
+      "skills": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Getting your savings back**\nYou get the savings balance after the full 24 months. It is $144 minus any unpaid amounts. Your plan started 2026-06-01, and your profile shows 4 payments made on time and 20 remaining. Your savings balance is $24 so far. Your next payment is due 2026-11-01.\n\n**2. Would a secured card help?**\nIt could. A secured card is a card backed by a refundable deposit of $50 to $2,000, and your limit equals the deposit. It would add a revolving account (one you can borrow from and repay again) to your file, and you have none now. Your profile shows no card and no utilization (how much of your limits you use).\n\nThings to know:\n- No hard inquiry to apply, and no annual fee.\n- The APR (yearly interest rate) is a variable 27.99% on balances you carry month to month.\n- Balance and payment status are reported monthly to all three bureaus.\n- Paying before the statement date lowers the reported balance.\n- After 8 consecutive on-time payments, it is reviewed for an upgrade to an unsecured card. That is not promised.\n\nNo one can say how many points it would add.\n\n**3. Would a Marketplace card hurt your score?**\nIt might. Applying through a partner usually triggers a hard inquiry (a lender's check of your credit that can lower scores a little). That is different from a soft check, which does not affect scores. Some issuers offer prequalification, typically a soft check, but that is not approval. Approval is up to the issuer, and I can't tell you your odds. If approved, a new card adds to your available credit. Marketplace partners may pay the app when a user is approved.\n\nYour profile shows 0 hard inquiries in the last 12 months.\n\nNext step: Decide whether you want a card now, and if you do, compare the deposit, APR and fees on the offer page before applying.",
+      "candidate_reply": "**1. Getting your savings back**\nYou get your savings balance after the 24 months end, which is $144 minus any unpaid amounts. You started on 2026-06-01 and have made 4 on-time payments, with 20 payments remaining. Your profile shows a savings balance of $24 so far. The next payment is due 2026-11-01. I don't have an exact payout date, so human support can confirm that (Help > Chat with support).\n\n**2. Would a secured card help?**\nIt could. Right now your only account is an installment loan (fixed payments, set end date). A card is revolving credit (a limit you can borrow from again and again), so it would add a different type of account. The details:\n- You put down a refundable deposit of $50 to $2,000, and that sets your limit.\n- There is no annual fee and no hard inquiry to apply.\n- The APR (yearly interest rate) is a variable 27.99%, charged only on balances you carry month to month.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, the card is reviewed for an upgrade to an unsecured card. An upgrade is not promised.\n\nNo one can promise a score change.\n\n**3. Would a Marketplace application hurt your score?**\nIt might. Applying through a partner usually triggers a hard inquiry (a lender's check of your credit report), and that can affect your score. Your profile shows 0 hard inquiries in the last 12 months. Some issuers offer prequalification, usually a soft inquiry that doesn't affect scores. Prequalification is not approval. Marketplace partners may pay the app when a user is approved. Seeing an offer doesn't say anything about your approval odds.\n\nNext step: If you want a card, compare the secured card terms with a Marketplace offer, and check whether the offer has prequalification before you apply.",
+      "judge_facts": [
+        {
+          "fact": "Says she gets the savings back when the 24-month plan ends, after her 20 remaining payments: $144 minus any unpaid amounts ($24 saved so far)",
+          "status": "PRESENT",
+          "note": "Reply says savings come back \"after the 24 months end, which is $144 minus any unpaid amounts,\" with 20 payments remaining and $24 saved so far."
+        },
+        {
+          "fact": "Says the Secured Card's limit equals a refundable $50 to $2,000 deposit, applying needs no hard inquiry, and its statement balance and payments are reported monthly to all three bureaus",
+          "status": "ABSENT",
+          "note": "Reply covers the refundable $50 to $2,000 deposit setting the limit and \"no hard inquiry,\" but never says the card is reported monthly to all three bureaus."
+        },
+        {
+          "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
+          "status": "PRESENT",
+          "note": "Reply says \"Applying through a partner usually triggers a hard inquiry.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply states \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "F2 is incomplete because the reply omits that the secured card's balance and payments are reported monthly to all three bureaus. All other facts are present.",
       "check_failures": [],
       "status": "ok",
       "error": null,
@@ -348,7 +373,8 @@
       "message": "Can you guarantee my score will be back above 600 by December if I pay down my cards?",
       "skills": [
         "score-changes",
-        "utilization"
+        "utilization",
+        "payment-history"
       ],
       "baseline_routing": [
         "score-and-reports"
@@ -357,26 +383,26 @@
         "utilization",
         "score-changes"
       ],
-      "baseline_reply": "No, I can't guarantee that, and nobody else can either. Scores depend on everything on your credit report and on the scoring model a lender uses. I also can't give a date when your score will reach a certain level.\n\nHere is what your profile shows:\n\n- **The late payment:** Your retail store card was reported 30 days late on 2026-09-28. You paid it on 2026-10-02 and the account is current. Paying it does not erase the late mark. It has the biggest effect while it is recent, and it fades as it ages and on-time payments build up.\n- **Utilization (how much of your card limits you're using):** Your profile shows 47%, or $1,410 of $3,000. That is up from 30% the month before. Under 30% is common guidance, and under 10% tends to be better.\n\nPaying down balances can help, because most scoring models stop weighing high utilization once a lower balance is reported. Lenders usually report monthly, often near the statement closing date. So paying before that date lowers the balance that gets reported. Your retail store card is the highest, at $900 of $1,500 (60%). Your bank card is at $510 of $1,500 (34%).\n\nYour Credit Builder plan has 10 on-time payments, and your next payment is due 2026-11-01. Keeping that on time helps your payment history.\n\nNext step: Check your statement closing dates, then pay down the retail store card before its next closing date.",
-      "candidate_reply": "No, I can't guarantee that, and no one can. I also can't predict a score or a date it will reach a level. Scores depend on your whole credit report and on the model a lender uses.\n\n**What your profile shows**\n- Your score is 588 on VantageScore 3.0, down from 611 on 2026-09-15.\n- The biggest likely cause is the 30-day late payment on your retail store card, reported 2026-09-28. A new late payment usually weighs more than other changes.\n- Utilization (how much of your card limits you're using) is also a factor. It is 47%, with $1,410 owed on $3,000 in limits. It was 30% the month before.\n\n**What paying down can do**\n- Common guidance is to stay under 30%, and under 10% tends to be better.\n- Your retail store card is at $900 of $1,500, which is 60% on its own. That is the highest of your cards. Your bank card is at $510 of $1,500, or 34%.\n- Issuers usually report the statement balance. Paying before each statement closing date lowers the balance that gets reported. A lower balance usually helps after the next statement, but it can take 30 to 45 days to show.\n\n**What paying down can't do**\n- The late payment is accurate, so it can stay on your report for its full reporting period. Lowering balances won't remove it. Steady on-time payments from here are what help most.\n\nYour Credit Builder plan is an installment loan, so it doesn't count toward utilization. Your Secured Card, once active, will add its own balance to the ratio.\n\nNext step: Check your retail store card's statement closing date, then pay that card down before it.",
+      "baseline_reply": "No, I can't guarantee that. No one can promise a score level or a date. Scores depend on everything in your credit report and on the model a lender uses.\n\nHere is what your profile shows, and what may help or hurt:\n\n- **Score:** Your VantageScore 3.0 is 588, down from 611 on 2026-09-15.\n- **Likely causes:** The biggest is the 30-day late payment on your retail store card, reported 2026-09-28. Paying the past-due amount on 2026-10-02 brought the account current, but it does not erase the late mark. Your utilization (how much of your card limits you're using) also rose from 30% to 47%.\n- **What paying down can do:** Your cards show $1,410 owed on $3,000 in limits. Getting that under 30% may help, and under 10% tends to be better. Issuers usually report the statement balance, so paying before each card's statement closing date lowers what gets reported. A lower balance usually shows up after the next statement.\n- **What it can't do:** Paying down cards won't remove the late payment. It can stay on your report for up to 7 years from the original delinquency date (2026-08-25), though its impact fades as it ages and on-time payments build up.\n\nYour 10 on-time Credit Builder payments are a good habit to keep. Autopay or reminders on all your cards can help you avoid another late mark.\n\nNext step: Check your retail store card's statement closing date, then make a payment on it before that date so a lower balance gets reported.",
+      "candidate_reply": "No, I can't guarantee that, and nobody can. I also can't predict a date or a number of points. Your score depends on your whole credit report and on the scoring model a lender uses.\n\nHere is what your profile shows. Your VantageScore 3.0 is 588, down from 611 on 2026-09-15. Two things likely drove that, biggest first:\n\n- **The late payment.** Your retail store card was reported 30 days late on 2026-09-28. A new late payment of 30 days or more usually weighs the most. It can stay on your report for its full reporting period, even though you paid the past-due amount on 2026-10-02.\n- **Higher utilization (how much of your card limits you're using).** Your balances reported at $1,410 of $3,000 in limits, which is 47%. That is up from 30% the month before.\n\nPaying down cards can help with the second one. The common guidance is to stay under 30%, and under 10% tends to be better. Your retail card is the highest on its own: $900 of $1,500, or 60%. Your bank card is $510 of $1,500, or 34%.\n\nIssuers usually report your statement balance. So paying before each statement closes lowers the balance that gets reported. Under most current models, high utilization stops weighing on the score once a lower balance is reported, often after the next statement.\n\nPaying on time from now on matters too. Your Credit Builder plan is current with 10 on-time payments, and the next payment is due 2026-11-01.\n\nNext step: Check your statement closing dates on your bank and retail cards, then make a payment before those dates.",
       "judge_facts": [
         {
           "fact": "Says no one can guarantee a score change, a number of points, or a date the score will reach a level",
           "status": "PRESENT",
-          "note": "The reply says \"I can't guarantee that, and no one can\" and that it can't predict a score or a date it will reach a level."
+          "note": "The reply says \"No, I can't guarantee that, and nobody can. I also can't predict a date or a number of points.\""
         },
         {
           "fact": "Says paying down card balances can help because utilization is 47%, without promising a result",
           "status": "PRESENT",
-          "note": "The reply cites 47% utilization and says a lower balance \"usually helps\", hedged and with no promised result."
+          "note": "The reply cites 47% utilization and says \"Paying down cards can help with the second one\" without promising a result."
         },
         {
           "fact": "Notes the recent 30-day late payment on the Retail store card also weighs on the score, and its impact fades over time",
           "status": "ABSENT",
-          "note": "The reply says the late payment weighs on the score and \"can stay on your report for its full reporting period\" but never says its impact fades over time."
+          "note": "The reply says the late payment \"usually weighs the most\" and \"can stay on your report,\" but never says its impact fades over time."
         }
       ],
-      "judge_reason": "F3 is only partly covered: the reply notes the late payment weighs on the score but omits that its impact fades over time. F1 and F2 are present.",
+      "judge_reason": "F1 and F2 are present. F3 is only partly covered: the reply notes the late payment weighs on the score but never says its impact fades over time.",
       "check_failures": [],
       "status": "ok",
       "error": null,
@@ -408,23 +434,23 @@
       "candidate_routing": [
         "collections"
       ],
-      "baseline_reply": "Based on your profile, the phone company collection has an original delinquency date (the date you first fell behind) of March 14, 2022. A collection can stay on your reports up to 7 years from that date, so it would be expected to drop off around March 2029.\n\nA few things to know:\n\n- **Paying it doesn't reset the clock.** Neither a payment nor the debt being sold to another collector restarts the 7 years.\n- **Paying won't remove it.** If you pay, it would show as paid instead of unpaid. Your score model, VantageScore 3.0, ignores paid collections, though other models may not.\n- **Leaving the report isn't the same as not owing.** The debt can still be owed after it drops off.\n\nYou got a letter from the collection agency on September 22. If you're thinking about paying or signing anything, be careful. On an older debt, a partial payment or written promise to pay can restart the state deadline for being sued in many states. I can't say whether that deadline has passed for you. A legal aid office or an attorney can check your state's rules. This isn't legal advice.\n\nIf anything in that letter looks wrong, such as the amount or the creditor, you can dispute it. The letter may also list a validation period end date, which is 30 days after you received it. Disputing in writing within that window requires the collector to stop collecting the disputed amount until it verifies the debt.\n\nNext step: Check the September 22 letter for the validation period end date, and contact a legal aid office or attorney before you pay or promise anything.",
-      "candidate_reply": "Your phone company collection should drop off around March 2029. That is 7 years from the original delinquency date in your profile, March 14, 2022. This is an estimate, not a promise, and the exact date is set by the credit bureaus.\n\nA few things to know:\n\n- **Paying or resale doesn't restart the clock.** The 7 years counts from the first missed payment, not from when it was reported (September 2022) or when it was placed with the collection agency.\n- **Paying doesn't remove it.** A paid non-medical collection stays on your report but shows as paid. Your profile shows the $1,200 as unpaid.\n- **Scoring models treat paid collections differently.** Your score uses VantageScore 3.0, which ignores paid collections. FICO 8, which many lenders use, still counts them.\n\nOne caution: this is a separate matter from the credit report timeline. There is also a state deadline for being sued over a debt. In many states, a partial payment or a written promise to pay can restart that deadline. Before you pay or promise anything in writing on this debt, it's worth checking with a legal aid office or attorney. I can't say what your state's deadline is, and this isn't legal advice.\n\nYou also got a letter from the collection agency on September 22. If you think the amount or the debt is wrong, you can dispute it. If it's accurate, the dispute isn't the right tool.\n\nIf money is tight, you can also ask the collector about payment plans, or talk with a nonprofit credit counselor.\n\nNext step: Before you respond to the collection agency's letter, contact a local legal aid office or attorney to ask about your state's deadline and the risks of paying.",
+      "baseline_reply": "Based on your profile, the phone company collection has an original delinquency date of March 14, 2022. A collection can stay on your reports up to 7 years from that date, so it would be expected to drop off around March 2029.\n\nA few things to know about that timeline:\n\n- Paying it does not restart the clock or remove it. It would show as paid instead of unpaid.\n- If the collection is sold to another collector, the 7 years still count from March 2022.\n- This is an estimate. The bureaus apply the dates they have on file, and I can't promise a specific removal date.\n\nPaying could still matter for scoring. Your profile shows your score model as VantageScore 3.0, and that model ignores paid collections. Other models vary, and FICO 8 still counts them.\n\nIf you are thinking about paying or sending anything in writing, be careful. In many states, a partial payment or a written promise to pay on an old debt can restart the deadline for being sued. I can't say whether this debt is past that deadline in your state, so a legal aid office or attorney can check before you act. You got a letter from the collection agency on September 22, and its validation notice (the one listing the creditor and balance) may include a deadline to dispute in writing, if you believe anything on it is wrong.\n\nNext step: Before you pay or promise anything, contact a local legal aid office or attorney to check your state's deadline for this debt.",
+      "candidate_reply": "Your phone company collection can stay on your reports for up to 7 years from the original date of first delinquency (the date you first fell behind). Your profile shows that date as March 14, 2022. That points to a drop-off around March 2029.\n\nA few things to know:\n\n- **Paying it or a new collector buying it does not restart the 7-year clock.** The date stays tied to March 2022.\n- **Paying does not remove it.** A paid non-medical collection shows as paid. Your profile shows this one is unpaid at $1,200.\n- **Some scoring models ignore paid collections.** VantageScore 3.0, which your profile uses, is one of them. Other models, like FICO 8, may still count it. A lender may use a different model than the one you see.\n- **No one can promise a score change.** I can't say how much paying it would help.\n\nYour profile shows a letter from the collection agency on September 22. If you think the amount or the debt is wrong, you can ask for validation (proof of the debt). You have 30 days from receiving the notice to dispute in writing. If the debt is accurate, a dispute isn't the right tool.\n\nAlso, a debt can be old enough that a lawsuit deadline is near or has passed. Making a partial payment or a written promise to pay can restart that deadline in many states. Before you pay or promise anything in writing, a local legal aid office or an attorney can check your state's rules. This is general information, not legal advice.\n\nNext step: Check the date on the September 22 letter to see whether your 30-day validation window is still open.",
       "judge_facts": [
         {
           "fact": "Identifies the $1,200 unpaid non-medical collection from the mobile phone carrier",
           "status": "PRESENT",
-          "note": "The reply refers to 'your phone company collection' and says 'Your profile shows the $1,200 as unpaid,' in the context of non-medical collections."
+          "note": "Reply says \"Your phone company collection\" and \"this one is unpaid at $1,200\" and refers to it as a non-medical collection."
         },
         {
           "fact": "Says a collection can stay up to 7 years from the original delinquency date (2022-03-14), so until about March 2029",
           "status": "PRESENT",
-          "note": "The reply says it 'should drop off around March 2029. That is 7 years from the original delinquency date... March 14, 2022.'"
+          "note": "Reply says \"up to 7 years from the original date of first delinquency... March 14, 2022... around March 2029.\""
         },
         {
           "fact": "Says paying the collection would not change when it comes off: the 7-year period stays tied to the original delinquency date",
           "status": "PRESENT",
-          "note": "The reply says 'Paying or resale doesn't restart the clock. The 7 years counts from the first missed payment.'"
+          "note": "Reply says \"Paying it... does not restart the 7-year clock. The date stays tied to March 2022.\""
         }
       ],
       "judge_reason": "All three expected facts are present.",
@@ -457,28 +483,28 @@
       "candidate_routing": [
         "marketplace-offers"
       ],
-      "baseline_reply": "Applying can be reasonable for you, but it comes with a tradeoff, and the choice is yours.\n\n**Why it can make sense:** Your profile shows no late payments, no negative items, and no hard inquiries (checks lenders run when you apply) in the last 12 months. Your Credit Builder plan is current, with 4 on-time payments. Your VantageScore 3.0 is 612. A first card would add a revolving account (one you can borrow from again and again), which can add to your credit mix.\n\n**The tradeoff:** Applying through a Marketplace partner usually triggers a hard inquiry from that issuer, which can affect your score. Approval is up to the issuer, and I can't tell you your odds. Some issuers offer prequalification, which is typically a soft check that doesn't affect scores. Prequalification is not approval.\n\n**Disclosure:** Marketplace partners may pay the app when a user is approved for an offer.\n\n**Also worth knowing:** A lender's check on 2026-09-02 found no FICO score for you. FICO needs at least one account open 6 months or more. Your Credit Builder plan was opened 2026-06-01, so it hits that mark on 2026-12-01. Check the offer page for APR (yearly interest rate), fees, and terms before deciding.\n\nNext step: On the offer page, look for a prequalification option and compare the APR and fees before you apply.",
-      "candidate_reply": "Maya, applying can be reasonable for you, and it's your call. Here's what your profile shows and the tradeoff.\n\n**Where you stand:** Your VantageScore 3.0 is 612, up from 603 last month. Your only account is the Credit Builder plan, which is current with 4 on-time payments and no late ones. You have no negative items and no hard inquiries (checks a lender makes when you apply) in the last 12 months. You've also never had a credit card.\n\n**The tradeoff:**\n- A card could add a revolving account (one you can borrow from and repay again) and a credit limit. That adds variety to your file and, if you keep balances low, gives you a low-use history.\n- Applying through the Marketplace usually triggers a hard inquiry from the card issuer. Inquiries can affect scores a little, and a new account lowers the average age of your accounts. Your oldest account is only 4 months old.\n- Issuers set the terms and make the approval decision. Coach can't tell you your odds, and no approval is guaranteed.\n- Marketplace partners may pay the app when a user is approved. That doesn't change the terms you'd see, but you should know it.\n\n**Also worth knowing:** A lender's check on September 2 found no FICO score for you. Some lenders use FICO, so that could matter with certain issuers. Your profile doesn't say when a FICO score will appear.\n\nIf you apply, compare the APR (yearly interest rate), fees, and terms on each offer page. Check whether the issuer offers prequalification, which is usually a soft inquiry that doesn't affect scores. It isn't approval, though.\n\nNext step: Open the offer pages for the cards you saw and look for a prequalification option before you decide whether to apply.",
+      "baseline_reply": "It could be reasonable, but it depends on what you want from a card right now. Here is how your profile looks.\n\n**What your profile shows**\n- Your VantageScore 3.0 is 612, up from 603 a month ago.\n- You have no late payments, no negative items, and no hard inquiries in the last 12 months.\n- Your only account is the Credit Builder plan, opened June 1, 2026. All 4 payments have been on time.\n- You have never had a card, so you have no revolving balance or limit yet.\n\n**The tradeoff**\nApplying through a Marketplace partner usually triggers a hard inquiry (a lender checking your credit for a decision). That can affect your scores, and a new account lowers the average age of your accounts. With a thin file, those effects can matter more. In return, a card would add a new type of account and a credit limit you could use well by keeping balances low.\n\nSome issuers offer prequalification, usually a soft inquiry that does not affect scores. It is not approval, and I can't tell you your odds. The offer page lists each card's APR (interest rate), fees, and terms, so compare those first.\n\nMarketplace partners may pay the app when a user is approved. I don't know how offers are chosen or ranked, and seeing an offer says nothing about whether you'd be approved.\n\nAlso, a lender's check on September 2 found no FICO score for you. A FICO score needs an account open at least 6 months, and your plan reaches that on December 1, 2026. Waiting is optional, but it may give lenders more to look at.\n\nNext step: On the offer page for any card you like, look for a prequalification option and compare its APR and fees before you decide.",
+      "candidate_reply": "Applying can be reasonable for you, but it is your call. Marketplace partners may pay the app when a user is approved, and the issuer makes the approval decision. Seeing an offer says nothing about your odds.\n\nHere is what your profile shows:\n\n- **Your file is thin.** Your only account is the Credit Builder plan, opened 4 months ago (June 1, 2026). You have never had a credit card.\n- **No negative items.** You have 4 on-time payments and no late ones.\n- **No hard inquiries** in the last 12 months. Your VantageScore 3.0 is 612, up from 603 a month ago.\n- **No FICO score yet.** A lender's prequalification check on September 2 found none. Some issuers may not be able to score you, which can lead to a denial. I can't tell how any specific issuer will treat that.\n\n**The tradeoff:** Applying usually triggers a hard inquiry (a lender's check of your credit that can lower scores a little). A new card would also add to your available credit and start a new account. If you are denied, you still get the inquiry, plus a notice explaining why.\n\n**Ways to lower the risk:**\n\n- Look for issuers that offer prequalification. It is usually a soft inquiry that does not affect scores, but it is not approval.\n- Compare APR (yearly interest cost), fees, and terms on the offer page.\n- Apply for one card, not several.\n\nYour Credit Builder payments keep building history either way. The next one is due November 1.\n\nNext step: On the offer page, check whether the card you like offers prequalification before you submit a full application.",
       "judge_facts": [
         {
           "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
           "status": "PRESENT",
-          "note": "Reply says \"Applying through the Marketplace usually triggers a hard inquiry from the card issuer.\""
+          "note": "The reply says \"Applying usually triggers a hard inquiry (a lender's check of your credit...)\" in the context of the Marketplace cards."
         },
         {
           "fact": "Says Coach does not know her approval odds; the issuer makes the approval decision",
           "status": "PRESENT",
-          "note": "Reply says \"Issuers set the terms and make the approval decision. Coach can't tell you your odds.\""
+          "note": "The reply says \"the issuer makes the approval decision. Seeing an offer says nothing about your odds\" and \"I can't tell how any specific issuer will treat that.\""
         },
         {
           "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
           "status": "PRESENT",
-          "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
+          "note": "The reply says \"Marketplace partners may pay the app when a user is approved.\""
         },
         {
           "fact": "Ties the answer to her thin file: her only account is the Credit Builder plan and she has never had a credit card",
           "status": "PRESENT",
-          "note": "Reply says \"Your only account is the Credit Builder plan\" and \"You've also never had a credit card.\""
+          "note": "The reply says \"Your file is thin. Your only account is the Credit Builder plan... You have never had a credit card.\""
         }
       ],
       "judge_reason": "All four expected facts are present in the reply.",
@@ -497,112 +523,40 @@
       "baseline_error": null
     },
     {
-      "id": "mi-001",
-      "dataset": "multi_intent",
-      "persona": "rebuilder",
-      "intents": 3,
-      "message": "Why did my score drop last month? And why hasn't my secured card arrived? Should I get the travel card from your marketplace?",
+      "id": "st-011",
+      "dataset": "single_topic",
+      "persona": "multi-product",
+      "intents": 1,
+      "message": "My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?",
       "skills": [
-        "score-changes",
-        "secured-card",
-        "marketplace-offers"
+        "bill-reporting"
       ],
       "baseline_routing": [
-        "score-and-reports"
+        "rent-and-bills"
       ],
       "candidate_routing": [
-        "score-changes",
-        "secured-card",
-        "marketplace-offers"
+        "bill-reporting"
       ],
-      "baseline_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n\n- **A 30-day late payment.** Your retail store card was reported late on 2026-09-28 for the payment due 2026-08-25. Paying it on 2026-10-02 brought the account current, but it does not erase the late mark already reported.\n- **Higher utilization (how much of your card limits you're using).** Reported balances rose from $900 (30%) to $1,410 of $3,000 (47%).\n\nI can't say how many points each one cost.\n\n**2. Your Secured Card**\n\nIt shipped on 2026-10-06 and hasn't been delivered. Your expected delivery window is 2026-10-16 to 2026-10-21, so it's not late yet. If it hasn't come by 2026-10-21, contact support in the app at Help > Chat with support, or email support@example.com.\n\n**3. The travel card**\n\nI wouldn't apply now. A new card usually means a hard inquiry (a lender checking your credit), and one is likely to be recorded if you apply. It also lowers the average age of your accounts. You have a recent late payment, and your Secured Card is still on its way. If you do apply later, know that Marketplace partners may pay the app when a user is approved.\n\nA better use of this time is lowering your card balances. Paying them down before each statement closing date lowers the balance that gets reported. Under 30% is a common target.\n\nNext step: Pay down your retail store card, which has a $900 balance on a $1,500 limit (60%), before its next statement closes.",
-      "candidate_reply": "**1. Why your score dropped**\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n- **A 30-day late payment.** Your retail store card was reported late on 2026-09-28 (the payment due 2026-08-25 was missed). A new late payment usually weighs the most.\n- **Higher utilization (how much of your card limits you're using).** Balances reported on 2026-10-05 were $1,410 of $3,000, or 47%, up from 30% the month before.\n\nYou paid the past-due amount on 2026-10-02, so the account is current. Lenders report monthly, so that may take a while to show. I can't predict how many points you'll regain or when.\n\n**2. Your Secured Card**\nIt shipped on 2026-10-06 and isn't due yet. The expected delivery window is 2026-10-16 to 2026-10-21. If it hasn't arrived by 2026-10-21, go to Card > Report not received in the app. Once it arrives, you'll need to activate it in the app before first use.\n\n**3. The travel card**\nI'd wait. You have a late payment reported last month and 47% utilization. Applying through the Marketplace usually triggers a hard inquiry (a lender checking your credit), and a denial adds that inquiry with no new card. Paying balances down helps your utilization with no inquiry. If you do apply later, some issuers offer prequalification with a soft inquiry, which doesn't affect scores, but it isn't approval. Compare APR, fees, and terms on the offer page.\n\nMarketplace partners may pay the app when a user is approved. I don't know your approval odds.\n\nNext step: Pay down your bank card or retail card before each statement closes, so a lower balance gets reported.",
+      "baseline_reply": "No, that's expected. Bill Reporting isn't broken. The app sends your on-time phone, electric, and internet payments to Equifax only. It does not send them to Experian or TransUnion, so they won't appear on your Experian report.\n\nYour profile shows Bill Reporting is active, with 8 months reported for each of your three bills (mobile phone, electric utility, and home internet). Those should be on your Equifax report.\n\nTwo things that may help:\n- Rent is different. Your rent payments go to Experian and TransUnion, not Equifax. So Experian should show your rent history, but not your bills.\n- Many providers don't report on-time bill payments themselves, so this history is often missing from reports unless a service like this sends it.\n\nYour profile doesn't say which bureau your VantageScore 3.0 of 702 comes from, so I can't tell whether bill data is included in it. A score based only on Experian or TransUnion data won't reflect these payments, and I can't promise how a lender will treat them.\n\nIf you check your Equifax report and the bills still aren't there, human support can look into whether your payments are being detected in your linked bank account. You can reach them in the app at Help > Chat with support, or at support@example.com.\n\nNext step: Pull your free Equifax report and look for your phone, electric, and internet accounts there.",
+      "candidate_reply": "No, this is most likely not a glitch. Bill Reporting sends your on-time payments to Equifax only. It does not send them to Experian or TransUnion, so they won't show on an Experian report.\n\nYour profile shows Bill Reporting is active, and it covers all three bills you mentioned. Each one (phone, electric, and internet) has 8 months reported so far.\n\nA few things to keep in mind:\n\n- **Check Equifax.** Your bill history should appear there, not on Experian.\n- **Your score may not reflect it.** Whether these payments affect a score depends on the scoring model and on whether a lender pulls Equifax data. I can't say how much they will or won't matter for you.\n- **Rent is different.** Rent and bills can reach different bureaus, so one report may look more complete than another.\n\nYour profile doesn't say which bureau your 702 VantageScore 3.0 comes from, so I can't tell you whether it includes this data.\n\nIf your Equifax report doesn't show the bills either, that could be a detection problem with your linked bank account. Human support can look into that. Go to Help > Chat with support, or email support@example.com.\n\nNext step: Pull your free Equifax report and look for your phone, electric, and internet accounts. If they're missing there, contact human support.",
       "judge_facts": [
         {
-          "fact": "Names the 30-day late payment on the Retail store card and the rise in utilization to 47% as the likely causes of the drop",
+          "fact": "Says Bill Reporting sends bill payments only to Equifax, not to Experian or TransUnion, so not seeing them on Experian is expected",
           "status": "PRESENT",
-          "note": "Reply lists \"A 30-day late payment\" on the retail store card and \"Higher utilization... 47%\" as the likely causes."
+          "note": "Reply says \"Bill Reporting sends your on-time payments to Equifax only. It does not send them to Experian or TransUnion.\""
         },
         {
-          "fact": "Says the Secured Card shipped on 2026-10-06 and is expected between October 16 and October 21, 2026, so it is not late yet",
+          "fact": "Uses the profile: the mobile phone, electric utility and home internet bills have each been reported for 8 months",
           "status": "PRESENT",
-          "note": "Reply says \"It shipped on 2026-10-06 and isn't due yet\" with a window of 2026-10-16 to 2026-10-21."
+          "note": "Reply says \"Each one (phone, electric, and internet) has 8 months reported so far.\""
         },
         {
-          "fact": "Says applying for the travel card usually triggers a hard inquiry from the issuer, and does not promise or estimate approval",
+          "fact": "Says the effect on a score depends on the scoring model and on whether a lender pulls Equifax",
           "status": "PRESENT",
-          "note": "Reply says applying \"usually triggers a hard inquiry\" and \"I don't know your approval odds.\""
-        },
-        {
-          "fact": "Notes that with a recent late payment, applying now risks a denial plus a hard inquiry",
-          "status": "PRESENT",
-          "note": "Reply cites \"a late payment reported last month\" and says \"a denial adds that inquiry with no new card.\""
-        },
-        {
-          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
-          "status": "PRESENT",
-          "note": "Reply states \"Marketplace partners may pay the app when a user is approved.\""
+          "note": "Reply says the effect \"depends on the scoring model and on whether a lender pulls Equifax data.\""
         }
       ],
-      "judge_reason": "All five expected facts are present in the reply.",
-      "check_failures": [],
-      "status": "ok",
-      "error": null,
-      "baseline_passed": 0,
-      "baseline_runs": 1,
-      "candidate_passed": 1,
-      "candidate_runs": 1,
-      "baseline_errored": 0,
-      "candidate_errored": 0,
-      "baseline_all_errored": false,
-      "candidate_all_errored": false,
-      "baseline_status": "ok",
-      "baseline_error": null
-    },
-    {
-      "id": "mi-010",
-      "dataset": "multi_intent",
-      "persona": "renter",
-      "intents": 3,
-      "message": "My score went up 7 points this month. Why? Should I pay to add my past rent? And should I open a new card from the Marketplace before I apply for a mortgage next year?",
-      "skills": [
-        "score-changes",
-        "rent-reporting",
-        "marketplace-offers"
-      ],
-      "baseline_routing": [
-        "score-and-reports"
-      ],
-      "candidate_routing": [
-        "score-changes",
-        "rent-reporting",
-        "marketplace-offers"
-      ],
-      "baseline_reply": "**1. Why your score rose**\nYour VantageScore 3.0 went from 634 on 2026-09-15 to 641 now. Nothing in your profile points to one clear cause, and small swings are normal. These things may have helped:\n- Your utilization (how much of your card limit you're using) is 22%, with $550 owed on a $2,500 limit. That is under the common 30% guideline.\n- You have no hard inquiries (credit checks from applications) in the last 12 months.\n- Your 30-day late payment on the bank card, reported 2024-12-16, gets older each month. Its impact fades with time, though it can stay on your report for up to 7 years from 2024-11-12.\n\nI can't say how many points any one factor added. Your rent payments may also be reported, but I can't tell from your profile whether they affected this change.\n\n**2. Adding past rent**\nI don't have any cost for adding past rent, so check in the app or ask support for the price. Your profile shows your lease started 2024-09-01 and you haven't added past rent. Adding it would put more on-time history on file, but I can't promise it would change your score. Lenders also may not use or weigh rent data the same way, so ask your mortgage lender what they consider.\n\n**3. A new Marketplace card before your mortgage**\nIt's not required. A new card brings a hard inquiry, lowers the average age of your accounts, and may not help much when your history is already building. If you do apply, Marketplace partners may pay the app when a user is approved. Since you plan to apply for a mortgage in 2027, it is usually safer to avoid new applications close to that date unless you have a clear need.\n\nNext step: Keep paying rent and your card on time, and ask support or check in the app what adding past rent would cost before deciding.",
-      "candidate_reply": "**1. Why your score went up 7 points**\n\nYour VantageScore 3.0 went from 634 on 2026-09-15 to 641 today. Nothing in your profile points to one clear cause, so I can't say for sure. Small moves with no new negative item are normal. Some things that may have helped:\n- Your utilization (how much of your card limit you're using) is 22%, with $550 owed on a $2,500 limit. A lower reported balance can help.\n- Your rent payments are now being reported. VantageScore 3.0 can count rent.\n- You have no new hard inquiries in the last 12 months.\n- The 30-day late payment from 2024 is getting older.\n\n**2. Adding past rent**\n\nIt costs a one-time $25. You can add up to 12 months of past rent. Your profile shows 4 reported months and no past rent added, though your lease started 2024-09-01. Adding it would give you more positive history on file. It can't promise a score change. Rent goes only to TransUnion and Experian, not Equifax. Whether it counts for a mortgage depends on the score model and bureaus your lender picks.\n\n**3. A Marketplace card before your mortgage**\n\nYou don't need a new card to get ready. Applying usually causes a hard inquiry, and a new account lowers the average age of your accounts. Your profile is steady, so applying can be reasonable, but it's your call. Marketplace partners may pay the app when a user is approved, and the app doesn't know your approval odds. Offer terms are on each offer page.\n\nKeeping your card balance low and paying on time does not cost anything.\n\nNext step: Ask a mortgage lender which credit score model and bureaus they use, so you know whether your rent history will count.",
-      "judge_facts": [
-        {
-          "fact": "Gives the rise from 634 to 641 and points only to causes found in his profile (such as on-time rent being reported and no new negative items), without claiming certainty",
-          "status": "PRESENT",
-          "note": "The reply says the score went \"from 634 on 2026-09-15 to 641 today\" and lists profile-based possible causes (rent reported, no new negatives or inquiries, aging late payment) while stating \"I can't say for sure.\""
-        },
-        {
-          "fact": "Says he can add up to 12 months of past rent for a one-time $25 fee, as added positive history rather than a guaranteed score change",
-          "status": "PRESENT",
-          "note": "The reply says \"It costs a one-time $25. You can add up to 12 months of past rent... more positive history... It can't promise a score change.\""
-        },
-        {
-          "fact": "Says applying for a new card usually brings a hard inquiry, and a new account lowers the average age of accounts",
-          "status": "PRESENT",
-          "note": "The reply says \"Applying usually causes a hard inquiry, and a new account lowers the average age of your accounts.\""
-        },
-        {
-          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
-          "status": "PRESENT",
-          "note": "The reply says \"Marketplace partners may pay the app when a user is approved.\""
-        }
-      ],
-      "judge_reason": "All four expected facts are present.",
+      "judge_reason": "All three expected facts are present in the reply.",
       "check_failures": [],
       "status": "ok",
       "error": null,
@@ -636,28 +590,28 @@
         "bill-reporting",
         "utilization"
       ],
-      "baseline_reply": "**1. Secured Card upgrade review**\nYour profile shows the Secured Card is eligible for upgrade review. You have 9 on-time payments in a row, and the review starts after 8. I can't see whether a review is under way or what the result will be, and an upgrade isn't promised. If you are upgraded, your $500 deposit is returned. Human support can tell you the review status (Help > Chat with support).\n\n**2. Phone and internet bills**\nThey may help. Bill Reporting is active, and your mobile phone ($65 a month) and home internet ($60 a month) have each been reported for 8 months. On-time payments are part of your payment history, which is a major part of a score. I can't say how many points they add, since that depends on the scoring model a lender uses. They only help if you keep paying on time.\n\n**3. Utilization**\nYour utilization (how much of your card limits you're using) is 12%. That comes from $300 in balances on $2,500 in total limits. Lower is generally better, and 12% is on the low side. You have no late payments or negative items on file. Paying a card down before its statement date lowers the balance that gets reported.\n\nNext step: Ask human support about your upgrade review status through Help > Chat with support.",
-      "candidate_reply": "**1. Secured card upgrade review**\nYour profile shows the upgrade review status as \"eligible.\" You have 9 consecutive on-time payments, past the 8 needed for review. Eligible does not mean approved, and I can't promise an upgrade or a date. If you are upgraded, your $500 deposit is returned. Your profile doesn't show a review result, so check the Secured Card section of the app or ask human support (Help > Chat with support).\n\n**2. Phone and internet bills**\nBill Reporting is active for your mobile phone ($65) and home internet ($60), each with 8 months reported. On-time payments are reported to Equifax only, not Experian or TransUnion. Your profile says your score of 702 uses VantageScore 3.0, but it doesn't say which bureau's data it came from. So I can't say whether these payments show in that score. Any effect depends on the model and on whether a lender pulls Equifax, and I can't predict a point change.\n\n**3. Utilization**\nYour profile shows overall utilization (how much of your card limits you're using) at 12%. That's $300 on $2,500 in limits. It's under the common 30% guidance and a little above the 10% mark that tends to be better. By card:\n- Bank credit card: $240 on $2,000, or 12%\n- Secured Card: $60 on $500, or 12%\n\nNeither card is high on its own. Your Credit Builder plan is an installment loan, so it isn't part of this number. Paying a card down before its statement closes lowers the balance that gets reported. Your Secured Card statement closes on the 10th.\n\nNext step: Check the Secured Card section of the app for your upgrade review status.",
+      "baseline_reply": "**1. Secured Card upgrade review**\nYour profile shows the Secured Card is eligible for upgrade review. You have 9 on-time payments in a row, and the review starts after 8. I can't see whether a review has been started or what the result is, and an upgrade isn't promised. If you are upgraded, your $500 deposit is returned. Human support can confirm the review status.\n\n**2. Phone and internet bills**\nYour mobile phone ($65) and home internet ($60) are both enrolled in Bill Reporting, with 8 months reported each. Paying on time and having it reported can add positive payment history to your file. I can't say how much it will affect your score, since that depends on your full report and the scoring model a lender uses. Your score is 702 on VantageScore 3.0, up from 695 on 2026-09-15.\n\n**3. Utilization**\nUtilization means how much of your card limits you're using. Yours is 12%, which is $300 in balances on $2,500 in total limits. That is a low figure, and low usage generally helps. Your Secured Card's $60 balance on a $500 limit is also 12%. Paying that card before the statement closes (the 10th of each month) lowers the balance that gets reported.\n\nNext step: Ask human support in the app (Help > Chat with support) to confirm the status of your Secured Card upgrade review.",
+      "candidate_reply": "**1. Secured Card upgrade review**\nYour profile shows the upgrade review status as \"eligible.\" You have 9 consecutive on-time payments, and review starts after 8, so no more payments are needed to qualify. I can't see a decision or a date, and I can't promise an upgrade. If upgraded, your $500 deposit is returned. Check the Secured Card section of the app or ask human support for the review status.\n\n**2. Phone and internet bills**\nBill Reporting is active for your phone ($65) and internet ($60), plus your electric bill. Each has 8 months reported. Only on-time payments are reported, and only to Equifax, not Experian or TransUnion. Your score is VantageScore 3.0, but your profile doesn't say which bureau's data it uses. So I can't say whether these payments show in that score. They may help where a lender pulls Equifax, but I can't promise any score change.\n\n**3. Utilization**\nYour profile shows overall utilization (how much of your card limits you're using) at 12%. That's $300 on $2,500 in limits. Common guidance is under 30%, and under 10% tends to be better, so you're in a good range.\n\nPer card:\n- Bank credit card: $240 of $2,000, which is 12%\n- Secured Card: $60 of $500, which is 12%\n\nYour Credit Builder plan is an installment loan, so it doesn't count here. Your Secured Card statement closes on the 10th. Paying before then lowers the balance that gets reported.\n\nNext step: In the app, look for the upgrade review status on your Secured Card, or ask human support (Help > Chat with support) if you don't see one.",
       "judge_facts": [
         {
           "fact": "Answers with the same numbering (1, 2, 3) as the question",
           "status": "PRESENT",
-          "note": "The reply uses headings numbered 1, 2 and 3, matching the question."
+          "note": "The reply uses headings numbered **1.**, **2.**, **3.**, matching the question."
         },
         {
           "fact": "Says 9 consecutive on-time payments (more than the 8 required) make the Secured Card eligible for upgrade review, without promising an upgrade",
           "status": "PRESENT",
-          "note": "The reply says \"9 consecutive on-time payments, past the 8 needed for review\" and \"I can't promise an upgrade.\""
+          "note": "It says \"You have 9 consecutive on-time payments, and review starts after 8\" and \"I can't promise an upgrade.\""
         },
         {
           "fact": "Says the phone and internet bills are reported only to Equifax, so the effect depends on the scoring model and on whether a lender pulls Equifax",
           "status": "PRESENT",
-          "note": "The reply says the payments are \"reported to Equifax only\" and that \"any effect depends on the model and on whether a lender pulls Equifax.\""
+          "note": "It says bills are reported \"only to Equifax\", that the VantageScore 3.0 bureau source is unknown, and that they \"may help where a lender pulls Equifax.\""
         },
         {
           "fact": "Gives utilization of 12% ($300 of $2,500), under the 30% guidance and close to 10%",
           "status": "PRESENT",
-          "note": "The reply gives \"12%. That's $300 on $2,500,\" under 30% and \"a little above the 10% mark.\""
+          "note": "It gives \"12%... $300 on $2,500\" and compares it to the \"under 30%\" and \"under 10%\" guidance, which places it near 10%."
         }
       ],
       "judge_reason": "All four expected facts are present in the reply.",
@@ -676,41 +630,353 @@
       "baseline_error": null
     },
     {
-      "id": "mi-012",
+      "id": "mi-013",
       "dataset": "multi_intent",
-      "persona": "new-to-credit",
-      "intents": 3,
-      "message": "How long until I get my Credit Builder savings back? Would a secured card help me since I've never had a credit card? And would applying for a card in the Marketplace hurt my score?",
+      "persona": "rebuilder",
+      "intents": 2,
+      "message": "how long is that 30 day late on my store card gonna keep dragging my score down?? also I pay my phone, electric and netflix on time every month, can any of that get reported to help me out",
+      "skills": [
+        "payment-history",
+        "bill-reporting"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "payment-history",
+        "bill-reporting"
+      ],
+      "baseline_reply": "**1. How long the late payment will weigh on your score**\n\nYour profile shows the Retail store card was reported 30 days late on 2026-09-28. The missed payment was due 2026-08-25. A late payment can stay on your reports for up to 7 years from that original date. You paid the past-due amount on 2026-10-02, so the account is current. That stops it from getting worse, but it does not erase the mark already reported.\n\nThe good news is that the impact is biggest while the late is recent. It fades as it ages and as on-time payments build up. I can't say how many points it will cost or when your score will recover.\n\nTwo things may help:\n- Autopay or reminders for at least the minimum payment.\n- An optional goodwill letter asking the store to remove the late as a courtesy. They don't have to agree, and it works best for a one-time slip on an otherwise clean account, which fits your history.\n\nAlso, your utilization (how much of your card limits you're using) is 47%, up from 30% the month before. That likely contributed to the drop from 611 to 588, along with the late. Paying balances down before the statement closes can lower what gets reported.\n\n**2. Reporting your phone, electric and Netflix**\n\nI don't have details on any bill reporting feature in the app, and your profile shows none set up. I can't confirm whether those bills can be reported or which ones qualify. Please check with human support in the app at Help > Chat with support, or email support@example.com.\n\nNext step: Write a short goodwill letter to the store card issuer explaining the missed August 25 payment and asking if they would remove the late mark.",
+      "candidate_reply": "**1. How long the late payment will weigh on your score**\n\nYour profile shows the retail store card was reported 30 days late on 2026-09-28, for the payment due 2026-08-25. That's a stressful thing to see, especially with your score at 588, down from 611.\n\n- A late payment can stay on your reports for up to 7 years from the original delinquency date, which here is 2026-08-25.\n- Its impact is biggest while it's recent. It fades as it ages and as on-time payments add up.\n- You paid the past-due amount on 2026-10-02, so the card is current again. That stops it from getting worse, but it doesn't erase the late mark.\n- No one can say exactly when your score will recover, because it depends on your whole report and the scoring model used.\n\nIf this was a one-time slip, you can ask the card issuer for a goodwill removal in a letter. They don't have to agree, so treat it as optional. Autopay or reminders can help prevent another one.\n\n**2. Phone, electric and Netflix**\n\nBill Reporting is free. It can report on-time phone and electric payments it finds in your linked bank account. Netflix isn't covered, since only utility, phone, and internet bills count.\n\n- These go to Equifax only, not Experian or TransUnion.\n- Only on-time payments are reported, never late ones.\n- Your profile shows Bill Reporting isn't turned on. I can't tell which bureau your VantageScore 3.0 of 588 draws from, and I can't promise it would change your score.\n\nNext step: Check the Bill Reporting section in the app to see if you'd like to turn it on for your phone and electric bills.",
+      "judge_facts": [
+        {
+          "fact": "Says the Retail store card late can stay on reports up to 7 years from its original delinquency on 2026-08-25, so until about August 2033",
+          "status": "PRESENT",
+          "note": "Reply says it \"can stay on your reports for up to 7 years from the original delinquency date, which here is 2026-08-25,\" which works out to about August 2033."
+        },
+        {
+          "fact": "Says the late's impact is largest while it is recent and fades as it ages and on-time payments build up",
+          "status": "PRESENT",
+          "note": "Reply says \"Its impact is biggest while it's recent. It fades as it ages and as on-time payments add up.\""
+        },
+        {
+          "fact": "Says on-time phone and electric payments can be reported through the app's Bill Reporting, but only to Equifax",
+          "status": "PRESENT",
+          "note": "Reply says Bill Reporting \"can report on-time phone and electric payments\" and \"These go to Equifax only.\""
+        },
+        {
+          "fact": "Says Netflix would not be reported, since streaming bills are not among the utility, phone and internet bills the feature covers",
+          "status": "PRESENT",
+          "note": "Reply says \"Netflix isn't covered, since only utility, phone, and internet bills count.\""
+        },
+        {
+          "fact": "Does not claim that reported bills would offset or remove the store card late payment",
+          "status": "PRESENT",
+          "note": "Reply never says reported bills would offset the late, and adds \"I can't promise it would change your score.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-014",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "intents": 2,
+      "message": "The store card is the real problem, I've got $900 sitting on it. How much do I have to pay down to get my overall usage under 30%? Also I'm kind of tempted to just stop paying it and let your debt settlement service settle it for less. Would that be cleaner than paying the whole thing?",
+      "skills": [
+        "utilization",
+        "debt-settlement"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "utilization",
+        "debt-settlement"
+      ],
+      "baseline_reply": "**1. Getting under 30%**\n\nYour profile shows overall utilization (how much of your card limits you're using) at 47%: $1,410 owed on $3,000 in limits. Under 30% means under $900 in total balances, so you'd need to pay down at least $511.\n\nPer card, the store card is at 60% ($900 of $1,500) and the bank card is at 34% ($510 of $1,500). Putting the $511 toward the store card would leave it near 26%. Issuers usually report the statement balance, so pay before the statement closing date. I can't promise what that does to your score.\n\n**2. Stopping payment and settling**\n\nI'd steer you away from this. The store card is current now, but if you stop paying, it can be reported 30 days late again, then 60, 90 and beyond. Each step is more serious. Fees and interest can also add up.\n\nI can't see any Debt Settlement details in your profile, and I don't have its costs or terms, so I can't confirm them. Human support (Help > Chat with support) can give you those. Generally, a settled-for-less account still shows as a negative mark, and forgiven debt can have tax effects. That isn't tax advice, so check with a tax professional.\n\nIf paying is hard right now, there are better first steps. Ask the store card issuer about a hardship program or payment plan. A nonprofit credit counselor can also help you weigh options.\n\nNext step: Call the store card issuer to ask about a payment plan or hardship program, and ask for the statement closing date on the same call.",
+      "candidate_reply": "**1. Paying down to under 30%**\n\nYour profile shows overall utilization (how much of your card limits you're using) at 47%. That is $1,410 in balances on $3,000 in limits.\n\n- 30% of $3,000 is $900. To get under that, you'd need balances below $900 in total, so a paydown of at least $511 across your cards (a bit more to land under 30%, not exactly at it).\n- Your store card is $900 on a $1,500 limit, which is 60% on its own. Your bank card is $510 on $1,500, or 34%.\n- Scoring models look at each card's ratio as well as the overall one, so the store card is a fair place to start.\n\nIssuers usually report your statement balance. Paying before the statement closing date lowers what gets reported. Once a lower balance is reported, high utilization usually stops weighing on the score. I can't predict a point change.\n\n**2. Stopping payments to settle**\n\nI'd advise against this. Settlement only applies to accounts that are charged off (written off as a loss) or in collections. Your store card is current, so it doesn't qualify.\n\nMissing payments would also add more late marks. You already have a 30-day late payment reported on September 28, and a further miss could make it worse. Settlement also doesn't erase the account, and a settled charge-off still shows as one for up to 7 years.\n\nIf money is tight, call the store card issuer and ask about hardship programs or a payment plan. A nonprofit credit counselor or human support (Help > Chat with support) can also help.\n\nNext step: Check your store card's statement closing date and make your paydown before it.",
+      "judge_facts": [
+        {
+          "fact": "Says reaching 30% overall utilization means paying down about $510, taking total card balances from $1,410 to $900 of the $3,000 in limits",
+          "status": "PRESENT",
+          "note": "Reply says 30% of $3,000 is $900 and a paydown of at least $511 from $1,410 is needed, which matches about $510."
+        },
+        {
+          "fact": "Flags the Retail store card at about 60% of its own $1,500 limit ($900 balance)",
+          "status": "PRESENT",
+          "note": "Reply states \"Your store card is $900 on a $1,500 limit, which is 60% on its own.\""
+        },
+        {
+          "fact": "Says the Debt Settlement service takes only charged-off or in-collections accounts, so the current Retail store card does not qualify",
+          "status": "PRESENT",
+          "note": "Reply says \"Settlement only applies to accounts that are charged off... or in collections. Your store card is current, so it doesn't qualify.\""
+        },
+        {
+          "fact": "Does not suggest stopping payments on the store card to make it qualify for settlement",
+          "status": "PRESENT",
+          "note": "Reply opens the section with \"I'd advise against this\" and warns that missed payments add late marks."
+        },
+        {
+          "fact": "Says settling would not clean up the report, since a settled charge-off still shows as a charge-off",
+          "status": "PRESENT",
+          "note": "Reply says \"a settled charge-off still shows as one for up to 7 years.\""
+        }
+      ],
+      "judge_reason": "All expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-017",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 2,
+      "message": "quick q, my next Credit Builder payment is due Nov 1, when will that actually show up on my credit report? also I've never missed a phone or electric bill in my life, why don't those help my credit at all",
       "skills": [
         "credit-builder-account",
-        "secured-card",
-        "marketplace-offers"
+        "bill-reporting"
       ],
       "baseline_routing": [
         "credit-products"
       ],
       "candidate_routing": [
         "credit-builder-account",
-        "secured-card",
-        "marketplace-offers"
+        "bill-reporting"
       ],
-      "baseline_reply": "**1. Getting your savings back**\nYou get your savings balance back after the full 24 months. The plan started 2026-06-01, and your profile shows 4 on-time payments with 20 remaining. The refund is $144 minus any unpaid amounts. Your savings balance is $24 now. Your next payment is due 2026-11-01.\n\n**2. Would a secured card help?**\nIt could. A secured card is a card backed by a refundable deposit of $50 to $2,000, and your limit equals the deposit. It would add a revolving account (one you can borrow from and repay each month), which you don't have now. Your profile shows no card and no negative items.\n\nSome facts to weigh:\n- There's no hard inquiry to apply and no annual fee.\n- The APR (yearly interest rate) is a variable 27.99% on balances you carry month to month.\n- Your deposit is tied up while the card is open.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 on-time payments in a row, the account is reviewed for an upgrade to an unsecured card. An upgrade isn't promised.\n\n**3. Marketplace card and your score**\nApplying through a partner usually triggers a hard inquiry (a lender's credit check that can affect your score a little). Some issuers offer prequalification, typically a soft check that doesn't affect scores, but it isn't approval. The app doesn't know your approval odds. Your profile shows 0 hard inquiries in the last 12 months. Applying can be reasonable, and you should compare the APR, fees and terms on the offer page. Marketplace partners may pay the app when a user is approved.\n\nNext step: Decide whether you want a card now, then compare a secured card's deposit and APR with the Marketplace offer terms before applying.",
-      "candidate_reply": "**1. Getting your savings back**\n\nYou get the savings balance back after the full 24 months. It's $144 minus any unpaid amounts. Your plan started 2026-06-01, and your profile shows 4 on-time payments and 20 payments remaining. Your profile shows a savings balance of $24 so far. I don't see an exact payout date, so check your plan in the app or ask human support (Help > Chat with support).\n\n**2. Would a secured card help?**\n\nIt may help. A secured card is a card backed by a refundable deposit of $50 to $2,000, and your limit equals the deposit. Right now you have only one installment account (fixed payments, set end date) and no cards. A card would add a revolving account (one you can borrow from and repay again), which can add to your credit mix.\n\nHere are the details:\n- No hard inquiry to apply and no annual fee.\n- Variable APR (interest rate) of 27.99% on balances you carry month to month.\n- Balances and payment status are reported monthly to all three bureaus.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, it's reviewed for an upgrade. That isn't promised.\n\nNo one can promise a score change.\n\n**3. Would a Marketplace card application hurt your score?**\n\nIt can. Applying through a partner usually triggers a hard inquiry (a lender's check of your credit), and a new account can also affect your score. Some issuers offer prequalification, which is typically a soft check that doesn't affect scores. It isn't approval. Your profile shows 0 hard inquiries in the last 12 months. Marketplace partners may pay the app when a user is approved, and I don't know your approval odds.\n\nNext step: Decide whether you want a card with no hard inquiry (the secured card) or a Marketplace offer, then compare the APR, fees, and terms before you apply.",
+      "baseline_reply": "**1. When the Nov 1 payment will show up**\n\nEach Credit Builder payment is reported to Equifax, Experian and TransUnion as an installment account (a loan with fixed payments). Reporting happens monthly, a few days after the payment posts. So if you pay on Nov 1, expect it to appear in the first week or so of November, though I can't give an exact date. Your profile shows 7 on-time payments so far and none late.\n\n**2. Why phone and electric bills don't help**\n\nI can't speak to every provider, but I can give you the general picture. Most phone and utility companies don't report on-time payments to the credit bureaus. They usually only report if an account goes to collections. That's why years of on-time bills may not show up on your report.\n\nYour profile shows no bill reporting set up, and I don't have details in this chat on how bill payments could be added to a report. Human support can tell you if the app has anything for that.\n\nSince you pay on time, your biggest lever right now is likely utilization (how much of your card limits you're using). Your profile shows $2,550 of $3,000 in limits, or 85%, with the Rewards card at $1,900 of $2,000 (95%). Paying those balances down may help your score over time, though I can't say by how much.\n\nNext step: Check the Credit Builder payment on your report in early November, and use Help > Chat with support to ask about reporting your phone and electric bills.",
+      "candidate_reply": "**1. When your Nov 1 Credit Builder payment will show up**\nEach payment is reported to Equifax, Experian and TransUnion about a few days after it posts. So if you pay on Nov 1, expect it on your reports a few days after that. I can't give an exact date, and it may take a little longer to appear in the app or on a report you pull. Your profile shows 7 on-time payments and no late ones so far.\n\n**2. Why your phone and electric bills don't help**\nMany phone and utility companies don't report on-time payments to the credit bureaus (the companies that keep your credit reports). Since they only tell the bureaus if a bill goes unpaid, years of on-time payments often never reach your report. It says nothing about you. It's how those providers work.\n\nThe app has a free feature called Bill Reporting. It finds on-time utility, phone and internet payments in your linked bank account and reports them to Equifax. Your profile shows it isn't turned on. Two limits to know:\n- It reaches Equifax only, not Experian or TransUnion.\n- Your score may or may not reflect it, depending on the scoring model and whether a lender pulls Equifax. Your profile lists VantageScore 3.0 but not which bureau it comes from, so I can't say if it would show up there.\n\nNo one can promise a score change from it.\n\nNext step: If you want those bills counted, check Bill Reporting in the app and decide whether to turn it on.",
       "judge_facts": [
         {
-          "fact": "Says she gets the savings back when the 24-month plan ends, after her 20 remaining payments: $144 minus any unpaid amounts ($24 saved so far)",
+          "fact": "Says each Credit Builder payment is reported to Equifax, Experian and TransUnion",
           "status": "PRESENT",
-          "note": "Reply says she gets savings back \"after the full 24 months,\" \"$144 minus any unpaid amounts,\" with \"20 payments remaining\" and \"$24 so far.\""
+          "note": "\"Each payment is reported to Equifax, Experian and TransUnion.\""
         },
         {
-          "fact": "Says the Secured Card's limit equals a refundable $50 to $2,000 deposit, applying needs no hard inquiry, and its statement balance and payments are reported monthly to all three bureaus",
+          "fact": "Says the Nov 1 payment should show on her report a few days after it posts",
           "status": "PRESENT",
-          "note": "Reply covers the refundable \"$50 to $2,000\" deposit where \"your limit equals the deposit,\" \"No hard inquiry to apply,\" and balances and payment status \"reported monthly to all three bureaus.\""
+          "note": "\"If you pay on Nov 1, expect it on your reports a few days after that.\""
         },
         {
-          "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
+          "fact": "Says many phone and utility providers do not report on-time payments to the credit bureaus themselves",
           "status": "PRESENT",
-          "note": "Reply says \"Applying through a partner usually triggers a hard inquiry.\""
+          "note": "\"Many phone and utility companies don't report on-time payments to the credit bureaus.\""
+        },
+        {
+          "fact": "Says the app's Bill Reporting feature reports on-time utility, phone and internet payments only to Equifax",
+          "status": "PRESENT",
+          "note": "The reply says Bill Reporting reports on-time utility, phone and internet payments to Equifax, and \"Equifax only.\""
+        },
+        {
+          "fact": "Mentions that Bill Reporting is free and available, without pushing her to turn it on",
+          "status": "PRESENT",
+          "note": "The reply calls it \"a free feature\" and leaves the choice to her: \"decide whether to turn it on.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-023",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 3,
+      "message": "Hi Coach, a few questions: 1) My score went from 603 to 612, what caused that? 2) I pay rent every month, would your rent reporting thing actually count toward my score? 3) I keep looking at cards in the Marketplace. How much does one hard inquiry really hurt?",
+      "skills": [
+        "score-changes",
+        "rent-reporting",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "rent-reporting",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1) Why your score moved from 603 to 612**\nYour VantageScore 3.0 went from 603 on 2026-09-15 to 612 today. Nothing in your profile shows a new late payment, new inquiry, or new account. Your 4th Credit Builder payment was on time on 2026-10-01, and you have no negative items. On-time payments building up may be part of it, but I can't say for sure. Small swings with no negative item are also normal.\n\n**2) Rent reporting**\nI don't have details about how rent reporting works in the app, so I can't confirm whether it would count toward your score or which bureaus it reports to. Your profile shows you aren't enrolled. Whether a score counts rent also depends on the scoring model a lender uses. Human support can confirm the details (Help > Chat with support, or support@example.com).\n\n**3) How much a hard inquiry hurts**\nA hard inquiry (a lender checking your credit because you applied) stays on your report for 2 years. FICO counts only those from the last 12 months. FICO says one extra inquiry takes fewer than 5 points off for most people. That is a general figure, not a prediction for you. Your profile shows 0 hard inquiries in the last 12 months. Browsing offers does not create an inquiry. Checking your own score is a soft inquiry and does not affect it.\n\nOne more point: a lender's check on 2026-09-02 found no FICO score for you. That is common with a thin file (very little credit history), so a lender may use a different score model for you.\n\nNext step: Ask human support in the app whether rent reporting is available for you and how it would be reported.",
+      "candidate_reply": "**1) Why your score moved from 603 to 612**\n\nYour VantageScore 3.0 went from 603 on Sept 15 to 612 today. Nothing in your profile points to one clear cause. You have no late payments or negative items, no hard inquiries in the last 12 months, and no revolving cards. You made your 4th Credit Builder payment on time on Oct 1, and that kind of steady history may be helping. Small swings with no negative items are also normal, and lenders report on their own monthly dates.\n\n**2) Would rent reporting count?**\n\nIt might, but it depends on two things. Rent Reporting costs $4 per month. It sends on-time rent to TransUnion and Experian only, not Equifax. The score model also has to count rent. VantageScore 3.0 can count it, which is the model your profile shows. FICO 8 ignores it. Each lender picks its own model and bureaus, so the effect varies. Past rent can be added for a one-time $25 fee (up to 12 months). Late rent is never reported. I can't promise any score change.\n\n**3) How much does one hard inquiry hurt?**\n\nFICO says one extra hard inquiry takes fewer than 5 points off for most people. That is general information, not a prediction for you. Hard inquiries stay on your report for 2 years, but FICO counts only the last 12 months. Your profile shows none right now. Browsing offers doesn't create an inquiry. Applying usually does, and a new account also lowers the average age of your accounts, which matters with a file as new as yours (your only account opened June 1, 2026). Some issuers offer prequalification with a soft check, which doesn't affect scores. It isn't approval.\n\nIf you apply through the Marketplace, partners may pay the app when a user is approved. Applying can be reasonable with a stable profile like yours. Compare APR (yearly interest cost), fees, and terms on the offer page first.\n\nNext step: Before applying anywhere, check each offer page for a prequalification option so you can see if it uses a soft check.",
+      "judge_facts": [
+        {
+          "fact": "Points to her 4th on-time Credit Builder payment (2026-10-01) as a likely reason for the rise from 603 to 612, without claiming certainty",
+          "status": "PRESENT",
+          "note": "Reply says \"You made your 4th Credit Builder payment on time on Oct 1, and that kind of steady history may be helping,\" which is hedged rather than certain."
+        },
+        {
+          "fact": "Says the app reports rent only to TransUnion and Experian, not Equifax",
+          "status": "PRESENT",
+          "note": "Reply says \"It sends on-time rent to TransUnion and Experian only, not Equifax.\""
+        },
+        {
+          "fact": "Says VantageScore 3.0, the model behind her score, can count reported rent",
+          "status": "PRESENT",
+          "note": "Reply says \"VantageScore 3.0 can count it, which is the model your profile shows.\""
+        },
+        {
+          "fact": "Cites FICO's general figure that one extra hard inquiry takes fewer than 5 points off for most people, not as a prediction for her",
+          "status": "PRESENT",
+          "note": "Reply says \"FICO says one extra hard inquiry takes fewer than 5 points off for most people. That is general information, not a prediction for you.\""
+        },
+        {
+          "fact": "Says applying for a Marketplace card usually triggers a hard inquiry from that issuer",
+          "status": "PRESENT",
+          "note": "Reply says \"Browsing offers doesn't create an inquiry. Applying usually does,\" in the context of Marketplace cards."
+        }
+      ],
+      "judge_reason": "All expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-026",
+      "dataset": "multi_intent",
+      "persona": "renter",
+      "intents": 2,
+      "message": "ok two things. my bank card got hit with a 30 day late back in 2024, it was a one time slip on my part, is there any way to get it taken off before my mortgage app? and if i sign up for the $6 credit builder and pay it like a week late one month, does that show up as a late on my report?",
+      "skills": [
+        "payment-history",
+        "credit-builder-account"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "payment-history",
+        "credit-builder-account"
+      ],
+      "baseline_reply": "**1. The 2024 late payment**\n\nYour profile shows a 30-day late on your bank card, reported 2024-12-16 (original late date 2024-11-12). Since you say it was accurate, no dispute or service can force it off early. It can stay on your report for up to 7 years from the original late date.\n\nYou do have one option. You can send a goodwill letter, which asks the card company to remove an accurate late as a courtesy. It tends to fit best for a one-time slip on an otherwise clean account, like yours. The company doesn't have to agree, and no one can promise the result.\n\nMeanwhile, the late's impact fades as it ages and on-time payments build up. Your card is current, and your utilization (how much of your card limit you're using) is 22%, under the 30% guidance.\n\n**2. A payment a week late on Credit Builder**\n\nI don't have the Credit Builder plan's late-payment rules loaded, so I can't confirm how the app treats a payment a week late. In general, creditors report a payment as late only once it's 30 or more days past due. A week late may mean a fee but usually no late mark on a report. Check the plan's terms in the app, or ask human support (Help > Chat with support) before you sign up.\n\nAutopay would remove the risk either way.\n\nNext step: Write a short goodwill letter to your bank card issuer explaining the one-time slip in late 2024 and your on-time record since, and ask them to consider removing it.",
+      "candidate_reply": "**1. Getting the 2024 late removed before your mortgage application**\n\nNo one can force it off early, and I can't promise any outcome. Your profile shows the bank card was reported 30 days late on 2024-12-16, with the original missed payment on 2024-11-12. If it's accurate, it can stay on your report for up to 7 years from that original date. Disputing only works for wrong or incomplete information, so it isn't a fit here.\n\nOne option is a goodwill letter. That's a short letter asking the bank to remove an accurate late payment as a courtesy. It fits best for a one-time slip on an otherwise clean account, which sounds like yours. The bank doesn't have to agree.\n\nAlso, the late's impact fades as it ages and as on-time payments pile up. Your card is currently open and current, and your profile shows 4 months of on-time rent reported.\n\n**2. A payment one week late on Credit Builder**\n\nNo. A payment 1 to 29 days late isn't reported as late. It's reported once it's 30 or more days past due. A week late wouldn't show as a late on your report, though paying on time is still the safer habit.\n\nFor context, the plan costs $6 a month for 24 months. Each payment is reported to all three bureaus as an installment account (a loan with fixed payments). At the end you get back the savings balance, $144 minus any unpaid amounts.\n\nNext step: Write a short goodwill letter to your bank card issuer explaining the one-time slip in late 2024 and asking them to consider removing it.",
+      "judge_facts": [
+        {
+          "fact": "Names the 30-day late on his Bank credit card, reported 2024-12-16",
+          "status": "PRESENT",
+          "note": "Reply says \"the bank card was reported 30 days late on 2024-12-16.\""
+        },
+        {
+          "fact": "Offers a goodwill letter to the card issuer as an optional request, noting the creditor has no obligation to agree",
+          "status": "PRESENT",
+          "note": "Reply offers a goodwill letter as \"One option\" and adds \"The bank doesn't have to agree.\""
+        },
+        {
+          "fact": "Says the late can stay up to 7 years from the original delinquency on 2024-11-12, so until about November 2031",
+          "status": "PRESENT",
+          "note": "Reply says it \"can stay on your report for up to 7 years from that original date\" (2024-11-12), which equals about November 2031 even though that end date isn't spelled out."
+        },
+        {
+          "fact": "Says a Credit Builder payment 1 to 29 days late is not reported as late, so a week late would not show as a late mark",
+          "status": "PRESENT",
+          "note": "Reply says \"A payment 1 to 29 days late isn't reported as late\" and \"A week late wouldn't show as a late.\""
+        },
+        {
+          "fact": "Says a Credit Builder payment is reported as late once it is 30 or more days past due",
+          "status": "PRESENT",
+          "note": "Reply says \"It's reported once it's 30 or more days past due.\""
+        }
+      ],
+      "judge_reason": "All expected facts are present. F3 states the 7-year window from 2024-11-12 without naming November 2031 explicitly.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-027",
+      "dataset": "multi_intent",
+      "persona": "renter",
+      "intents": 3,
+      "message": "Few questions. I pulled my Equifax report to get ready for the mortgage and none of my rent is on there, is something broken? Also a coworker settled his credit card for way less than he owed. Could your settlement service do that with my card so I pay less than the $550? And last one, can I check if I'd get approved for a Marketplace card without a hard pull?",
+      "skills": [
+        "rent-reporting",
+        "debt-settlement",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "rent-and-bills"
+      ],
+      "candidate_routing": [
+        "rent-reporting",
+        "debt-settlement",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Rent not on your Equifax report**\n\nNothing looks broken. The app reports on-time rent to TransUnion and Experian only. It does not report rent to Equifax, so it won't show up there. Your profile shows 4 months of rent reported (June to September), and your October payment hasn't been reported yet. Your score model is VantageScore 3.0, which can count rent when the data comes from TransUnion or Experian.\n\nFor your mortgage, lenders pick their own score model and bureaus. Ask yours which ones it will use. If you think a payment is missing from TransUnion or Experian, contact human support at Help > Chat with support.\n\n**2. Settling your card**\n\nI can't tell you a settlement would lower what you pay. Your profile shows no Debt Settlement service on your account, and I don't have details on how it works or what it costs. Your card is also open and current, with a $550 balance. Settling an account that is current usually isn't needed, and a settlement can hurt your credit. Paying the $550 in full and on time is the cleaner path, especially with a mortgage planned. For specifics on the service, human support can help.\n\n**3. Marketplace card without a hard pull**\n\nI don't have information on whether Marketplace offers have a pre-check that avoids a hard inquiry (a lender's credit check that can affect your score), so I can't confirm that. Your profile shows 0 hard inquiries in the last 12 months. Before any application, check the offer page for how approval is checked. Marketplace partners may pay the app when a user is approved. Since you're planning a mortgage in 2027, you may not need a new card.\n\nNext step: Ask your mortgage lender which score model and credit bureaus it uses, so you know whether your TransUnion and Experian rent history will count.",
+      "candidate_reply": "**1. Rent missing from Equifax**\n\nNothing is broken. The app reports your on-time rent to TransUnion and Experian only. It does not report to Equifax, so your rent won't show on that report. Your profile shows 4 months reported (June to September), and October's payment hasn't been reported yet. For your mortgage, ask the lender which bureaus and which score model it uses, since each lender chooses. Whether rent counts depends on that choice.\n\n**2. Settling your card**\n\nNo, this wouldn't fit your card. The settlement service only covers accounts that are charged off (written off as a loss by the lender) or in collections. Your bank card is open and current, with a $550 balance. Your profile shows one 30-day late payment from December 2024, but the account is not in collections. Settling also doesn't remove an account or its history from your report, so it wouldn't help your mortgage plans. Your coworker's account was likely in a different situation. Paying your balance down is the simpler route.\n\n**3. Checking a Marketplace card without a hard pull**\n\nSome issuers offer prequalification, which is usually a soft inquiry that doesn't affect scores. Prequalification is not approval, and I can't tell you your odds. Applying for the card usually triggers a hard inquiry. Marketplace partners may pay the app when a user is approved. If you look at offers, check whether each one offers prequalification and compare the fees and terms on the offer page. Your profile shows no hard inquiries in the last 12 months.\n\nNext step: Before you apply for anything, ask your mortgage lender which credit bureaus and score model it will use.",
+      "judge_facts": [
+        {
+          "fact": "Says the app reports rent only to TransUnion and Experian, not Equifax, so rent missing from his Equifax report is expected",
+          "status": "PRESENT",
+          "note": "Reply says \"The app reports your on-time rent to TransUnion and Experian only. It does not report to Equifax\" and \"Nothing is broken.\""
+        },
+        {
+          "fact": "Says the Debt Settlement service only takes charged-off or in-collections accounts, so his current Bank credit card does not qualify",
+          "status": "PRESENT",
+          "note": "Reply says the settlement service \"only covers accounts that are charged off ... or in collections\" and that his open, current card wouldn't fit."
+        },
+        {
+          "fact": "Mentions that some issuers offer prequalification, typically a soft inquiry that does not affect scores",
+          "status": "PRESENT",
+          "note": "Reply says \"Some issuers offer prequalification, which is usually a soft inquiry that doesn't affect scores.\""
+        },
+        {
+          "fact": "Says prequalification is not the same as approval",
+          "status": "PRESENT",
+          "note": "Reply says \"Prequalification is not approval.\""
         },
         {
           "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
@@ -718,7 +984,314 @@
           "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
         }
       ],
-      "judge_reason": "All four expected facts are present in the reply.",
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-029",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 2,
+      "message": "got a letter last month from the collection agency about my old phone bill and it got me thinking, i pay my current phone bill on time every month so does that do anything for my credit or is it basically invisible? also once you guys finish settling my bank card will the charge off disappear from my report",
+      "skills": [
+        "bill-reporting",
+        "debt-settlement"
+      ],
+      "baseline_routing": [
+        "rent-and-bills"
+      ],
+      "candidate_routing": [
+        "bill-reporting",
+        "debt-settlement",
+        "collections"
+      ],
+      "baseline_reply": "**1. Your on-time phone payments**\n\nThey may be partly invisible. Many phone companies don't report on-time payments to the credit bureaus themselves. Bill Reporting in the app is free and can report on-time phone, utility, and internet payments it finds in your linked bank account. It goes only to Equifax, not Experian or TransUnion. Your profile doesn't show Bill Reporting turned on.\n\nWhether it helps depends on the score model and bureau a lender uses. Your score of 560 is VantageScore 3.0, but your profile doesn't say which bureau it comes from, so I can't say if it would show there. It also doesn't offset the old collection or the charge-off.\n\nSince you have unpaid items, you may want to look at hardship options on your own first. Ask the collection agency and the card creditor about payment plans, and consider a nonprofit credit counselor. Human support is also in the app under Help > Chat with support.\n\n**2. Will the charge-off disappear after settlement?**\n\nProbably not. A charge-off (when a lender writes off a debt as a loss) that is accurate can stay on your report for its full reporting period, even after it's settled. Your charge-off was reported 2024-12-18. A settlement usually changes how the account shows, such as \"settled\" rather than unpaid, but I can't promise that or any removal. Your profile shows the negotiation is still open, with no settlement agreed as of 2026-10-08.\n\nBefore you accept any deal, ask what the creditor will report afterward. Get the terms in writing.\n\nNext step: Reply to the collection agency's September 22 letter by asking for written details of the $1,200 debt, or call a nonprofit credit counselor to talk through both accounts.",
+      "candidate_reply": "**1. Your on-time phone bill**\n\nIt may not be invisible, but it depends on where it's reported. Many phone providers don't report on-time payments to the credit bureaus on their own. Bill Reporting is a free feature that can report on-time phone, utility, and internet payments it finds in your linked bank account. Those go to Equifax only, not Experian or TransUnion. Late payments are never reported through the app.\n\nYour profile shows Bill Reporting isn't turned on. Whether it helps depends on the scoring model and whether a lender looks at Equifax. Your score of 560 uses VantageScore 3.0, and I can't say how Bill Reporting would affect it. It also doesn't offset the old collection.\n\n**2. Will the charge-off disappear after settlement?**\n\nNo. Settling doesn't remove the account or shorten its 7-year reporting period. A settled charge-off usually shows as \"settled for less than the full balance,\" and it still appears as a charge-off. Your charge-off's first missed payment was June 12, 2024, so 7 years from then would be June 2031.\n\nAlso, your Debt Settlement is still negotiating. Your last update on October 8 says no settlement has been agreed. Creditors don't have to agree, and no outcome is guaranteed.\n\nIf an amount is forgiven, it may count as taxable income. A tax professional can tell you how that applies to you.\n\nYour fee is 20% of the amount saved, charged only after a settlement is agreed and you make at least one payment under it. For example, a $1,000 balance settled for $600 saves $400, so the fee is $80.\n\nNext step: Keep paying your current phone bill on time, and get any settlement terms in writing before you pay anything.",
+      "judge_facts": [
+        {
+          "fact": "Says on-time phone bill payments are often missing from credit reports because many providers do not report them to the bureaus themselves",
+          "status": "PRESENT",
+          "note": "Reply says \"Many phone providers don't report on-time payments to the credit bureaus on their own.\""
+        },
+        {
+          "fact": "Says the app's Bill Reporting sends on-time phone bill payments only to Equifax, not to Experian or TransUnion",
+          "status": "PRESENT",
+          "note": "Reply says Bill Reporting payments \"go to Equifax only, not Experian or TransUnion.\""
+        },
+        {
+          "fact": "Mentions that Bill Reporting is free, without pushing her to turn it on",
+          "status": "PRESENT",
+          "note": "Reply calls Bill Reporting \"a free feature\" and notes it isn't on, without urging her to enable it."
+        },
+        {
+          "fact": "Says a settled charge-off still shows on her report as a charge-off rather than disappearing",
+          "status": "PRESENT",
+          "note": "Reply says a settled charge-off \"still appears as a charge-off\" and answers \"No\" to disappearing."
+        },
+        {
+          "fact": "Says settling does not shorten the charge-off's 7-year reporting period",
+          "status": "PRESENT",
+          "note": "Reply says settling doesn't \"shorten its 7-year reporting period.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-030",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 2,
+      "message": "The collection agency's letter from September says I owe $1,200 on the old phone account, but I think part of that is fees I never agreed to. How do I push back on the amount? Also, I've kept my store card paid on time and I really don't want to slip on it now. What's the best way to make sure that never happens?",
+      "skills": [
+        "collections",
+        "payment-history"
+      ],
+      "baseline_routing": [
+        "debt-and-collections"
+      ],
+      "candidate_routing": [
+        "collections",
+        "payment-history"
+      ],
+      "baseline_reply": "**1. Pushing back on the $1,200**\n\nIf you think part of the amount is wrong, you can dispute it. Here is how:\n\n- **Check the letter.** A validation notice lists the creditor, an itemized balance, and the date your validation period ends. That date is 30 days after you received the letter. Your profile shows the letter arrived around September 22, so check the date on it soon. I can't confirm the exact deadline from here.\n- **Dispute in writing.** If you do it within that period, the collector must stop collecting the disputed amount until it sends proof of the debt. Ask for an itemized breakdown showing which parts are fees.\n- **Dispute with the bureaus too.** Your profile shows this collection reported at $1,200. If the amount is wrong or incomplete, you can dispute that entry with each bureau.\n- **Be careful with payments or written promises.** On an old debt, a partial payment or written promise to pay can restart the state deadline for being sued in many states. The original delinquency was March 2022. I can't say whether the debt is time-barred. A legal aid office or attorney can check your state's rules. This is general information, not legal advice.\n\n**2. Keeping your store card on time**\n\nYour store card is current, with a $280 balance on an $800 limit (35% utilization, meaning how much of your limit you're using). You paid it on time on October 1. To keep that going:\n\n- Set up autopay for at least the minimum, so a busy week can't cause a missed payment.\n- Add a calendar reminder a few days before the due date.\n- Keep the balance low when you can. That helps utilization too.\n\nPayment history matters a lot in scoring, so staying current is a strong move.\n\nNext step: Find the validation period end date on the September letter and, if you're within it, send your written dispute asking for an itemized breakdown.",
+      "candidate_reply": "**1. Pushing back on the amount**\n\nSince you think part of the $1,200 is fees you never agreed to, you can question it. Here is how:\n\n- **Check the letter.** A validation notice should list the creditor, an itemized balance, and a validation period end date. That date is 30 days after you received the letter. Your profile shows the letter arrived around September 22, so that window may be closing or already closed. Check the date on the letter.\n- **Dispute in writing.** If you do it within that period, the collector must stop collecting the disputed amount until it sends proof of the debt. Ask for an itemized breakdown of the fees.\n- **Dispute with the credit bureaus too.** If the reported amount looks wrong, you can dispute it with each bureau. They generally have 30 days to investigate. Keep copies of everything.\n\nIf the period has passed, you can still ask for an itemized breakdown and dispute with the bureaus. Only dispute what you believe is inaccurate.\n\nAlso, the debt dates to March 2022. Before you make any payment or sign a promise to pay, talk to a legal aid office or attorney. In many states, a partial payment or written promise can restart the deadline for being sued. This is general information, not legal advice.\n\n**2. Keeping your store card on time**\n\nYour profile shows you paid it on time on October 1. To keep that going:\n\n- Set up autopay for at least the minimum payment.\n- Add a calendar reminder a few days before the due date.\n- Keep your balance low. Yours is $280 on an $800 limit, which is 35% utilization (how much of your limit you're using).\n\nA payment is generally reported late only when it is 30 or more days past due, so catching a missed one fast matters.\n\nNext step: Turn on autopay for at least the minimum payment on your store card.",
+      "judge_facts": [
+        {
+          "fact": "Suggests requesting debt validation from the collection agency, which lists an itemized balance she can check for the fees",
+          "status": "PRESENT",
+          "note": "The reply says the validation notice should list 'an itemized balance' and tells her to 'Ask for an itemized breakdown of the fees.'"
+        },
+        {
+          "fact": "Says that if she disputes in writing within the validation period (30 days after she receives the notice), the collector must stop collecting the disputed amount until it sends verification",
+          "status": "PRESENT",
+          "note": "The reply says that if she disputes in writing within the period (30 days after receipt), 'the collector must stop collecting the disputed amount until it sends proof of the debt.'"
+        },
+        {
+          "fact": "Says the credit bureau generally has 30 days to investigate a dispute of the collection entry",
+          "status": "PRESENT",
+          "note": "The reply says the bureaus 'generally have 30 days to investigate.'"
+        },
+        {
+          "fact": "Uses her profile: the Store card is open and current, with an on-time payment on 2026-10-01",
+          "status": "PRESENT",
+          "note": "The reply says 'Your profile shows you paid it on time on October 1,' which reflects the current Store card and its on-time payment."
+        },
+        {
+          "fact": "Suggests autopay or reminders for at least the minimum payment on the Store card",
+          "status": "PRESENT",
+          "note": "The reply says 'Set up autopay for at least the minimum payment' and to add a calendar reminder."
+        }
+      ],
+      "judge_reason": "All expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-031",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 3,
+      "message": "Three things:\n1. While you're still negotiating my bank card, can the bank keep coming after me or even sue me?\n2. If I signed up for Rent Reporting and came up short on rent one month, would that get reported as late?\n3. Should I pay my store card all the way down to $0 before the statement, or is leaving a little on it fine?",
+      "skills": [
+        "debt-settlement",
+        "rent-reporting",
+        "utilization"
+      ],
+      "baseline_routing": [
+        "debt-and-collections"
+      ],
+      "candidate_routing": [
+        "collections",
+        "rent-reporting",
+        "utilization"
+      ],
+      "baseline_reply": "**1. Collection and lawsuits during negotiation**\n\nYes, the bank can still try to collect, and it can still sue. Negotiating through Debt Settlement does not stop collection calls, lawsuits, or interest. Your profile shows the $2,800 bank card is still in negotiation, with no settlement agreed as of October 8. If you get court papers, don't ignore them. Missing the response deadline can lead to a default judgment. Contact an attorney or local legal aid office quickly. This is general information, not legal advice.\n\nAlso, before you make any payment or sign anything on this debt, ask a legal aid office or attorney to check your state's deadline for suing. In many states a partial payment or written promise to pay can restart it.\n\n**2. Rent Reporting and a short month**\n\nI don't have details on how Rent Reporting handles a short or late payment, so I can't say how it would be reported. Please check the program terms or ask human support (Help > Chat with support) before enrolling. In general, rent reporting sends your payment history to the bureaus, so a missed or late payment could show up. Your profile shows no Rent Reporting on file, and you're dealing with open collection accounts, so I'd hold off until you're sure you can pay in full each month.\n\n**3. Store card balance**\n\nLeaving a small balance is fine. You don't need to pay it to $0, and carrying a balance doesn't help your score. Your profile shows a $280 balance on an $800 limit, so utilization (how much of your limit you're using) is 35%. Lower is generally better, and the balance on the statement date is usually what gets reported. Paying it down before then may help. Keep paying on time, as you did on October 1.\n\nNext step: Write down your state's court-response deadline process by asking a legal aid office about your bank card debt before you pay or sign anything.",
+      "candidate_reply": "**1. Can the bank keep collecting or sue while you negotiate?**\nEnrolling in Debt Settlement does not stop the creditor from collecting, and I can't confirm any app-specific protection from a lawsuit. Your profile shows the $2,800 bank card charged off and still in negotiation, with no settlement agreed as of October 8. If you get court papers, don't ignore them. Missing the response deadline can lead to a default judgment. Contact an attorney or local legal aid office promptly. This is general information, not legal advice. Also, a partial payment or written promise to pay can restart a debt's legal deadline in many states, so check with legal aid before paying outside the negotiation.\n\n**2. Short on rent with Rent Reporting**\nNo. Late rent is never reported through the app. A missed month is simply not reported. Still, pay your landlord as soon as you can. Unpaid rent sent to a collection agency can show up on your reports through the collector. Rent Reporting costs $4 per month. Your profile shows you're not enrolled, and with the collection and charge-off on file, I'm not suggesting it now.\n\n**3. Store card: $0 or a little left?**\nA little left is fine. Your profile shows a $280 balance on an $800 limit, which is 35% on that card, and 35% overall. Common guidance is under 30%, and under 10% tends to be better. That would be about $80 or less on this card. Forcing $0 brings no real benefit. Paying before the statement closing date lowers the balance that gets reported. You don't need to carry a balance or pay interest to build credit.\n\nNext step: Check your store card's statement closing date, then pay the balance down before that date.",
+      "judge_facts": [
+        {
+          "fact": "Says negotiating through the Debt Settlement service does not stop the bank from collecting or suing",
+          "status": "PRESENT",
+          "note": "The reply says \"Enrolling in Debt Settlement does not stop the creditor from collecting\", says it can't confirm any protection from a lawsuit, and warns about court papers."
+        },
+        {
+          "fact": "Mentions that Rent Reporting costs $4 per month, without suggesting she sign up",
+          "status": "PRESENT",
+          "note": "The reply says \"Rent Reporting costs $4 per month\" and adds \"I'm not suggesting it now.\""
+        },
+        {
+          "fact": "Says late or missed rent is never reported through the app",
+          "status": "PRESENT",
+          "note": "The reply says \"Late rent is never reported through the app. A missed month is simply not reported.\""
+        },
+        {
+          "fact": "Gives her utilization as 35% ($280 of the $800 limit on the Store card), above the 30% guidance",
+          "status": "PRESENT",
+          "note": "The reply says \"$280 balance on an $800 limit, which is 35%\" and \"Common guidance is under 30%.\""
+        },
+        {
+          "fact": "Says paying the Store card down to a $0 balance brings no real benefit, so leaving a small balance reported is fine",
+          "status": "PRESENT",
+          "note": "The reply says \"A little left is fine\" and \"Forcing $0 brings no real benefit.\""
+        }
+      ],
+      "judge_reason": "All expected facts are present.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-032",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 3,
+      "message": "ok so a few things lol. the collection agency keeps bugging me about that $1,200 phone bill and i was thinking of just sending them like $50 to get them off my back, does that mess anything up? and would the credit builder plan help me rebuild, i keep seeing it in the app. oh and if my electric bill goes out a couple days late is that gonna show up on my credit",
+      "skills": [
+        "collections",
+        "credit-builder-account",
+        "bill-reporting"
+      ],
+      "baseline_routing": [
+        "debt-and-collections"
+      ],
+      "candidate_routing": [
+        "collections",
+        "credit-builder-account",
+        "bill-reporting"
+      ],
+      "baseline_reply": "**1. Sending $50 to the collection agency**\n\nYes, it could cause problems. The debt dates to March 2022, so it's old. In many states, a partial payment or a written promise to pay can restart the clock on the statute of limitations (the state deadline for being sued over a debt). A $50 payment also won't make the collection \"paid\" on your report, and it won't stop the agency from contacting you.\n\nI can't say whether your debt is time-barred or what your state's deadline is. A legal aid office or an attorney can check that before you pay anything. Your profile shows a letter from the agency on 2026-09-22. If you want to dispute the amount or ask for proof of the debt, that letter may have a validation deadline (30 days after you got it), so check the date on it. This isn't legal advice.\n\n**2. Credit Builder plan**\n\nI can't recommend it right now. You have two unpaid items, the collection and the charged-off card, and I don't have any details on the plan that I can share here. Your profile shows you aren't enrolled in it. If you still want to know more, human support can walk you through the cost and what happens if you miss a payment. They're in the app at Help > Chat with support.\n\nFirst, it may help to ask the collector about a payment plan, talk with a nonprofit credit counselor, or ask support about options. These are free or low cost.\n\n**3. Electric bill a couple days late**\n\nUsually, no. Most utilities don't report to the credit bureaus unless a bill goes seriously past due or goes to collections. Being a few days late may bring a late fee from the utility, so check their policy. Your profile doesn't show any utility reporting.\n\nNext step: Find the collection agency's letter from 2026-09-22 and check the date it lists for the end of the validation period.",
+      "candidate_reply": "**1. Sending $50 to the collector**\n\nIt can cause problems, so pause first. The debt's original delinquency date is March 14, 2022. A small payment or a written promise to pay can restart the state deadline for being sued over a debt (the statute of limitations) in many states. I can't say whether that applies to you or what your state's deadline is.\n\nA partial payment also won't stop the collection from showing on your report. It stays up to 7 years from the original delinquency date, and paying it only changes it to \"paid.\" Paying it in full does matter for some models: VantageScore 3.0, which your profile shows, ignores paid collections. A $50 payment leaves the balance unpaid, so that wouldn't apply.\n\nBefore you pay anything, a legal aid office or attorney can check your state's deadline. This is general information, not legal advice. The choice is yours.\n\n**2. Credit Builder plan**\n\nYou've got a collection and a charged-off card in settlement, so I won't suggest starting something new right now. If you're curious, it costs $6 a month for 24 months. It's reported as late if a payment is 30 or more days past due. You'd get back $144 minus any unpaid amounts at the end.\n\n**3. Electric bill a couple days late**\n\nThe app doesn't report late bills. Your profile shows Bill Reporting isn't on, and it's free if you want it later. Still, a provider can send an unpaid bill to collections on its own, so pay it soon.\n\nNext step: Call a local legal aid office to ask about your state's deadline before you send the collector any money.",
+      "judge_facts": [
+        {
+          "fact": "Flags that in many states even a partial payment like $50 can restart the statute of limitations on the $1,200 phone debt",
+          "status": "PRESENT",
+          "note": "Reply says \"A small payment or a written promise to pay can restart the state deadline for being sued... in many states.\""
+        },
+        {
+          "fact": "Says a payment does not restart the 7-year reporting clock, so the collection can stay only until about March 2029 (7 years from 2022-03-14)",
+          "status": "PRESENT",
+          "note": "Right after discussing a partial payment, reply says it \"stays up to 7 years from the original delinquency date\" and gives that date as March 14, 2022, which points to about March 2029."
+        },
+        {
+          "fact": "Mentions that the Credit Builder plan adds a $6 monthly payment for 24 months, without recommending she open it",
+          "status": "PRESENT",
+          "note": "Reply says \"it costs $6 a month for 24 months\" after saying \"I won't suggest starting something new right now.\""
+        },
+        {
+          "fact": "Says late bills are never reported through the app's Bill Reporting",
+          "status": "PRESENT",
+          "note": "Reply says \"The app doesn't report late bills.\""
+        }
+      ],
+      "judge_reason": "All four facts are present. F2 is inferred from tying the 7-year clock to the March 14, 2022 delinquency date, though the reply never states March 2029 explicitly.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-035",
+      "dataset": "multi_intent",
+      "persona": "multi-product",
+      "intents": 3,
+      "message": "Getting ready to apply for a mortgage sometime next year, so a few things: 1) Will the lender actually count my rent history? 2) Is there a way to see if I'd be approved for a Marketplace card without a hard inquiry? 3) If I pay my cards down to zero right before I apply, will the lender only see that, or do they look back at older balances too?",
+      "skills": [
+        "rent-reporting",
+        "marketplace-offers",
+        "utilization"
+      ],
+      "baseline_routing": [
+        "rent-and-bills"
+      ],
+      "candidate_routing": [
+        "rent-reporting",
+        "marketplace-offers",
+        "utilization"
+      ],
+      "baseline_reply": "**1) Will the lender count your rent?**\nI can't say for sure. It depends on the lender's choices. Your profile shows 27 months of rent reported in total (15 since you enrolled, plus 12 past months added). The app reports rent to TransUnion and Experian, not Equifax. Whether it counts also depends on the scoring model. VantageScore 4.0 can count rent, and older Classic FICO versions ignore it. Since September 2026, any approved lender may choose VantageScore 4.0 for loans sold to Fannie Mae and Freddie Mac, but the choice is the lender's. Ask each lender which score and bureaus it uses.\n\n**2) Marketplace card approval without a hard inquiry?**\nI don't have anything in my guidance about prequalification or soft-pull checks for Marketplace offers, so I can't confirm that. Support can tell you. Your profile shows 0 hard inquiries in the last 12 months. If you apply for anything before your mortgage, an inquiry could be added, so many people hold off on new credit. If you do apply through the Marketplace, know that partners may pay the app when a user is approved.\n\n**3) Paying cards to zero before applying**\nYour credit report shows balances as your card issuers report them, usually around each statement closing date. A lender sees the current report, not a full history of past balances. Your profile shows overall utilization (how much of your limits you use) at 12%, with $300 on $2,500 of limits. Your Secured Card statement closes on the 10th. Paying before that date means a lower balance may be reported. Mortgage lenders also look at other parts of your report, so I can't say how a given balance will affect your approval.\n\nNext step: When you start talking to mortgage lenders, ask each one which scoring model and credit bureaus it uses.",
+      "candidate_reply": "**1) Will the lender count your rent history?**\nIt depends on the lender's choices. Your profile shows 27 months of rent reported in total (15 since you enrolled, plus 12 past months added). That rent goes to TransUnion and Experian only, not Equifax. Your score is VantageScore 3.0, which can count rent. But FICO 8 ignores rent, and some mortgage lenders use older \"Classic FICO\" versions that also ignore it. Since September 2026, any approved lender may choose VantageScore 4.0 for loans sold to Fannie Mae and Freddie Mac, which can count rent. I can't say what a specific lender will do, so ask which score and which bureaus they use.\n\n**2) Checking a Marketplace card without a hard inquiry**\nSome issuers offer prequalification, which is usually a soft inquiry that doesn't affect scores. Prequalification is not approval, and I don't know your approval odds. If you do apply, it usually triggers a hard inquiry. Your profile shows no hard inquiries in the last 12 months. Marketplace partners may pay the app when a user is approved. Since you're planning a mortgage, you may want to hold off on new applications unless you need the card.\n\n**3) Paying cards to zero before you apply**\nMost scores, including FICO 8, look at the balances currently reported. Issuers usually report the statement balance, so pay before the statement closes. Your Secured Card statement closes on the 10th. Your profile shows utilization (how much of your card limits you're using) at 12%, with $300 owed on $2,500 in limits. Some newer models, such as FICO 10T and VantageScore 4.0 with trended data, also look at up to 24 months of balance history. Getting to 0% on every card isn't needed. Under 10% tends to be better.\n\nNext step: When you start talking to mortgage lenders, ask each one which score model and which bureaus they pull.",
+      "judge_facts": [
+        {
+          "fact": "Notes 27 months of reported rent on file (15 since enrolling plus 12 past months added)",
+          "status": "PRESENT",
+          "note": "Reply says \"27 months of rent reported in total (15 since you enrolled, plus 12 past months added).\""
+        },
+        {
+          "fact": "Says loans sold to Fannie Mae and Freddie Mac may use Classic FICO, which ignores rent, or VantageScore 4.0, which can count it",
+          "status": "PRESENT",
+          "note": "Reply says some mortgage lenders use \"Classic FICO\" versions that ignore rent, and that lenders may choose VantageScore 4.0 for Fannie Mae and Freddie Mac loans, which can count rent."
+        },
+        {
+          "fact": "Says some card issuers offer prequalification, usually a soft inquiry that does not affect scores",
+          "status": "PRESENT",
+          "note": "Reply says \"Some issuers offer prequalification, which is usually a soft inquiry that doesn't affect scores.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
+        },
+        {
+          "fact": "Says trended-data models, such as FICO 10T and VantageScore 4.0 when trended data is used, can look at up to 24 months of balance history rather than only the latest balance",
+          "status": "PRESENT",
+          "note": "Reply says FICO 10T and VantageScore 4.0 with trended data \"also look at up to 24 months of balance history.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
       "check_failures": [],
       "status": "ok",
       "error": null,
@@ -735,7 +1308,7 @@
     }
   ],
   "verdict": "Not passed",
-  "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.754): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "verdict_note": "The verdict is Not passed because 4 cases regressed, although the net change is a significant improvement (p = 0.019).",
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,
@@ -749,33 +1322,33 @@
     "family": 4,
     "correction": "Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha",
     "overall": {
-      "cases": 40,
+      "cases": 64,
       "left_out": 0,
-      "mean_diff": 0.05,
-      "improved": 6,
+      "mean_diff": 0.1719,
+      "improved": 15,
       "regressed": 4,
-      "p_value": 0.753906,
-      "significant": false
+      "p_value": 0.019211,
+      "significant": true
     },
     "by_dataset": {
       "single_topic": {
         "cases": 12,
         "left_out": 0,
         "mean_diff": 0.1667,
-        "improved": 2,
-        "regressed": 0,
-        "p_value": 0.5,
+        "improved": 3,
+        "regressed": 1,
+        "p_value": 0.625,
         "p_holm": 1.0,
         "significant": false
       },
       "multi_intent": {
-        "cases": 12,
+        "cases": 36,
         "left_out": 0,
-        "mean_diff": 0.0833,
-        "improved": 4,
-        "regressed": 3,
-        "p_value": 1.0,
-        "p_holm": 1.0,
+        "mean_diff": 0.2778,
+        "improved": 12,
+        "regressed": 2,
+        "p_value": 0.012939,
+        "p_holm": 0.051758,
         "significant": false
       },
       "context_use": {

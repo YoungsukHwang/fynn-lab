@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ScenarioCard } from "@/components/evals/ScenarioCard";
 import { Chip, NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
 import { getPersonas, getResultsData } from "@/lib/evalData";
-import { KIND_LABELS, pPhrase } from "@/lib/evalLabels";
+import { formatTimestamp, KIND_LABELS, pPhrase } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Skill edits results" };
 
@@ -11,6 +11,11 @@ export default async function SkillEditsResultsPage() {
   const [data, personas] = await Promise.all([getResultsData(), getPersonas()]);
   const personaNames = Object.fromEntries(personas.map((p) => [p.id, p.name]));
   const ran = data.scenarios.filter((s) => s.comparison);
+  // Baselines older than the current After run: the edits were compared with a run since replaced.
+  const after = data.after?.meta ?? null;
+  const olderBaselines = [
+    ...new Set(ran.map((s) => s.comparison?.report.baseline.createdAt ?? "").filter((t) => t && t !== after?.createdAt)),
+  ];
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
@@ -21,6 +26,14 @@ export default async function SkillEditsResultsPage() {
           overall pass rate moved by more than run-to-run noise.
         </p>
       </PageHero>
+
+      {after && olderBaselines.length > 0 && (
+        <NotGenerated title="These edits predate the current After run">
+          They were compared with the After run of {olderBaselines.map(formatTimestamp).join(" and ")}, kept in
+          results/archive/. The current After run ({formatTimestamp(after.createdAt)}) covers {after.cases} cases, so
+          cases added since then show here only once the edits are rerun against it.
+        </NotGenerated>
+      )}
 
       <OnThisPage
         links={[

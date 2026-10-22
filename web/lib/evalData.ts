@@ -824,6 +824,7 @@ export interface Comparison {
   regressed: CaseChange[];
   improved: CaseChange[];
   unstable: CaseChange[];
+  baselineCases: number | null; // cases in the baseline run the report compared against, when that file is found
   // Why some case details may be partial (e.g. a results file newer than the report).
   notes: string[];
 }
@@ -884,10 +885,26 @@ function side(result: CaseResult): CaseSide {
   };
 }
 
+/** Earlier results files kept in results/archive/ after a newer run replaced them, while a report still compares them. */
+const ARCHIVE_DIR = "archive";
+
+async function archivedRun(info: RunInfo): Promise<Run | null> {
+  for (const name of await listDir(path.join(resultsDir(), ARCHIVE_DIR))) {
+    if (!name.endsWith(".json")) continue;
+    const run = await getRun(path.join(ARCHIVE_DIR, name));
+    if (run && run.name === info.name && run.scenario === info.scenario && run.createdAt === info.createdAt) return run;
+  }
+  return null;
+}
+
 async function matchingRun(info: RunInfo, label: string, notes: string[]): Promise<Run | null> {
   const file = runFileFor(info);
   if (!file) return null;
   const run = await getRun(file);
+  if (run?.createdAt !== info.createdAt) {
+    const archived = await archivedRun(info);
+    if (archived) return archived;
+  }
   if (!run) {
     notes.push(`The ${label} results file (${file}) is missing, so some case details are partial.`);
     return null;
@@ -1002,6 +1019,7 @@ async function buildComparison(report: Report, cases: EvalCase[]): Promise<Compa
     regressed: report.transitions.regressed.map((id) => change(id, "regressed")),
     improved: report.transitions.improved.map((id) => change(id, "improved")),
     unstable: report.transitions.unstable.map((id) => change(id, "unstable")),
+    baselineCases: baselineRun?.cases.length ?? null,
     notes,
   };
 }

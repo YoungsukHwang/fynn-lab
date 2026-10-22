@@ -62,7 +62,7 @@ The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
 
 - **What it calls.** The runner calls the Anthropic API for the routers, the answer model and the Opus judge, so it needs `ANTHROPIC_API_KEY` in `backend/.env`. The tests never call the API.
 - **Inputs.** The 64 cases are in `backend/evals/cases/` (four datasets). Each scenario in `scenarios/<id>/` has a `scenario.yaml` with its hypothesis and an edited copy of one skill. The copy is overlaid at run time; `skills/` is never modified.
-- **Outputs.** Results go to `results/` at the repo root. Run the commands from `backend/`.
+- **Outputs.** Results go to `results/` at the repo root. Run the commands from `backend/`. When a new run replaces a results file that a committed report still compares, the old file moves to `results/archive/`, where the site still finds it by name and timestamp.
 
 ```bash
 cd backend
@@ -88,7 +88,7 @@ cd backend
 - **Baseline freshness.** Run the scenarios against an `after.json` made from the current `skills/`. The runner warns when the baseline's skill hashes differ.
 - **Reports.** A report compares only the cases in the candidate. The verdict is Passed when no case regressed. A scenario report also says whether the result matches the hypothesis in `scenario.yaml`.
 - **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, and `--workers N` sets parallel case runs (default 8).
-- **Cost.** The token usage recorded in the committed results comes to at most about $1.30 per 40 case runs (Sonnet 5.5 answering and an Opus 5.5 judge, at list prices), so about $2.10 for a single-run round of the current 64 cases. `--repeats K` multiplies that by K: the set of commands above with K=3 is about 816 case runs (before, after, S2 and S3 on 64 cases each, S1 on about 16), roughly $27. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
+- **Cost.** The token usage recorded in the committed results comes to at most about $2.20 for one bot's single run of the current 64 cases (Sonnet 5.5 answering and an Opus 5.5 judge, at list prices). The first two 40-case runs came to at most about $2.60, and the two 64-case runs of 2026-10-22 used about 1.7 times their tokens. `--repeats K` multiplies that by K: the set of commands above with K=3 is about 816 case runs (before, after, S2 and S3 on 64 cases each, S1 on about 16), roughly $28. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
 
 ## Noise and significance
 
@@ -112,18 +112,6 @@ The first real run had several scenario flips that could be run-to-run variation
 - **Calibration.** In A/A simulations on the original 40-case layout (6 personas, K=3), the permutation test flags about 3% of no-change runs at 0.05, and 0 to 4% depending on how noisy the cases are. It never went above 5%, because an exact test on coarse pass fractions is a little conservative. When 8 cases really drop (from passing 95% of the time to 30%), the overall test catches it roughly 75 to 95% of the time at K=3 and 20 to 30% at K=1, depending on how noisy the other cases are. That gap is the case for K=3. With nothing changed, the per-case verdict still reads Not passed in about 93 to 99.7% of comparisons at K=1 and 53 to 70% at K=3, and at K=1 a real 10-point gain is caught only about one time in five. These figures come from one-off simulations that are not committed.
 - **Caveats.** A few dozen cases cannot detect small effects, and a non-significant result is not evidence of no change.
 
-## Eval set expansion
-
-The first Before vs After run could not show much difference, because 31 of the 40 cases fit inside one Before domain, where the Before agent already holds every skill the case needs. On 2026-10-22, 24 multi-question cases were added (`mi-013` to `mi-036`, four per persona, 11 with two questions and 13 with three):
-
-- **Each needs a second domain.** Its labeled skills span two or more Before domains (13 span two, 11 span three, covering every domain pair).
-- **Each extra question hinges on a skill-only fact**: a price, fee, bureau list, threshold or how-to-answer rule found only in that topic skill, not in the profile, the always-on skills or general credit knowledge. A Before agent routed elsewhere should miss it.
-- **Facts are single claims**, and a comment above each one names the skill line or profile field it comes from. A separate reviewer checked every fact against its source, and dropped facts the message never asked for.
-- **Four cases need four topic skills** (`mi-016`, `mi-020`, `mi-028`, `mi-036`), one more than the After bot's cap of 3 new skills (a Fynn Lab setting). They test raising the cap to 4.
-- **Labels on five existing cases were completed** (`st-001`, `st-002`, `mi-003` and `mi-008` gain utilization, `sb-001` gains payment-history), because a fact in each relied on that skill. With the added label, `mi-008` also needs four skills.
-
-The committed results predate the expansion and cover the original 40 cases. The new cases need a rerun: about $4.20 to run both bots once on all 64 cases, or the K=3 set above.
-
 ```bash
 # A/A: a second baseline run with nothing changed and the same --repeats, then a report against it
 .venv/bin/python -m evals.run --bot after --repeats 3 --out ../results/aa/after.json
@@ -135,6 +123,32 @@ The committed results predate the expansion and cover the original 40 cases. The
 ```
 
 `report.json` gains `flag_rule`, `paired_test` (with `by_dataset`, `p_holm`, `family` and the descriptive `ci`), `noise_floor` (with its `unit`), `noise_floor_note`, `verdict_note`, `kind`, `improvements`, `sharp_changes`, `baseline_errors` and an `unstable` transition. `report.md` gives the test, the noise floor and any verdict note next to the verdict, plus a "Noise and significance" section.
+
+## Eval set expansion
+
+The first Before vs After run could not show much difference, because 31 of the 40 cases fit inside one Before domain, where the Before agent already holds every skill the case needs. On 2026-10-22, 24 multi-question cases were added (`mi-013` to `mi-036`, four per persona, 11 with two questions and 13 with three):
+
+- **Each needs a second domain.** Its labeled skills span two or more Before domains (13 span two, 11 span three, covering every domain pair).
+- **Each extra question hinges on a skill-only fact**: a price, fee, bureau list, threshold or how-to-answer rule found only in that topic skill, not in the profile, the always-on skills or general credit knowledge. A Before agent routed elsewhere should miss it.
+- **Facts are single claims**, and a comment above each one names the skill line or profile field it comes from. A separate reviewer checked every fact against its source, and dropped facts the message never asked for.
+- **Four cases need four topic skills** (`mi-016`, `mi-020`, `mi-028`, `mi-036`), one more than the After bot's cap of 3 new skills (a Fynn Lab setting). They test raising the cap to 4.
+- **Labels on five existing cases were completed** (`st-001`, `st-002`, `mi-003` and `mi-008` gain utilization, `sb-001` gains payment-history), because a fact in each relied on that skill. With the added label, `mi-008` also needs four skills.
+
+### Rerun on 64 cases
+
+Both bots were rerun on 2026-10-22, once per case. The earlier 40-case After run moved to `results/archive/`, because the three skill-edit reports still compare against it.
+
+- **Overall.** After passes 42 of 64 (66%) and Before 31 of 64 (48%). 15 cases pass on After only and 4 on Before only, an exact McNemar p of 0.019. The verdict stays Not passed because of the 4 regressions.
+- **Where the gain is.** On the 33 cases that need a second domain, After passes 17 and Before 5. On the 31 that fit in one domain it is 25 against 26.
+- **The new cases.** Before passes none of the 24. Of the 51 facts it missed there, 48 come from a skill outside the domain it routed to. After passes 11.
+
+A review of every After failure on the new cases, plus the 4 regressions, read each reply, judge verdict, source comment and skill. A second reviewer then tried to refute each claimed case or judge defect. The 17 failures sort into five causes:
+
+- **Cap (4).** In `mi-016`, `mi-020`, `mi-028` and `mi-036` the router picked 3 of the 4 labeled skills, and every missed fact comes from the one it dropped. In `mi-020` it spent two slots on the first question and none on the third.
+- **Skill description hides the need (5).** The 10-year closed-account line lives only in the score-changes body, and credit-builder-account just points there (`mi-019`, `mi-034`; Before misses it too). The free-reports line sits in payment-history, whose description never mentions credit reports (`mi-024`). Score-drop questions do not pull in utilization or payment-history (`st-002`, `sb-001`).
+- **Router miss with a clear description (1).** `mi-022`.
+- **Reply missed a fact from a loaded skill (5).** `mi-015`, `mi-018`, `mi-025`, `mi-006` and `mi-012`. `mi-012` passes about half the time on both bots.
+- **Grading (2).** In `mi-021` the judge rejected a correct, unhedged statement, prompted by the fact's wording "as the plan's own rule". In `mi-033` the fact bundles "at least the minimum payment" into a reminder suggestion. Both facts need rewording before the next run.
 
 ## Layout
 
