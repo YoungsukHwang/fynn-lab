@@ -26,7 +26,7 @@ Both bots read the same skill files, see the same member profile and use the sam
 | M3 | Eval set, code checks, LLM judge, parallel runner | Done |
 | M4 | Regression report, dependent-test selection, three skill-edit scenarios | Done |
 | Later | Batch API runner; compare skill budgets (cap 3/5/none) and answer models (Opus/Sonnet/Haiku) | Planned |
-| M5 | Monitoring framework and results pages, built from the committed eval results | Done |
+| M5 | Eval pages built from the committed results: Before vs After, Skill edits, Noise & A/A, each with Framework and Results tabs | Done |
 | Stats | Repeated runs, A/A noise floor, paired tests, flag rule, Holm correction (see Noise and significance) | Built; the committed results are still single runs |
 | M6 | Optional public deployment | Planned |
 
@@ -109,7 +109,7 @@ The first real run had several scenario flips that could be run-to-run variation
   - A second baseline run passed as `report.py --aa PATH` gives an observed count under the flag rule instead. It should have the candidate's K; when it does not, the report warns and says which rule it used instead.
   - A report whose two runs share the bot, skills and models is marked as an A/A report. Code, the judge and the cases are not fingerprinted, so it is only pure noise if nothing else changed.
 - **Multiplicity.** The per-dataset p-values are Holm-corrected together, which controls the chance of any false positive among them. The overall test is the primary one at 0.05 and is not adjusted, so across every row of the table that chance can reach 0.10. Significant means p at or below 0.05.
-- **Calibration.** In A/A simulations on this eval set's layout (40 cases, 6 personas, K=3), the permutation test flags about 3% of no-change runs at 0.05, and 0 to 4% depending on how noisy the cases are. It never went above 5%, because an exact test on coarse pass fractions is a little conservative. When 8 cases really drop (from passing 95% of the time to 30%), the overall test catches it roughly 75 to 95% of the time at K=3 and 20 to 30% at K=1, depending on how noisy the other cases are. That gap is the case for K=3.
+- **Calibration.** In A/A simulations on this eval set's layout (40 cases, 6 personas, K=3), the permutation test flags about 3% of no-change runs at 0.05, and 0 to 4% depending on how noisy the cases are. It never went above 5%, because an exact test on coarse pass fractions is a little conservative. When 8 cases really drop (from passing 95% of the time to 30%), the overall test catches it roughly 75 to 95% of the time at K=3 and 20 to 30% at K=1, depending on how noisy the other cases are. That gap is the case for K=3. With nothing changed, the per-case verdict still reads Not passed in about 93 to 99.7% of comparisons at K=1 and 53 to 70% at K=3, and at K=1 a real 10-point gain is caught only about one time in five. These figures come from one-off simulations that are not committed.
 - **Caveats.** 40 cases cannot detect small effects, and a non-significant result is not evidence of no change.
 
 ```bash
@@ -192,5 +192,9 @@ npm run dev                 # http://localhost:3000
 - **Pages.** `/` is the demo: pick a synthetic member, then send one message to both bots. Each column shows the reply, the router's decision and reason, and the architecture diagram with the agent or skills that were used.
 - **Different backend.** To point the site at a different backend, set `NEXT_PUBLIC_API_URL`. It is read at build time.
 - **CORS.** The API allows `localhost:3000` and `127.0.0.1:3000`. Set `FYNN_CORS_ORIGINS` in `backend/.env` for any other origin.
-- **Eval pages.** `/framework` describes the eval set, the scoring and the regression loop; `/results` shows the committed results and reports, including each comparison's noise check.
+- **Eval pages.** Three sections, each with a Framework tab and a Results tab, all built from the committed results and reports:
+  - `/before-after`: how the two bots are compared (designs, the domain map, the eval set, scoring), and what the eval found, split by whether a case needs a second domain, by number of questions and by dataset;
+  - `/skill-edits`: the regression loop and dependent-test selection, and the three scenario reports;
+  - `/noise`: the statistics (repeats, flag rule, net-change tests, A/A noise floor, calibration and power), and every comparison's noise check with the runs behind it.
+  The old `/framework` and `/results` paths redirect to the Before vs After tabs.
 - **Checks.** `npm run typecheck` (generates route types, then runs `tsc`) and `npm run lint`.

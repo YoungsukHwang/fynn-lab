@@ -67,24 +67,20 @@ v1에서 말하는 "모니터링"은 **출시 전 회귀 테스트**입니다. �
 - 출처 구분: After 칼럼과 다이어그램에 "Fynn Lab 추가 사항 (블로그에 없음)"을 따로 표시합니다. 대상은 새 스킬 최대 3개, 직전 턴 이월입니다. 이월은 라우터가 아니라 앱이 한다는 점도 함께 보여줍니다.
 - 사이트 문구는 모두 영어입니다. 한국어는 이 SPEC에만 씁니다.
 
-### 1-2. Monitoring framework
+### 1-2. 평가 섹션 3개 (각각 Framework / Results 탭)
 
-- 블로그 세 번째 다이어그램을 재현한 루프 그림: 스킬 수정 → (테스트 추가) → 의존 테스트 실행 → 회귀 리포트 → 안전? → 배포
-- 평가셋 소개: 페르소나 카드, 데이터셋 4종, 케이스 예시
-- 채점 방식: 객관 체크 목록, judge 프롬프트 원문
-- 스킬 ↔ 테스트 의존 맵 (표)
+상단 메뉴는 Demo, Before vs After, Skill edits, Noise & A/A입니다. 평가 섹션마다 Framework 탭(어떻게 재는가)과 Results 탭(무엇이 나왔는가)이 있습니다. 예전 `/framework`, `/results` 주소는 Before vs After 탭으로 넘어갑니다.
 
-### 1-3. Monitoring results
-
-- **결과 A: Before vs After**
-  - 데이터셋별 통과율 막대 그래프
-  - 메시지 안 질문 수(1, 2, 3)별 통과율. 대표 차트입니다.
-- **결과 B: After 봇의 스킬 개선 시나리오 3개** (3장 "스킬 개선 시나리오" 참고)
-  - 시나리오마다: 무엇을 왜 고쳤는지, 미리 적어 둔 가설, 다시 돌린 케이스 수 (의존 테스트 선택 결과)
-  - 요약: 통과/불통과, 개선·퇴보·유지 개수, 데이터셋별 변화
-  - 실패 상세: 케이스, 이전 답, 새 답, judge 이유, (S3) 라우터가 고른 스킬의 변화
-  - 판정: 배포해도 되는가, 그리고 가설이 맞았는가
-  - 판정 옆에 노이즈 점검: 짝지은 검정의 p값과 유의성, A/A 노이즈 기준선, 플래그 규칙, 데이터셋별 Holm 보정 p값
+- **Before vs After** (`/before-after`)
+  - Framework: 두 설계의 차이, Before 도메인별로 에이전트가 보는 스킬 (도메인 지도), 두 번째 도메인이 필요한 케이스 수와 목록, 평가셋 (페르소나, 데이터셋, 케이스), 채점 (객관 체크, judge, 판정)
+  - Results: 케이스 통과율과 기대 사실 비율 (두 숫자를 나란히), 덤벨 차트 하나에 공통 축으로 "두 번째 도메인이 필요한가 / 질문 수 / 데이터셋" 그룹, 데이터에서 계산한 "읽는 법" 요약, 케이스별 결과 (두 번째 도메인이 필요한 케이스는 따로 표시)
+  - 덤벨은 Before를 코랄(#e0633a), After를 Fynn 파랑으로 그립니다. 피치(#f79e7d)는 마크로 쓰기엔 너무 밝아서(흰 배경에서 2.0:1) 같은 계열의 진한 색을 쓰고, dataviz 팔레트 검증기로 확인했습니다. 두 봇이 같으면 반반 점 하나로 그리고, 모든 차트에 표 보기가 있습니다.
+- **Skill edits** (`/skill-edits`)
+  - Framework: 회귀 루프 그림, 의존 테스트 선택 규칙, 스킬별 라벨 케이스 수, 시나리오 3개와 미리 적은 가설
+  - Results: 한눈에 보는 표 (다시 돌린 케이스, 개선/퇴보, 순변화 p, 판정, 가설), 시나리오 카드 (판정, 순변화 배지, 판정 메모, 실패 상세)
+- **Noise & A/A** (`/noise`)
+  - Framework: 왜 케이스별 판정만으로는 부족한가 (변화가 없어도 K=1이면 93~99.7%가 Not passed), 방법 7가지, 보정과 검출력 (시뮬레이션 범위 막대), "유의하지 않다"를 읽는 법
+  - Results: A/A 기준선 측정 여부, 비교별 한 줄 요약 (실행 횟수, 평균 변화 막대, 순변화 검정, 판정), 비교별 노이즈 점검 패널, 결과 파일과 실행 횟수
 - 결과는 미리 돌려서 커밋한 JSON을 읽어서 보여줍니다. 사이트에서 평가를 실시간으로 돌리지 않습니다 (비용과 재현성 때문).
 
 ## 2. 챗봇 설계
@@ -286,13 +282,13 @@ fynn report results/a.json results/b.json
   - FastAPI로 HTTP API를 엽니다.
   - Anthropic Python SDK, pydantic (구조화 출력과 데이터 검증), PyYAML (테스트 케이스), pytest를 씁니다.
 - **프론트엔드 (Next.js + TypeScript)**
-  - 페이지 3개: `/` Demo, `/framework`, `/results`. 상단 내비로 이동합니다.
-  - Tailwind로 스타일링하고, 차트는 Recharts로 그립니다.
+  - 상단 내비: `/` Demo와 평가 섹션 3개 (`/before-after`, `/skill-edits`, `/noise`). 섹션마다 Framework와 Results 탭이 있습니다.
+  - Tailwind로 스타일링합니다. 차트는 차트 라이브러리 없이 서버 컴포넌트로 직접 그립니다 (`web/components/evals/charts.tsx`의 덤벨과 수치 타일 등).
   - API 키는 백엔드 `.env`에만 둡니다. 프론트는 키를 절대 보지 않습니다.
 - **평가 결과**
   - `results/*.json`으로 커밋합니다.
-  - Results 페이지는 Next.js 서버 컴포넌트가 이 파일들을 읽어서 그립니다.
-  - Framework 페이지도 같은 방식으로 `skills/`, `personas/`, `evals/cases/`를 읽습니다.
+  - Results 탭은 Next.js 서버 컴포넌트가 이 파일들을 읽어서 그립니다.
+  - Framework 탭도 같은 방식으로 `skills/`, `personas/`, `evals/cases/`를 읽습니다.
 - **실행**
   - 로컬: 백엔드 `uvicorn` (포트 8000), 프론트 `npm run dev` (포트 3000)
   - 배포는 M6에서 정합니다 (예: 백엔드 Render 또는 Fly, 프론트 Vercel).
@@ -400,9 +396,10 @@ fynn-lab/
 └── web/                  # Next.js
     ├── app/
     │   ├── page.tsx          # Demo
-    │   ├── framework/page.tsx
-    │   └── results/page.tsx
-    └── components/           # ChatColumn, ArchitectureDiagram, PersonaCard, charts
+    │   ├── before-after/     # layout.tsx + framework/page.tsx + results/page.tsx
+    │   ├── skill-edits/      # 같은 구조
+    │   └── noise/            # 같은 구조
+    └── components/           # ChatColumn, ArchitectureDiagram, PersonaCard, evals/ (charts, NoiseCheck, ScenarioCard 등)
 ```
 
 ## 6. 구현 순서
@@ -415,8 +412,8 @@ fynn-lab/
 | M2 | FastAPI + Next.js Demo 페이지 (좌우 채팅, 라우팅 결과, 다이어그램) | 브라우저에서 비교 |
 | M3 | 평가셋, 객관 체크, judge, 실행기 (Batch API); 스킬 예산 비교 (새 스킬 상한 3/5/무제한, 이월 0/2); 답변 모델 비교 | 두 버전 전체 평가 결과 JSON |
 | M4 | 회귀 리포트, 의존 테스트 선택, 스킬 개선 시나리오 3개 (S1~S3) | 시나리오별 리포트 Markdown + 가설 대비 결과 |
-| M5 | Framework, Results 페이지 | 사이트 3개 섹션 완성 |
-| 통계 | 반복 실행, A/A 노이즈 기준선, 짝지은 검정, 플래그 규칙, Holm 보정 | 리포트와 Results 페이지에 판정 옆 노이즈 점검 표시 |
+| M5 | 평가 페이지: Before vs After, Skill edits, Noise & A/A (각각 Framework / Results 탭) | 사이트의 평가 섹션 3개 완성 |
+| 통계 | 반복 실행, A/A 노이즈 기준선, 짝지은 검정, 플래그 규칙, Holm 보정 | 리포트의 판정 옆, 그리고 Noise & A/A 탭에 노이즈 점검 표시 |
 | M6 (선택) | 배포 (공개 데모면 사용량 제한 필요) | 공개 URL |
 
 ## 7. 결정 사항

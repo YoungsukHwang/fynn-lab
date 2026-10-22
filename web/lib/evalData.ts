@@ -131,6 +131,8 @@ export interface CaseResult {
   passes: number; // runs passed
   repeats: number; // runs of this case
   errored: number; // runs that errored
+  factsPresent: number; // expected facts graded PRESENT, over every judged run
+  factsGraded: number; // expected facts graded, over every judged run
   status: string; // "ok" | "error"
   error: string | null;
 }
@@ -373,6 +375,7 @@ function toCaseResult(value: Obj): CaseResult {
     : value.status === "error"
       ? 1
       : 0;
+  const graded = (runs.length ? runs : [value]).flatMap((run) => (isObj(run.judge) ? objList(run.judge.facts) : []));
   return {
     id: str(value.id),
     dataset: str(value.dataset),
@@ -390,6 +393,8 @@ function toCaseResult(value: Obj): CaseResult {
     passes: num(value.passes, passes),
     repeats,
     errored,
+    factsPresent: graded.filter((fact) => fact.status === "PRESENT").length,
+    factsGraded: graded.length,
     status: str(value.status, "ok"),
     error: strOrNull(value.error),
   };
@@ -1062,4 +1067,120 @@ export async function getFrameworkData(): Promise<FrameworkData> {
       : null;
   const repeats = { before: before?.repeats ?? null, after: after?.repeats ?? null };
   return { repeats, cases, personas, skills, scenarios, judgeInstructions, judgeModel };
+}
+
+/* ----------------------------------------------------------------------------------------------
+ * Before vs After: where the two designs can differ
+ * -------------------------------------------------------------------------------------------- */
+
+export interface GroupStat {
+  cases: number;
+  passed: number; // passing runs
+  runs: number;
+  rate: number | null; // passing runs over runs
+  factsPresent: number;
+  factsGraded: number;
+}
+
+export interface CaseGroup {
+  key: string;
+  label: string;
+  note: string;
+  before: GroupStat | null;
+  after: GroupStat | null;
+}
+
+export interface BeforeAfterData {
+  before: { meta: RunMeta; run: Run } | null;
+  after: { meta: RunMeta; run: Run } | null;
+  comparison: Comparison | null;
+  overall: CaseGroup | null;
+  byDomains: CaseGroup[]; // cases whose labeled skills need one Before domain vs more than one
+  crossByQuestions: CaseGroup[]; // the cases that need a second domain, split by number of questions
+  byQuestions: CaseGroup[];
+  byDataset: CaseGroup[];
+  crossDomain: { ids: string[]; domains: Record<string, string[]> }; // case id -> Before domains it spans
+  caseCount: number;
+}
+
+function groupStat(run: Run | null, ids: Set<string>): GroupStat | null {
+  if (!run) return null;
+  const cases = run.cases.filter((c) => ids.has(c.id));
+  const passed = cases.reduce((sum, c) => sum + c.passes, 0);
+  const runs = cases.reduce((sum, c) => sum + c.repeats, 0);
+  return {
+    cases: cases.length,
+    passed,
+    runs,
+    rate: runs ? passed / runs : null,
+    factsPresent: cases.reduce((sum, c) => sum + c.factsPresent, 0),
+    factsGraded: cases.reduce((sum, c) => sum + c.factsGraded, 0),
+  };
+}
+
+/** Before domains a case's labeled topic skills fall in. Only cases spanning two or more need a second domain expert. */
+export function caseDomains(evalCase: EvalCase, skillDomain: Map<string, string>): string[] {
+  return [...new Set(evalCase.skills.map((skill) => skillDomain.get(skill)).filter((d): d is string => Boolean(d)))].sort();
+}
+
+/** Everything the Before vs After pages show. */
+export async function getBeforeAfterData(): Promise<BeforeAfterData> {
+  "use cache";
+  cacheLife("max");
+
+  const [cases, skills, before, after, report] = await Promise.all([
+    getCases(),
+    getSkills(),
+    getRun("before.json"),
+    getRun("after.json"),
+    getReport("before-vs-after"),
+  ]);
+  const skillDomain = new Map(skills.flatMap((s) => (s.type === "topic" && s.domain ? [[s.name, s.domain] as const] : [])));
+  const domains = Object.fromEntries(cases.map((c) => [c.id, caseDomains(c, skillDomain)]));
+  const crossIds = cases.filter((c) => (domains[c.id]?.length ?? 0) > 1).map((c) => c.id);
+  const cross = new Set(crossIds);
+
+  const group = (key: string, label: string, note: string, ids: string[]): CaseGroup => {
+    const set = new Set(ids);
+    return { key, label, note, before: groupStat(before, set), after: groupStat(after, set) };
+  };
+  const questions = (n: number) => (n === 1 ? "1 question" : `${n} questions`);
+  const hasCases = (g: CaseGroup) => (g.after?.cases ?? g.before?.cases ?? 0) > 0;
+  const byQuestions = [1, 2, 3]
+    .map((n) => group(`q${n}`, questions(n), "", cases.filter((c) => c.intents === n).map((c) => c.id)))
+    .filter(hasCases);
+  const crossByQuestions = [1, 2, 3]
+    .map((n) =>
+      group(`cross-q${n}`, questions(n), "", cases.filter((c) => cross.has(c.id) && c.intents === n).map((c) => c.id)),
+    )
+    .filter(hasCases);
+  const byDataset = DATASETS.map((d) => group(d, d, "", cases.filter((c) => c.dataset === d).map((c) => c.id))).filter(
+    (g) => (g.after?.cases ?? g.before?.cases ?? 0) > 0,
+  );
+
+  return {
+    before: before ? { meta: runMeta("before.json", before), run: before } : null,
+    after: after ? { meta: runMeta("after.json", after), run: after } : null,
+    comparison: report ? await buildComparison(report, cases) : null,
+    overall: cases.length ? group("all", "All cases", "", cases.map((c) => c.id)) : null,
+    byDomains: [
+      group(
+        "cross",
+        "Needs a second domain",
+        "skills span 2+ Before domains; a Before agent lacks some",
+        crossIds,
+      ),
+      group(
+        "single",
+        "One domain is enough",
+        "Before holds every labeled skill and more; After loads a subset",
+        cases.filter((c) => !cross.has(c.id)).map((c) => c.id),
+      ),
+    ],
+    crossByQuestions,
+    byQuestions,
+    byDataset,
+    crossDomain: { ids: crossIds, domains },
+    caseCount: cases.length,
+  };
 }

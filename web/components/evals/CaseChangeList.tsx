@@ -6,7 +6,8 @@ import { Chip, type ChipTone, Expander } from "./ui";
 
 const STATUS_TONE: Record<string, ChipTone> = { PRESENT: "lime", ABSENT: "neutral", CONTRADICTED: "bad" };
 
-function ReplyPanel({ label, side }: { label: string; side: CaseSide | null }) {
+function ReplyPanel({ label, side, level }: { label: string; side: CaseSide | null; level: 4 | 5 }) {
+  const Heading = level === 4 ? "h4" : "h5";
   if (!side) {
     return (
       <div className="rounded-xl border border-dashed border-field px-3 py-2.5 text-sm text-slate">
@@ -20,7 +21,7 @@ function ReplyPanel({ label, side }: { label: string; side: CaseSide | null }) {
   return (
     <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-line bg-canvas px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
-        <h5 className="text-sm font-semibold text-ink">{label}</h5>
+        <Heading className="text-sm font-semibold text-ink">{label}</Heading>
         {side.passed !== null && (
           <Chip tone={failed ? "bad" : "lime"}>
             {runs ? (failed ? "Shown run failed" : "Shown run passed") : failed ? "Not passed" : "Passed"}
@@ -96,10 +97,14 @@ export function CaseChangeList({
   changes,
   labels,
   personaNames,
+  tag,
+  headingLevel = 5,
 }: {
   changes: CaseChange[];
   labels: { baseline: string; candidate: string };
   personaNames: Record<string, string>;
+  tag?: { ids: string[]; label: string }; // marks some cases, e.g. the ones that need a second domain
+  headingLevel?: 4 | 5; // the level of each reply panel's heading, one below the list's own heading
 }) {
   return (
     <ul className="space-y-2">
@@ -110,6 +115,11 @@ export function CaseChangeList({
               <span className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-3">
                 <span className="shrink-0 font-mono text-xs leading-5 text-slate">{change.id}</span>
                 <span className="min-w-0 flex-1 text-sm leading-5 text-ink">{change.message || "(message not found)"}</span>
+                {tag?.ids.includes(change.id) && (
+                  <span className="shrink-0">
+                    <Chip tone="fynn">{tag.label}</Chip>
+                  </span>
+                )}
                 {change.sharp && (
                   <span className="shrink-0">
                     <Chip tone={change.sharp === "dropped" ? "bad" : "lime"}>
@@ -127,8 +137,8 @@ export function CaseChangeList({
               {change.skills.length > 0 && ` · labeled skills: ${change.skills.join(", ")}`}
             </p>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <ReplyPanel label={labels.baseline} side={change.baseline} />
-              <ReplyPanel label={labels.candidate} side={change.candidate} />
+              <ReplyPanel label={labels.baseline} side={change.baseline} level={headingLevel} />
+              <ReplyPanel label={labels.candidate} side={change.candidate} level={headingLevel} />
             </div>
           </Expander>
         </li>

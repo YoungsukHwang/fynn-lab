@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { Comparison, RateCell, ScenarioResult } from "@/lib/evalData";
 import {
   datasetLabel,
@@ -12,7 +14,7 @@ import {
 } from "@/lib/evalLabels";
 
 import { CaseChangeList } from "./CaseChangeList";
-import { NoiseCheck, TestBadge, VerdictNote } from "./NoiseCheck";
+import { TestBadge, VerdictNote } from "./NoiseCheck";
 import { Chip, NotGenerated } from "./ui";
 
 function Rate({ cell, total }: { cell: RateCell; total: number }) {
@@ -140,7 +142,7 @@ export function TransitionStats({
 
 const SCENARIO_LABELS = { baseline: "Baseline", candidate: "With the edit" };
 const SCENARIO_COLUMNS = { baseline: "Baseline", candidate: "With edit" };
-const SCENARIO_TRANSITIONS = {
+export const SCENARIO_TRANSITIONS = {
   improved: "Improved",
   regressed: "Regressed",
   unchanged_pass: "Still passing",
@@ -277,14 +279,13 @@ export function ScenarioCard({
               <RatesTable comparison={comparison} labels={SCENARIO_COLUMNS} />
             </div>
 
-            <div className="mt-4">
-              <NoiseCheck
-                id={scenario.id}
-                label={scenario.id.toUpperCase()}
-                report={report}
-                flips={{ ...SCENARIO_TRANSITIONS, improvedShort: "Better", regressedShort: "Worse" }}
-              />
-            </div>
+            <p className="mt-3 text-xs leading-5 text-slate">
+              Is this more than run-to-run noise? See the{" "}
+              <Link href={`/noise/results#${scenario.id}`} className="font-medium text-ink underline underline-offset-2">
+                {scenario.id.toUpperCase()} noise check
+              </Link>
+              .
+            </p>
 
             {(report.warnings.length > 0 ||
               comparison.notes.length > 0 ||
@@ -307,6 +308,7 @@ export function ScenarioCard({
             <div className="mt-5 space-y-4">
               <section aria-labelledby={`${scenario.id}-regressed`}>
                 <h4 id={`${scenario.id}-regressed`} className="text-sm font-semibold text-ink">
+                  <span className="sr-only">{scenario.id.toUpperCase()}: </span>
                   Regressed cases ({comparison.regressed.length})
                 </h4>
                 {comparison.regressed.length ? (
@@ -319,6 +321,7 @@ export function ScenarioCard({
               </section>
               <section aria-labelledby={`${scenario.id}-improved`}>
                 <h4 id={`${scenario.id}-improved`} className="text-sm font-semibold text-ink">
+                  <span className="sr-only">{scenario.id.toUpperCase()}: </span>
                   Improved cases ({comparison.improved.length})
                 </h4>
                 {comparison.improved.length ? (
@@ -332,6 +335,7 @@ export function ScenarioCard({
               {comparison.unstable.length > 0 && (
                 <section aria-labelledby={`${scenario.id}-unstable`}>
                   <h4 id={`${scenario.id}-unstable`} className="text-sm font-semibold text-ink">
+                    <span className="sr-only">{scenario.id.toUpperCase()}: </span>
                     Unstable cases ({comparison.unstable.length})
                   </h4>
                   <p className="mt-1 text-xs leading-5 text-slate">

@@ -29,6 +29,10 @@
   --color-peach: #f79e7d; /* the Before (single-agent) design */
   --color-peach-soft: #fdece4;
   --color-ember: #7a2a0e;
+  /* Chart marks for Before: a deeper step of the peach. Peach itself is too light for a mark on
+     white (2.0:1); coral passes the lightness band, 3:1 contrast and colorblind separation
+     against fynn (CVD delta E 31), checked with the dataviz palette validator. */
+  --color-coral: #e0633a;
 }
 
 /* The demo is designed for a light theme only. */
@@ -37,7 +41,7 @@
 }
 
 /* One visible keyboard focus ring for every interactive element (also kept in forced-colors mode). */
-:where(a, button, select, textarea, summary, input):focus-visible {
+:where(a, button, select, textarea, summary, input, [tabindex]):focus-visible {
   outline: 2px solid #131413;
   outline-offset: 2px;
 }
