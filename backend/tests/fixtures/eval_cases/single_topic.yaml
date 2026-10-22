@@ -1,0 +1,23 @@
+# Small fixture set for unit tests. Persona ids are real; skill names exist in both the
+# real library and the conftest mini library.
+- id: st-001
+  dataset: single_topic
+  persona: rebuilder
+  message: Why did my score drop last month?
+  intents: 1
+  skills: [score-changes]
+  expected_facts:
+    - Names the 30-day late payment on the Retail store card as a likely cause
+    - Names utilization rising to 47% as a likely cause
+  must_not_regex: ['\bwill definitely (raise|increase|improve|boost)\b']
+  must_include_regex: ['47\s*%']
+
+- id: st-002
+  dataset: single_topic
+  persona: renter
+  message: Is my rent showing up on my credit report yet?
+  intents: 1
+  skills: [rent-reporting]
+  expected_facts:
+    - Uses the rent reporting status from the profile
+    - Explains which bureaus receive rent data

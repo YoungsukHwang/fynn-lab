@@ -23,8 +23,9 @@ Both bots read the same skill files, see the same member profile and use the sam
 |---|---|---|
 | M1 | Backend: skills, personas, both bots, FastAPI, tests | Done |
 | M2 | Demo site: Before/After columns, routing display, architecture diagrams | Done |
-| M3 | Eval set, code checks, LLM judge, runner (Batch API); compare skill budgets and answer models | Next |
-| M4 | Regression report, dependent-test selection, three skill-edit scenarios | Planned |
+| M3 | Eval set, code checks, LLM judge, parallel runner | Done |
+| M4 | Regression report, dependent-test selection, three skill-edit scenarios | Done |
+| Later | Batch API runner; compare skill budgets (cap 3/5/none) and answer models (Opus/Sonnet/Haiku) | Planned |
 | M5 | Monitoring framework and results pages | Planned |
 | M6 | Optional public deployment | Planned |
 
@@ -54,6 +55,37 @@ Both bots read the same skill files, see the same member profile and use the sam
   - a description edit.
 
 The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
+
+## Running the evals
+
+- **What it calls.** The runner calls the Anthropic API for the routers, the answer model and the Opus judge, so it needs `ANTHROPIC_API_KEY` in `backend/.env`. The tests never call the API.
+- **Inputs.** The 40 cases are in `backend/evals/cases/` (four datasets). Each scenario in `scenarios/<id>/` has a `scenario.yaml` with its hypothesis and an edited copy of one skill. The copy is overlaid at run time; `skills/` is never modified.
+- **Outputs.** Results go to `results/` at the repo root. Run the commands from `backend/`.
+
+```bash
+cd backend
+
+# Full runs on both bots
+.venv/bin/python -m evals.run --bot before --out ../results/before.json
+.venv/bin/python -m evals.run --bot after --out ../results/after.json
+
+# Skill-edit scenarios on the After bot. --baseline turns on dependent-test selection.
+.venv/bin/python -m evals.run --bot after --scenario s1 --baseline ../results/after.json --out ../results/scenarios/s1.json
+.venv/bin/python -m evals.run --bot after --scenario s2 --baseline ../results/after.json --out ../results/scenarios/s2.json
+.venv/bin/python -m evals.run --bot after --scenario s3 --baseline ../results/after.json --out ../results/scenarios/s3.json
+
+# Regression reports: report.json (for the site) and report.md in each directory
+.venv/bin/python -m evals.report --baseline ../results/before.json --candidate ../results/after.json --out ../results/reports/before-vs-after
+.venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s1.json --out ../results/reports/s1
+.venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s2.json --out ../results/reports/s2
+.venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s3.json --out ../results/reports/s3
+```
+
+- **Passing.** A case passes only if the code checks and the judge both pass. A case that errors is recorded with status `error` and counts as not passed; the rest of the run continues.
+- **Selection.** With `--baseline`, a body edit to a topic skill (s1) reruns only the cases labeled with that skill or routed to it in the baseline. An always-on edit (s2) or a description edit (s3) reruns every case.
+- **Baseline freshness.** Run the scenarios against an `after.json` made from the current `skills/`. The runner warns when the baseline's skill hashes differ.
+- **Reports.** A report compares only the cases in the candidate. The verdict is Passed when no case regressed. A scenario report also says whether the result matches the hypothesis in `scenario.yaml`.
+- **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, and `--workers N` sets parallel cases (default 8).
 
 ## Layout
 

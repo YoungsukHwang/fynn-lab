@@ -1,0 +1,172 @@
+# multi_intent: 2 or 3 distinct questions in one message. Does the bot answer every one?
+# mi-001 is the blog's example. mi-009, mi-010 and mi-011 each span three Before domains.
+
+- id: mi-001
+  dataset: multi_intent
+  persona: rebuilder
+  message: "Why did my score drop last month? And why hasn't my secured card arrived? Should I get the travel card from your marketplace?"
+  intents: 3
+  skills: [score-changes, secured-card, marketplace-offers]
+  expected_facts:
+    - "Names the 30-day late payment on the Retail store card and the rise in utilization to 47% as the likely causes of the drop"
+    - "Says the Secured Card shipped on 2026-10-06 and is expected between October 16 and October 21, 2026, so it is not late yet"
+    - "Says applying for the travel card usually triggers a hard inquiry from the issuer, and does not promise or estimate approval"
+    - "Notes that with a recent late payment, applying now risks a denial plus a hard inquiry"
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+
+- id: mi-002
+  dataset: multi_intent
+  persona: rebuilder
+  message: "Why did my score fall 23 points, and which card should I pay down first?"
+  intents: 2
+  skills: [score-changes, utilization]
+  expected_facts:
+    - "Names the 30-day late payment on the Retail store card (reported 2026-09-28) as a likely cause of the drop"
+    - "Notes overall utilization rose to 47% ($1,410 of $3,000), up from 30% the month before"
+    - "Gives per-card utilization: Retail store card about 60% ($900 of $1,500) and Bank credit card about 34% ($510 of $1,500)"
+    - "Recommends paying down the Retail store card first, since it has the higher utilization"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '\bstore card\b'
+
+- id: mi-003
+  dataset: multi_intent
+  persona: high-util
+  message: "Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?"
+  intents: 2
+  skills: [score-changes, marketplace-offers]
+  expected_facts:
+    - "Names higher reported balances as the likely cause: 85% utilization ($2,550 of $3,000), up from 70%, with no late payments"
+    - "Gives per-card utilization, flagging the Rewards credit card at about 95% of its $2,000 limit"
+    - "Says a new card's limit lowers utilization only if balances do not grow, and applying usually triggers a hard inquiry"
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-004
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "When will my Credit Builder payments start showing on my credit report? And should I also get a secured card?"
+  intents: 2
+  skills: [credit-builder-account, secured-card]
+  expected_facts:
+    - "Says each Credit Builder payment is reported monthly to Equifax, Experian and TransUnion, a few days after it posts"
+    - "Uses her profile: 4 on-time payments since the plan opened on 2026-06-01"
+    - "Says the Secured Card's credit limit equals a refundable deposit of $50 to $2,000, and applying needs no hard inquiry"
+    - "Mentions at least one of the card's costs: no annual fee, or the 27.99% variable APR on balances carried month to month"
+
+- id: mi-005
+  dataset: multi_intent
+  persona: renter
+  message: "Will my reported rent help me get a mortgage in 2027? And does my auto loan count toward my utilization?"
+  intents: 2
+  skills: [rent-reporting, utilization]
+  expected_facts:
+    - "Says whether rent counts depends on the lender's scoring model and bureaus: rent goes only to TransUnion and Experian, and some models count it (such as VantageScore 4.0) while others ignore it (such as Classic FICO or FICO 8)"
+    - "Suggests asking the mortgage lender which score and bureaus it uses, without promising mortgage approval"
+    - "Says the auto loan is an installment loan and does not count toward revolving utilization"
+    - "Gives his utilization as 22% ($550 of the $2,500 limit on his Bank credit card)"
+  must_not_regex:
+    - '\bI guarantee\b'
+  must_include_regex:
+    - '22\s*(%|percent)'
+
+- id: mi-006
+  dataset: multi_intent
+  persona: collections
+  message: "Should I pay the $1,200 phone collection? And can your Debt Settlement service handle it?"
+  intents: 2
+  skills: [collections, debt-settlement]
+  expected_facts:
+    - "Says paying a non-medical collection does not remove it: it shows as paid and can stay until about March 2029 (7 years from 2022-03-14)"
+    - "Says VantageScore 3.0, the model behind her score, ignores paid collections, while FICO 8 still counts them"
+    - "Flags that a payment on a debt this old could restart the state statute of limitations, and suggests a legal aid office or attorney before paying"
+    - "Says the service can take accounts in collections, for a fee of 20% of the amount saved, charged only after a settlement is agreed and a payment is made, with no upfront fee"
+    - "Names free alternatives: negotiating directly with the collector, or a nonprofit credit counselor"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:it|the collection|this collection) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'
+
+- id: mi-007
+  dataset: multi_intent
+  persona: multi-product
+  message: "What happens when my Credit Builder plan ends? And how many months of rent have been reported for me?"
+  intents: 2
+  skills: [credit-builder-account, rent-reporting]
+  expected_facts:
+    - "Says 2 payments are left, after which the plan ends and the savings balance is returned: $144 minus any unpaid amounts ($132 saved so far)"
+    - "Says 27 months of rent are on file: 15 reported since enrolling plus 12 past months added"
+
+- id: mi-008
+  dataset: multi_intent
+  persona: high-util
+  message: "Why did my score drop 13 points? Can I use my Credit Builder savings to pay down my cards? And should I get a personal loan from the Marketplace to pay them off?"
+  intents: 3
+  skills: [score-changes, credit-builder-account, marketplace-offers]
+  expected_facts:
+    - "Names higher reported balances (85% utilization, up from 70%) as the likely cause, flagging the Rewards credit card at about 95% of its limit"
+    - "Says the Credit Builder savings ($42 so far) are paid out when the 24-month plan ends ($144 minus any unpaid amounts), and sends questions about getting savings out early to human support"
+    - "Says applying for a Marketplace loan usually triggers a hard inquiry and Coach does not know her approval odds"
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: mi-009
+  dataset: multi_intent
+  persona: collections
+  message: "My score went up 5 points. What caused that? Would Rent Reporting help me build credit? And when will the phone collection come off my report?"
+  intents: 3
+  skills: [score-changes, rent-reporting, collections]
+  expected_facts:
+    - "Says her score rose from 555 to 560, that small moves with no new negative item are normal, and does not invent a cause that is not in her profile"
+    - "Describes Rent Reporting factually: $4 a month, reported to TransUnion and Experian (not Equifax), and a missed month is not reported"
+    - "Says VantageScore 3.0, the model behind her score, can count reported rent, while FICO 8 ignores it"
+    - "Says the $1,200 phone collection can stay until about March 2029, 7 years from the original delinquency on 2022-03-14"
+
+- id: mi-010
+  dataset: multi_intent
+  persona: renter
+  message: "My score went up 7 points this month. Why? Should I pay to add my past rent? And should I open a new card from the Marketplace before I apply for a mortgage next year?"
+  intents: 3
+  skills: [score-changes, rent-reporting, marketplace-offers]
+  expected_facts:
+    - "Gives the rise from 634 to 641 and points only to causes found in his profile (such as on-time rent being reported and no new negative items), without claiming certainty"
+    - "Says he can add up to 12 months of past rent for a one-time $25 fee, as added positive history rather than a guaranteed score change"
+    - "Says applying for a new card usually brings a hard inquiry, and a new account lowers the average age of accounts"
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+
+- id: mi-011
+  dataset: multi_intent
+  persona: multi-product
+  message: "1. Is my secured card being reviewed for an upgrade? 2. Do my phone and internet bills help my score? 3. Is my utilization OK?"
+  intents: 3
+  skills: [secured-card, bill-reporting, utilization]
+  expected_facts:
+    - "Answers with the same numbering (1, 2, 3) as the question"
+    - "Says 9 consecutive on-time payments (more than the 8 required) make the Secured Card eligible for upgrade review, without promising an upgrade"
+    - "Says the phone and internet bills are reported only to Equifax, so the effect depends on the scoring model and on whether a lender pulls Equifax"
+    - "Gives utilization of 12% ($300 of $2,500), under the 30% guidance and close to 10%"
+  must_include_regex:
+    - '12\s*(%|percent)'
+
+- id: mi-012
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "How long until I get my Credit Builder savings back? Would a secured card help me since I've never had a credit card? And would applying for a card in the Marketplace hurt my score?"
+  intents: 3
+  skills: [credit-builder-account, secured-card, marketplace-offers]
+  expected_facts:
+    - "Says she gets the savings back when the 24-month plan ends, after her 20 remaining payments: $144 minus any unpaid amounts ($24 saved so far)"
+    - "Says the Secured Card's limit equals a refundable $50 to $2,000 deposit, applying needs no hard inquiry, and its statement balance and payments are reported monthly to all three bureaus"
+    - "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer"
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'

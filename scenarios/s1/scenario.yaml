@@ -1,0 +1,21 @@
+id: s1
+title: Per-card utilization in score-drop answers
+kind: body
+skill: score-changes
+change: >-
+  Adds one "How to answer" rule to score-changes: when a score drop coincides with higher
+  reported card balances, compute each open card's utilization from the profile's accounts,
+  give those ratios, and name the card to pay down first.
+motivation: >-
+  In the 2026-10-19 run, the After bot's score-drop answers were less specific than the Before
+  bot's. Before loads all three score-and-reports skills, so it also gets the utilization skill
+  and computes per-card ratios. After's router usually picks only score-changes for "why did my
+  score drop", so the answer named overall utilization but not which card to pay down.
+hypothesis:
+  expected: improve
+  detail: >-
+    Only the body changed, so only cases that depend on score-changes rerun (its label plus any
+    case where the baseline router picked it, about 8 to 10). Score-drop cases with higher
+    balances (rebuilder, high-util) should now give per-card ratios and name the card to pay
+    down first, so some of them improve. Other score cases should hold, since the rule applies
+    only when balances went up. Expected verdict: no regressions, safe to ship.

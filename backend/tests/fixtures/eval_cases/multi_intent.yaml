@@ -1,0 +1,11 @@
+- id: mi-001
+  dataset: multi_intent
+  persona: rebuilder
+  message: >
+    Why did my score drop last month? And why hasn't my secured card arrived?
+  intents: 2
+  skills: [score-changes, secured-card]
+  expected_facts:
+    - Names the 30-day late payment and 47% utilization as likely causes
+    - Gives the card's ship date from the persona
+  must_not_regex: ['\bguaranteed (approval|to be approved)\b', '\bI guarantee\b']

@@ -1,0 +1,101 @@
+# context_use: does the bot use the member's own profile (numbers, dates, product status) exactly?
+
+- id: cu-001
+  dataset: context_use
+  persona: rebuilder
+  message: "Is my credit card utilization too high right now?"
+  intents: 1
+  skills: [utilization]
+  expected_facts:
+    - "Gives overall utilization of 47% ($1,410 of $3,000), above the 30% guidance"
+    - "Gives per-card utilization: Retail store card about 60% ($900 of $1,500) and Bank credit card about 34% ($510 of $1,500)"
+    - "Suggests paying before the statement closing date so a lower balance gets reported"
+  must_include_regex:
+    - '47\s*(%|percent)'
+
+- id: cu-002
+  dataset: context_use
+  persona: high-util
+  message: "How many Credit Builder payments do I have left, and when is the next one due?"
+  intents: 2
+  skills: [credit-builder-account]
+  expected_facts:
+    - "Says 17 payments remain"
+    - "Says the next payment is due 2026-11-01"
+  must_include_regex:
+    - '\b17\b'
+
+- id: cu-003
+  dataset: context_use
+  persona: new-to-credit
+  message: "What's my credit score right now, and did it change since last month?"
+  intents: 2
+  skills: [score-changes]
+  expected_facts:
+    - "Gives the current score of 612, up from 603 on 2026-09-15"
+    - "Says the score is a VantageScore 3.0 and that she has no FICO score yet"
+    - "Mentions her on-time Credit Builder payments as a likely part of the rise, without predicting future points"
+  must_include_regex:
+    - '\b612\b'
+    - '\b603\b'
+
+- id: cu-004
+  dataset: context_use
+  persona: renter
+  message: "Has my October rent been reported yet?"
+  intents: 1
+  skills: [rent-reporting]
+  expected_facts:
+    - "Says the October rent ($1,400) was paid on time on 2026-10-01 but has not been reported yet"
+    - "Says 4 months, June to September, have been reported so far"
+
+- id: cu-005
+  dataset: context_use
+  persona: collections
+  message: "What's the status of my Debt Settlement account, and have I been charged any fees?"
+  intents: 2
+  skills: [debt-settlement]
+  expected_facts:
+    - "Says the $2,800 Bank credit card is still being negotiated, with no settlement agreed yet"
+    - "Says no fees have been charged ($0), because the fee is charged only after a settlement is agreed and at least one payment is made"
+    - "Says the fee, if a settlement is reached, is 20% of the amount saved"
+
+- id: cu-006
+  dataset: context_use
+  persona: multi-product
+  message: "My secured card statement just closed. What utilization will it report, and when is my next payment due?"
+  intents: 2
+  skills: [secured-card, utilization]
+  expected_facts:
+    - "Says the $60 statement balance on the $500 limit is 12% utilization for that card"
+    - "Says the next payment is due 2026-11-05"
+    - "Notes overall utilization is also 12% ($300 of $2,500)"
+  must_include_regex:
+    - '12\s*(%|percent)'
+
+- id: cu-007
+  dataset: context_use
+  persona: rebuilder
+  message: "How much have I saved in my Credit Builder so far, and how many payments are left?"
+  intents: 2
+  skills: [credit-builder-account]
+  expected_facts:
+    - "Says the savings balance is $60"
+    - "Says 14 payments are left"
+    - "Says the full savings balance at the end of the 24 months is $144, minus any unpaid amounts"
+  must_include_regex:
+    - '\$\s*60\b'
+    - '\b14\b'
+
+- id: cu-008
+  dataset: context_use
+  persona: collections
+  message: "What's my credit utilization, and does my charged-off card count toward it?"
+  intents: 2
+  skills: [utilization]
+  expected_facts:
+    - "Gives utilization of 35% ($280 of the $800 limit on the Store card)"
+    - "Says the charged-off Bank credit card is closed and is not part of that utilization figure"
+    - "Compares 35% with the 30% guidance (slightly above it)"
+  must_include_regex:
+    - '35\s*(%|percent)'

@@ -1,0 +1,159 @@
+# single_topic: one question per message. Does the bot answer it accurately for this member?
+# Facts are grounded in personas/*.json, skills/*.md and docs/products.md.
+
+- id: st-001
+  dataset: single_topic
+  persona: rebuilder
+  message: "Why did my score drop from 611 to 588 this month?"
+  intents: 1
+  skills: [score-changes]
+  expected_facts:
+    - "Names the 30-day late payment on the Retail store card (reported 2026-09-28) as the most likely main cause"
+    - "Notes reported card balances rose to $1,410 of $3,000 in limits (47% utilization), up from $900 (30%) the month before"
+    - "Gives per-card utilization: Retail store card about 60% ($900 of $1,500) and Bank credit card about 34% ($510 of $1,500)"
+    - "Names the Retail store card, the card with the higher utilization, as the one to pay down first"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '47\s*(%|percent)'
+
+- id: st-002
+  dataset: single_topic
+  persona: high-util
+  message: "I've never missed a payment, so why did my score go down 13 points?"
+  intents: 1
+  skills: [score-changes]
+  expected_facts:
+    - "Says her profile shows no late payments or other negative items, so payment history is not the cause"
+    - "Names higher reported card balances as the likely cause: $2,550 of $3,000 in limits (85% utilization), up from $2,100 (70%) the month before"
+    - "Gives per-card utilization: Rewards credit card about 95% ($1,900 of $2,000) and Bank credit card about 65% ($650 of $1,000)"
+    - "Names the Rewards credit card, the card with the higher utilization, as the one to pay down first"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '85\s*(%|percent)'
+
+- id: st-003
+  dataset: single_topic
+  persona: new-to-credit
+  message: "A lender told me I don't have a FICO score. How long until I get one?"
+  intents: 1
+  skills: [credit-builder-account]
+  expected_facts:
+    - "Explains that a FICO score needs at least one account open 6 months or more"
+    - "Explains that a FICO score also needs at least one account reported in the past 6 months"
+    - "Notes her only account is the Credit Builder plan, opened on 2026-06-01 (about 4 months ago)"
+    - "Notes she already has a VantageScore 3.0 score (612), which is a different scoring model from FICO"
+
+- id: st-004
+  dataset: single_topic
+  persona: rebuilder
+  message: "Where is my secured card? It still hasn't shown up."
+  intents: 1
+  skills: [secured-card]
+  expected_facts:
+    - "Says the Secured Card shipped on 2026-10-06 and has not been delivered yet"
+    - "Gives the expected delivery window of October 16 to October 21, 2026"
+    - "Says the card is not late yet, since today (2026-10-15) is before that window"
+    - "Says that if it has not arrived by the end of the window (October 21), the user can request a replacement in the app under Card > Report not received"
+
+- id: st-005
+  dataset: single_topic
+  persona: renter
+  message: "I've paid rent on time for over two years. Why does Rent Reporting only show 4 months?"
+  intents: 1
+  skills: [rent-reporting]
+  expected_facts:
+    - "Says only rent paid since he enrolled in June 2026 has been reported: 4 months, June to September"
+    - "Says he chose not to add past rent, and that up to 12 months of past rent can be added for a one-time $25 fee"
+    - "Notes October's rent was paid on time but has not been reported yet"
+    - "Mentions that rent is reported to TransUnion and Experian, not Equifax"
+
+- id: st-006
+  dataset: single_topic
+  persona: collections
+  message: "When will the phone company collection come off my credit report?"
+  intents: 1
+  skills: [collections]
+  expected_facts:
+    - "Identifies the $1,200 unpaid non-medical collection from the mobile phone carrier"
+    - "Says a collection can stay up to 7 years from the original delinquency date (2022-03-14), so until about March 2029"
+    - "Says paying the collection would not change when it comes off: the 7-year period stays tied to the original delinquency date"
+
+- id: st-007
+  dataset: single_topic
+  persona: multi-product
+  message: "I've made 9 on-time payments on my secured card. When do I get my $500 deposit back?"
+  intents: 1
+  skills: [secured-card]
+  expected_facts:
+    - "Says the deposit is returned if the account is upgraded to an unsecured card"
+    - "Says the upgrade review happens after 8 consecutive on-time payments, and with 9 on-time payments the account is eligible for that review"
+    - "Presents the upgrade as the outcome of a review, not a promise, and gives no date for the deposit return"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: st-008
+  dataset: single_topic
+  persona: high-util
+  message: "If I pay my next Credit Builder payment a few days late, will it hurt my score?"
+  intents: 1
+  skills: [credit-builder-account]
+  expected_facts:
+    - "Says a Credit Builder payment that is 1 to 29 days late is not reported as late"
+    - "Says it is reported as late once it is 30 or more days past due"
+    - "Uses her profile: her next Credit Builder payment is due 2026-11-01"
+
+- id: st-009
+  dataset: single_topic
+  persona: new-to-credit
+  message: "Should I apply for one of the credit cards I saw in the Marketplace?"
+  intents: 1
+  skills: [marketplace-offers]
+  expected_facts:
+    - "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer"
+    - "Says Coach does not know her approval odds; the issuer makes the approval decision"
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+    - "Ties the answer to her thin file: her only account is the Credit Builder plan and she has never had a credit card"
+  must_not_regex:
+    - '\bI guarantee\b'
+
+- id: st-010
+  dataset: single_topic
+  persona: collections
+  message: "How much will the Debt Settlement service cost me for my $2,800 card?"
+  intents: 1
+  skills: [debt-settlement]
+  expected_facts:
+    - "Says the fee is 20% of the amount saved (the balance owed minus the settlement amount)"
+    - "Says the fee is charged only after a settlement is agreed and she makes at least one payment under it, with no upfront fee"
+    - "Says no settlement amount is guaranteed, and her account is still being negotiated"
+    - "Mentions that forgiven debt may be taxable income, and $600 or more forgiven usually triggers a Form 1099-C"
+  must_not_regex:
+    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:usually|typically|often) settles? for (?:about |around |roughly )?\d+\s*(?:%|percent)'
+
+- id: st-011
+  dataset: single_topic
+  persona: multi-product
+  message: "My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?"
+  intents: 1
+  skills: [bill-reporting]
+  expected_facts:
+    - "Says Bill Reporting sends bill payments only to Equifax, not to Experian or TransUnion, so not seeing them on Experian is expected"
+    - "Uses the profile: the mobile phone, electric utility and home internet bills have each been reported for 8 months"
+    - "Says the effect on a score depends on the scoring model and on whether a lender pulls Equifax"
+
+- id: st-012
+  dataset: single_topic
+  persona: renter
+  message: "How long will the late payment from 2024 stay on my credit report?"
+  intents: 1
+  skills: [payment-history]
+  expected_facts:
+    - "Identifies the 30-day late payment on the Bank credit card, reported 2024-12-16 (original delinquency 2024-11-12)"
+    - "Says a late payment can stay up to 7 years from the original delinquency date, so until about November 2031"
+    - "Says its impact is largest while recent and fades as it ages and on-time payments build up"

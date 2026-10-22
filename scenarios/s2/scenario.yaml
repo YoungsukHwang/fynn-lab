@@ -1,0 +1,18 @@
+id: s2
+title: Shorter replies in the always-on response rules
+kind: always_on
+skill: response-rules
+change: >-
+  Changes the length rule in the always-on response-rules skill from "under about 250 words"
+  to "under about 120 words".
+motivation: >-
+  Assumes a product request for shorter answers. The blog warns that short answers can leave
+  out important content, and an always-on skill is in every prompt, so this edit can affect
+  any case.
+hypothesis:
+  expected: regress
+  detail: >-
+    An always-on edit reruns every case. Single-question cases should mostly hold, since one
+    answer fits in about 120 words. Multi-part messages, especially three-question ones with
+    four or five expected facts, should regress because facts get dropped to meet the limit.
+    Expected verdict: not passed, do not ship.
