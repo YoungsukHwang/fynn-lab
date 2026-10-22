@@ -1,11 +1,43 @@
 @import "tailwindcss";
 
+/*
+ * Palette taken from kikoff.com's public CSS variables (black, light-grey, kikoff-button lime,
+ * forest, fynn-blue, cobalt, peach), so the study reads in Kikoff's visual language.
+ * Fynn Lab is not affiliated with Kikoff; no Kikoff logo or name is used as branding.
+ * Every text/background pair used on the site meets WCAG AA (4.5:1) for body text.
+ */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
+
+  --color-ink: #131413; /* text, dark surfaces */
+  --color-canvas: #f7f8f7; /* page background */
+  --color-mist: #eeefee; /* quiet fills */
+  --color-line: #e2e3e2; /* borders */
+  --color-slate: #515251; /* secondary text (7.4:1 on canvas) */
+  --color-dim: #6b6c6b; /* tertiary text (4.9:1 on canvas) */
+  --color-field: #8a8b8a; /* form field borders (3.4:1 on white, enough to identify the control) */
+
+  --color-lime: #b5fc4f; /* primary action, highlights on dark */
+  --color-lime-soft: #f0fedc;
+  --color-forest: #1c4024; /* primary action hover */
+
+  --color-fynn: #4b42f1; /* the After (skill-based) design */
+  --color-fynn-soft: #eeedfe;
+  --color-cobalt: #1f0078;
+
+  --color-peach: #f79e7d; /* the Before (single-agent) design */
+  --color-peach-soft: #fdece4;
+  --color-ember: #7a2a0e;
 }
 
 /* The demo is designed for a light theme only. */
 :root {
   color-scheme: light;
+}
+
+/* One visible keyboard focus ring for every interactive element (also kept in forced-colors mode). */
+:where(a, button, select, textarea, summary, input):focus-visible {
+  outline: 2px solid #131413;
+  outline-offset: 2px;
 }

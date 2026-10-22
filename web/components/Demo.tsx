@@ -144,7 +144,7 @@ export function Demo() {
 
   if (loadError) {
     return (
-      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
         <p className="font-medium">{loadError.message}</p>
         {loadError.status === 0 ? (
           <p className="mt-1">
@@ -160,7 +160,7 @@ export function Demo() {
   }
 
   if (!architecture || !persona) {
-    return <p className="text-sm text-zinc-500">Loading personas and architecture...</p>;
+    return <p className="text-sm text-slate">Loading personas and architecture...</p>;
   }
 
   const failed = BOTS.filter((bot) => columns[bot].error !== null);
@@ -176,13 +176,13 @@ export function Demo() {
   const canSend = !pending && !blockedByError && !atLimit && input.trim().length > 0;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3" aria-label="Member">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+          <label className="flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate">
             Member (synthetic persona)
             <select
-              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 sm:text-sm"
+              className="rounded-full border border-field bg-white px-4 py-2 text-base font-medium normal-case tracking-normal text-ink focus:border-ink sm:text-sm"
               value={personaId}
               onChange={(event) => {
                 setPersonaId(event.target.value);
@@ -198,7 +198,7 @@ export function Demo() {
           </label>
           <button
             type="button"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-ink enabled:hover:bg-mist disabled:opacity-50"
             onClick={reset}
             disabled={!hasConversation && !pending}
           >
@@ -208,7 +208,7 @@ export function Demo() {
         <PersonaCard persona={persona} />
       </section>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {BOTS.map((bot) => (
           <ChatColumn
             key={bot}
@@ -222,7 +222,7 @@ export function Demo() {
       </div>
 
       <form
-        className="sticky bottom-0 flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white/95 p-2 shadow-sm backdrop-blur sm:p-3"
+        className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-line bg-white/95 p-2.5 shadow-lg shadow-ink/5 backdrop-blur sm:p-3"
         onSubmit={(event) => {
           event.preventDefault();
           if (!canSend) return;
@@ -231,7 +231,7 @@ export function Demo() {
         }}
       >
         {composerHint && (
-          <p className="text-xs text-amber-800" role="status">
+          <p className="text-xs font-medium text-ember" role="status">
             {composerHint}
           </p>
         )}
@@ -240,7 +240,7 @@ export function Demo() {
             <button
               key={example.label}
               type="button"
-              className="shrink-0 rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              className="shrink-0 rounded-full bg-mist px-3 py-1.5 text-xs font-medium text-ink enabled:hover:bg-lime-soft disabled:opacity-50"
               onClick={() => {
                 setInput(example.text);
                 focusComposer();
@@ -258,7 +258,7 @@ export function Demo() {
           <textarea
             id="message"
             ref={textarea}
-            className="min-h-10 flex-1 resize-y rounded-md border border-zinc-300 px-3 py-2 text-base text-zinc-900 sm:text-sm"
+            className="min-h-10 flex-1 resize-y rounded-xl border border-field bg-white px-3.5 py-2 text-base text-ink placeholder:text-dim focus:border-ink sm:text-sm"
             rows={1}
             maxLength={limits.max_user_message_chars}
             placeholder="Ask both bots the same question. Enter sends, Shift+Enter adds a line."
@@ -274,7 +274,7 @@ export function Demo() {
           />
           <button
             type="submit"
-            className="self-end rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+            className="self-end rounded-full bg-lime px-5 py-2 text-sm font-semibold text-ink transition-colors enabled:hover:bg-forest enabled:hover:text-lime disabled:bg-mist disabled:text-dim"
             disabled={!canSend}
           >
             {pending ? "Waiting..." : "Send to both"}

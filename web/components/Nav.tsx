@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Short labels on phones keep the nav on one line; the full label shows from the sm breakpoint.
 const LINKS = [
-  { href: "/", label: "Demo" },
-  { href: "/framework", label: "Monitoring framework" },
-  { href: "/results", label: "Monitoring results" },
+  { href: "/", label: "Demo", short: "Demo" },
+  { href: "/framework", label: "Monitoring framework", short: "Framework" },
+  { href: "/results", label: "Monitoring results", short: "Results" },
 ];
 
 export function Nav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="flex flex-wrap gap-1">
+    <nav aria-label="Main" className="flex gap-1 rounded-full bg-mist p-1">
       {LINKS.map((link) => {
         const active = pathname === link.href;
         return (
@@ -20,9 +21,12 @@ export function Nav() {
             key={link.href}
             href={link.href}
             aria-current={active ? "page" : undefined}
-            className={`rounded-md px-3 py-1.5 text-sm ${active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100"}`}
+            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors sm:px-3.5 ${
+              active ? "bg-ink text-white" : "text-slate hover:bg-white hover:text-ink"
+            }`}
           >
-            {link.label}
+            <span className="sm:hidden">{link.short}</span>
+            <span className="hidden sm:inline">{link.label}</span>
           </Link>
         );
       })}

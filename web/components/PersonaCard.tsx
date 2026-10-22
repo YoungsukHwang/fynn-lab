@@ -13,6 +13,15 @@ function productSummary(name: string, product: Record<string, unknown>): string 
   return typeof product.status === "string" ? `${label} (${product.status})` : label;
 }
 
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl bg-canvas px-3 py-2">
+      <dt className="text-[11px] font-medium uppercase tracking-wide text-slate">{label}</dt>
+      <dd className="mt-0.5 text-sm font-semibold text-ink">{children}</dd>
+    </div>
+  );
+}
+
 export function PersonaCard({ persona }: { persona: Persona }) {
   const score = persona.credit.score;
   const util = persona.credit.utilization;
@@ -23,36 +32,35 @@ export function PersonaCard({ persona }: { persona: Persona }) {
   );
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4">
-      <p className="text-sm text-zinc-700">{persona.summary}</p>
-      <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+    <div className="rounded-2xl border border-line bg-white p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-lime-soft text-sm font-semibold text-forest"
+        >
+          {persona.name.slice(0, 1)}
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-ink">{persona.name}</p>
+          <p className="mt-0.5 text-sm leading-6 text-slate">{persona.summary}</p>
+        </div>
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {score?.current !== undefined && (
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-zinc-500">Score ({score.model})</dt>
-            <dd className="font-medium text-zinc-900">
-              {score.current}
-              {score.previous !== undefined && (
-                <span className="ml-1 font-normal text-zinc-500">from {score.previous}</span>
-              )}
-            </dd>
-          </div>
+          <Stat label={`Score (${score.model ?? "model n/a"})`}>
+            {score.current}
+            {score.previous !== undefined && <span className="ml-1 font-normal text-slate">from {score.previous}</span>}
+          </Stat>
         )}
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-zinc-500">Utilization</dt>
-          <dd className="font-medium text-zinc-900">
-            {typeof utilization === "number" ? `${Math.round(utilization * 100)}%` : "No credit cards"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-zinc-500">Products</dt>
-          <dd className="text-zinc-900">
+        <Stat label="Utilization">
+          {typeof utilization === "number" ? `${Math.round(utilization * 100)}%` : "No credit cards"}
+        </Stat>
+        <Stat label="Products">
+          <span className="font-medium">
             {products.length ? products.map(([name, p]) => productSummary(name, p)).join(", ") : "None"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-zinc-500">Profile date</dt>
-          <dd className="text-zinc-900">{persona.as_of}</dd>
-        </div>
+          </span>
+        </Stat>
+        <Stat label="Profile date">{persona.as_of}</Stat>
       </dl>
     </div>
   );
