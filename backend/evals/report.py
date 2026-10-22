@@ -35,6 +35,7 @@ from evals.stats import (
     pair_counts,
     paired_tests,
     run_repeats,
+    run_skill_cap,
     sharp_changes,
     valid_counts,
 )
@@ -117,14 +118,27 @@ def _failure(base: Mapping[str, Any], cand: Mapping[str, Any], *, regressed: boo
 
 def _run_info(results: Mapping[str, Any]) -> dict[str, Any]:
     info = {key: results.get(key) for key in ("name", "bot", "scenario", "created_at", "models")}
-    return {**info, "repeats": run_repeats(results)}
+    return {**info, "repeats": run_repeats(results), "skill_cap": run_skill_cap(results)}
 
 
 def _same_setup(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
-    """Same bot, skills, models and scenario. Code, the judge and the cases are not fingerprinted,
+    """Same bot, skills, models, skill cap and scenario. Code and the judge are not fingerprinted,
     so two such runs differ only by noise if nothing else changed between them."""
     keys = ("bot", "scenario", "models", "skill_fingerprint")
-    return all(a.get(key) == b.get(key) for key in keys) and a.get("skill_fingerprint") is not None
+    return (
+        all(a.get(key) == b.get(key) for key in keys)
+        and a.get("skill_fingerprint") is not None
+        and run_skill_cap(a) == run_skill_cap(b)
+    )
+
+
+def _graded_facts(case: Mapping[str, Any]) -> list[str]:
+    """The expected facts the judge graded for a case, in order; empty if no run reached the judge."""
+    for run in case_runs(case):
+        facts = [str(fact.get("fact", "")) for fact in (run.get("judge") or {}).get("facts") or []]
+        if facts:
+            return facts
+    return []
 
 
 def _noise_floor(
@@ -258,19 +272,32 @@ def compare(
         warnings.append(f"models differ: baseline {baseline.get('models')}, candidate {candidate.get('models')}")
     if base_repeats != cand_repeats:
         warnings.append(f"runs per case differ: baseline {base_repeats}, candidate {cand_repeats}")
+    if run_skill_cap(baseline) != run_skill_cap(candidate):
+        warnings.append(f"skill caps differ: baseline {run_skill_cap(baseline)}, candidate {run_skill_cap(candidate)}")
 
     transitions: dict[str, list[str]] = {name: [] for name in TRANSITIONS}
     compared: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
     missing: list[str] = []
+    facts_changed: list[str] = []
     for cand in cand_cases:
         base = base_cases.get(cand["id"])
         if base is None:
             missing.append(cand["id"])
             continue
+        # A case whose expected facts were edited between the runs was graded against different facts.
+        base_facts, cand_facts = _graded_facts(base), _graded_facts(cand)
+        if base_facts and cand_facts and base_facts != cand_facts:
+            facts_changed.append(cand["id"])
+            continue
         compared.append((base, cand))
         transitions[classify(*pair_counts(base, cand), min_fails)].append(cand["id"])
     if missing:
         warnings.append(f"not in the baseline, so not compared: {', '.join(missing)}")
+    if facts_changed:
+        warnings.append(
+            f"expected facts differ between the runs, so not compared: {', '.join(facts_changed)}; "
+            "rerun the baseline to compare them"
+        )
     for side, cases in (("baseline", [b for b, _ in compared]), ("candidate", [c for _, c in compared])):
         all_errored = [case["id"] for case in cases if error_count(case) == len(case_runs(case))]
         partly = [case["id"] for case in cases if error_count(case) and case["id"] not in all_errored]
@@ -342,6 +369,7 @@ def compare(
         "sharp_changes": sharp_changes(compared, transitions["unstable"], min_fails, cand_repeats),
         "errors": [c["id"] for _, c in compared if error_count(c)],
         "baseline_errors": baseline_errors,
+        "facts_changed": facts_changed,
         "failures": failures,
         "improvements": improvements,
         "verdict": verdict,

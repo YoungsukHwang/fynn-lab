@@ -118,6 +118,11 @@ export function pValue(p: number | null | undefined, alpha = 0.05): string {
   return p.toFixed(digits);
 }
 
+/** ["S1"] -> "S1", ["S1", "S2"] -> "S1 and S2", ["S1", "S2", "S3"] -> "S1, S2 and S3". */
+export function listLabel(items: string[]): string {
+  return items.length < 2 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 /** 1 -> "1 run", 3 -> "3 runs". */
 export function plural(count: number, word: string, many = `${word}s`): string {
   return `${count} ${count === 1 ? word : many}`;

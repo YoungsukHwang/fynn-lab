@@ -5,7 +5,7 @@ import { type FlipLabels, NoiseCheck } from "@/components/evals/NoiseCheck";
 import { RunDetails } from "@/components/evals/RunDetails";
 import { SCENARIO_TRANSITIONS } from "@/components/evals/ScenarioCard";
 import { Chip, NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
-import { type Comparison, getResultsData } from "@/lib/evalData";
+import { type Comparison, getCapData, getResultsData } from "@/lib/evalData";
 import { pPhrase, signedPoints, TEST_METHOD_LABELS } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Noise & A/A results" };
@@ -53,7 +53,7 @@ interface Row {
 }
 
 export default async function NoiseResultsPage() {
-  const data = await getResultsData();
+  const [data, capData] = await Promise.all([getResultsData(), getCapData()]);
   const rows: Row[] = [
     ...(data.beforeVsAfter
       ? [
@@ -83,6 +83,19 @@ export default async function NoiseResultsPage() {
           ]
         : [],
     ),
+    ...(capData.comparison
+      ? [
+          {
+            id: "skill-cap",
+            name: `Cap ${capData.cap ?? "?"}`,
+            title: `The After bot with a skill cap of ${capData.cap ?? "?"} instead of ${capData.baselineCap ?? "?"}`,
+            comparison: capData.comparison,
+            flips: SCENARIO_FLIPS,
+            href: "/before-after/results#cap",
+            shipCheck: true,
+          },
+        ]
+      : []),
   ];
   const measured = rows.filter((r) => r.comparison.report.noiseFloor);
   const allSingle = data.runs.length > 0 && data.runs.every((run) => run.repeats === 1);

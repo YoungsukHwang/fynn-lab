@@ -7,7 +7,7 @@ import { TestBadge } from "@/components/evals/NoiseCheck";
 import { ModelList } from "@/components/evals/RunDetails";
 import { TransitionStats, UNSTABLE_LABEL } from "@/components/evals/ScenarioCard";
 import { NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
-import { type CaseGroup, getBeforeAfterData, getPersonas } from "@/lib/evalData";
+import { type CapCaseSide, type CaseGroup, getBeforeAfterData, getCapData, getPersonas } from "@/lib/evalData";
 import { datasetLabel, deltaLabel, deltaPoints, formatTimestamp, pct, plural, pPhrase, runsPerCase } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Before vs After results" };
@@ -15,6 +15,7 @@ export const metadata: Metadata = { title: "Before vs After results" };
 const SECTIONS = [
   { href: "#headline", label: "Headline" },
   { href: "#where", label: "Where they differ" },
+  { href: "#cap", label: "Skill cap" },
   { href: "#cases", label: "Case by case" },
 ];
 
@@ -38,8 +39,24 @@ function points(group: CaseGroup | null | undefined): number | null {
   return deltaPoints(group?.before?.rate, group?.after?.rate);
 }
 
+/** One side of an over-cap case: how many skills loaded, which labeled ones were left out, and the outcome. */
+function CapCell({ side }: { side: CapCaseSide | null }) {
+  if (!side) return <span className="text-slate">not run</span>;
+  return (
+    <>
+      <span className={`font-semibold ${side.passed ? "text-forest" : "text-red-800"}`}>
+        {side.passed ? "Passed" : "Not passed"}
+      </span>
+      <span className="block text-xs text-slate">
+        {plural(side.loaded, "skill")} loaded
+        {side.missing.length > 0 ? `; left out ${side.missing.join(", ")}` : "; none left out"}
+      </span>
+    </>
+  );
+}
+
 export default async function BeforeAfterResultsPage() {
-  const [data, personas] = await Promise.all([getBeforeAfterData(), getPersonas()]);
+  const [data, personas, capData] = await Promise.all([getBeforeAfterData(), getPersonas(), getCapData()]);
   const personaNames = Object.fromEntries(personas.map((p) => [p.id, p.name]));
   const { before, after, comparison, overall } = data;
   const cross = data.byDomains.find((g) => g.key === "cross");
@@ -200,6 +217,117 @@ export default async function BeforeAfterResultsPage() {
             )}
           </ul>
         </div>
+      </section>
+
+      {/* Skill cap */}
+      <section aria-labelledby="cap" className="flex flex-col gap-4">
+        <SectionHeader
+          id="cap"
+          eyebrow="Skill cap"
+          title={`Raising the After bot's cap from ${capData.baselineCap ?? "?"} to ${capData.cap ?? "4"}`}
+        >
+          <p>
+            The After router may pick at most {capData.baselineCap ?? "?"} new topic skills per message, a Fynn Lab
+            setting. {plural(capData.overCap.length, "case")} {capData.overCap.length === 1 ? "is" : "are"} labeled with
+            more (
+            <Link href="/before-after/framework#domains" className="font-medium text-ink underline underline-offset-2">
+              listed on the Framework tab
+            </Link>
+            ). A second After run with a higher cap reran every case, because the cap can change routing anywhere.
+          </p>
+        </SectionHeader>
+        {capData.comparison ? (
+          <>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <PairTile
+                label="Cases passed"
+                unit="cases"
+                sides={[
+                  { name: `Cap ${capData.baselineCap ?? "?"}`, swatch: "bg-fynn" },
+                  { name: `Cap ${capData.cap ?? "?"}`, swatch: "border-2 border-fynn bg-white" },
+                ]}
+                before={{
+                  value: capData.comparison.report.overall.baseline.passed,
+                  of: capData.comparison.report.overall.baseline.runs,
+                }}
+                after={{
+                  value: capData.comparison.report.overall.candidate.passed,
+                  of: capData.comparison.report.overall.candidate.runs,
+                }}
+                hint={
+                  capData.comparison.report.pairedTest
+                    ? `net-change test ${pPhrase(capData.comparison.report.pairedTest.overall.pValue, capData.comparison.report.pairedTest.alpha)}`
+                    : undefined
+                }
+              />
+              <div className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-slate sm:p-5">
+                <p className="font-semibold text-ink">What moved</p>
+                <p className="mt-1">
+                  Improved: {capData.comparison.improved.map((c) => c.id).join(", ") || "none"}. Regressed:{" "}
+                  {capData.comparison.regressed.map((c) => c.id).join(", ") || "none"}.
+                </p>
+                <p className="mt-1">
+                  The answering agent sees only the bodies of the skills it loads, so a case routed the same way at both
+                  caps got the same prompt twice, and its flip is run-to-run noise. The{" "}
+                  <Link href="/noise/results#skill-cap" className="font-medium text-ink underline underline-offset-2">
+                    noise check
+                  </Link>{" "}
+                  has the test.
+                </p>
+                {capData.comparison.report.factsChanged.length > 0 && (
+                  <p className="mt-1">
+                    Not compared: {capData.comparison.report.factsChanged.join(", ")}, because their expected facts were
+                    reworded after the cap-{capData.baselineCap ?? "?"} run.
+                  </p>
+                )}
+              </div>
+            </div>
+            {capData.overCap.length > 0 && (
+              <div className="overflow-x-auto rounded-2xl border border-line bg-white p-4 sm:p-5">
+                <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+                  <caption className="mb-2 text-left text-sm font-semibold text-ink">
+                    The cases labeled with more skills than the cap of {capData.baselineCap ?? "?"}
+                  </caption>
+                  <thead>
+                    <tr className="border-b border-line text-[11px] uppercase tracking-wide text-slate">
+                      <th scope="col" className="py-2 pr-3 font-semibold">
+                        Case
+                      </th>
+                      <th scope="col" className="py-2 pr-3 font-semibold">
+                        Cap {capData.baselineCap ?? "?"}
+                      </th>
+                      <th scope="col" className="py-2 font-semibold">
+                        Cap {capData.cap ?? "?"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-ink">
+                    {capData.overCap.map((c) => (
+                      <tr key={c.id} className="border-b border-line align-top last:border-0">
+                        <th scope="row" className="py-2.5 pr-3 font-medium">
+                          <span className="font-mono">{c.id}</span>
+                          <span className="block text-xs font-normal text-slate">labeled {c.skills.join(", ")}</span>
+                        </th>
+                        <td className="py-2.5 pr-3">
+                          <CapCell side={c.baseline} />
+                        </td>
+                        <td className="py-2.5">
+                          <CapCell side={c.candidate} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <NotGenerated title="Cap run not generated yet">
+            results/cap4.json and results/reports/cap4/report.json do not exist yet. Run the After bot with{" "}
+            <code className="font-mono text-xs">--max-skills 4</code> and its report (see &ldquo;Running the evals&rdquo; in
+            the README), then rebuild.
+          </NotGenerated>
+        )}
       </section>
 
       {/* Case by case */}

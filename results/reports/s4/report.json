@@ -1,0 +1,588 @@
+{
+  "scenario": {
+    "id": "s4",
+    "title": "Closed-account reporting time in the Credit Builder skill",
+    "kind": "body",
+    "skill": "credit-builder-account",
+    "change": "Replaces the pointer \"(how long: see score-changes)\" in credit-builder-account with the line itself: a closed account in good standing can stay on the report for up to 10 years.",
+    "motivation": "In the 2026-10-22 run of 64 cases, three After failures (mi-016, mi-019, mi-034) asked whether a closed or finished Credit Builder account stays on the report. The answer lives only in the score-changes body. The router reasonably picked credit-builder-account, which only pointed to score-changes, so the agent could not state the 10 years. This fixes the gap in the skill the router already picks.",
+    "hypothesis": {
+      "expected": "improve",
+      "detail": "Only the body changed, so only cases labeled credit-builder-account or routed to it in the baseline rerun. The cases that ask whether a closed or finished Credit Builder account stays on the report (mi-016, mi-019, mi-034) should now state the 10-year rule, so some of them improve. The new line adds no instruction, so other Credit Builder cases should hold. Expected verdict: no regressions, safe to ship."
+    }
+  },
+  "baseline": {
+    "name": "after",
+    "bot": "after",
+    "scenario": null,
+    "created_at": "2026-10-22T17:15:15+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    },
+    "repeats": 1,
+    "skill_cap": 3
+  },
+  "candidate": {
+    "name": "s4",
+    "bot": "after",
+    "scenario": "s4",
+    "created_at": "2026-10-22T18:10:11+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    },
+    "repeats": 1,
+    "skill_cap": 3
+  },
+  "kind": "change",
+  "selection": {
+    "rule": "body of topic skill credit-builder-account changed: cases labeled with it or routed to it in the baseline (18 of 64)",
+    "case_count": 17
+  },
+  "pass_rates": {
+    "overall": {
+      "total": 17,
+      "baseline": {
+        "passed": 9,
+        "runs": 17,
+        "rate": 0.5294
+      },
+      "candidate": {
+        "passed": 15,
+        "runs": 17,
+        "rate": 0.8824
+      }
+    },
+    "by_dataset": {
+      "single_topic": {
+        "total": 2,
+        "baseline": {
+          "passed": 2,
+          "runs": 2,
+          "rate": 1.0
+        },
+        "candidate": {
+          "passed": 2,
+          "runs": 2,
+          "rate": 1.0
+        },
+        "delta": 0.0
+      },
+      "multi_intent": {
+        "total": 13,
+        "baseline": {
+          "passed": 5,
+          "runs": 13,
+          "rate": 0.3846
+        },
+        "candidate": {
+          "passed": 11,
+          "runs": 13,
+          "rate": 0.8462
+        },
+        "delta": 0.4616
+      },
+      "context_use": {
+        "total": 2,
+        "baseline": {
+          "passed": 2,
+          "runs": 2,
+          "rate": 1.0
+        },
+        "candidate": {
+          "passed": 2,
+          "runs": 2,
+          "rate": 1.0
+        },
+        "delta": 0.0
+      }
+    }
+  },
+  "transitions": {
+    "improved": [
+      "mi-008",
+      "mi-012",
+      "mi-016",
+      "mi-019",
+      "mi-022",
+      "mi-034"
+    ],
+    "regressed": [],
+    "unchanged_pass": [
+      "st-003",
+      "st-008",
+      "mi-004",
+      "mi-007",
+      "mi-017",
+      "mi-026",
+      "mi-032",
+      "cu-002",
+      "cu-007"
+    ],
+    "unchanged_fail": [
+      "mi-018",
+      "mi-024"
+    ],
+    "unstable": []
+  },
+  "transition_counts": {
+    "improved": 6,
+    "regressed": 0,
+    "unchanged_pass": 9,
+    "unchanged_fail": 2,
+    "unstable": 0
+  },
+  "sharp_changes": {
+    "dropped": [],
+    "rose": []
+  },
+  "errors": [],
+  "baseline_errors": [],
+  "facts_changed": [
+    "mi-021"
+  ],
+  "failures": [],
+  "improvements": [
+    {
+      "id": "mi-008",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 3,
+      "message": "Why did my score drop 13 points? Can I use my Credit Builder savings to pay down my cards? And should I get a personal loan from the Marketplace to pay them off?",
+      "skills": [
+        "score-changes",
+        "credit-builder-account",
+        "marketplace-offers",
+        "utilization"
+      ],
+      "baseline_routing": [
+        "score-changes",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 on 2026-09-15 to 655 now, a 13-point drop. The most likely cause is utilization (how much of your card limits you're using). Your profile shows card balances reported at $2,550 of $3,000 (85%) on 2026-10-05, up from $2,100 (70%) the month before. The balance rose after a car repair was charged to your Rewards card on 2026-09-20.\n\nNothing else in your profile points to a cause. You have no negative items, no hard inquiries in the last 12 months, and your payments are on time. The Rewards card is at $1,900 of $2,000, which is 95%.\n\n**2. Using Credit Builder savings**\n\nYour profile shows a savings balance of $42. That money is not available to you now. The guidance I have says you get the savings balance back after 24 months, minus any unpaid amounts. Cancelling early closes the account, and I don't know what happens to money you paid in. Human support can answer that (Help > Chat with support). Your plan is also in good standing, with 7 on-time payments, and I'd keep it that way.\n\n**3. A Marketplace personal loan**\n\nI don't have details on personal loan offers, so I can't compare terms. Here is the general tradeoff:\n- Applying usually triggers a hard inquiry, which can lower scores a bit.\n- A loan could lower your card utilization, but only if the card balances don't grow again.\n- Paying down the Rewards card directly has no inquiry and no new payment.\n\nMarketplace partners may pay the app when a user is approved. Check the APR (yearly cost of borrowing), fees, and terms on the offer page.\n\nNext step: Put any extra cash toward the Rewards card first, since it is at 95% of its limit.",
+      "candidate_reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 668 to 655 between September 15 and October 15. The most likely cause is utilization (how much of your card limits you're using). Your profile shows it rose from 70% ($2,100) to 85% ($2,550 of $3,000) after the October 5 report. That followed a car repair charged to your Rewards card on September 20. One card is at 95% of its limit.\n\nNothing else in your profile points to a cause. You have no late payments or negative items, and no new hard inquiries in the last 12 months. Your on-time payments are helping. Lenders report on their own schedules, so this is a snapshot of one reported balance.\n\n**2. Using Credit Builder savings to pay down cards**\n\nYour profile shows a savings balance of $42. The guidance I have says you get the savings back after the 24 months end, with $144 minus any unpaid amounts. It doesn't say you can withdraw early. I can't confirm if that's allowed, and cancelling early would close the account. Please ask human support (Help > Chat with support) before counting on it.\n\n**3. A personal loan from the Marketplace**\n\nI don't have details on specific loan offers, so check terms on the offer page. Here is the tradeoff:\n\n- Applying usually triggers a hard inquiry (a lender's credit check), which can affect scores. It also adds a new account.\n- Paying off the cards could lower your utilization, but only if balances don't climb again.\n- Marketplace partners may pay the app when a user is approved. Approval isn't guaranteed, and I can't estimate your odds.\n- Paying down the cards directly lowers utilization with no inquiry.\n\nNext step: Check your card due dates, then see how much extra you can put toward the Rewards card, which is at 95%.",
+      "judge_facts": [
+        {
+          "fact": "Names higher reported balances (85% utilization, up from 70%) as the likely cause, flagging the Rewards credit card at about 95% of its limit",
+          "status": "PRESENT",
+          "note": "Reply says utilization rose from 70% to 85% as the most likely cause and that the Rewards card is at 95%."
+        },
+        {
+          "fact": "Says the Credit Builder savings ($42 so far) are paid out when the 24-month plan ends ($144 minus any unpaid amounts), and sends questions about getting savings out early to human support",
+          "status": "PRESENT",
+          "note": "Reply cites the $42 balance, payout after 24 months of $144 minus unpaid amounts, and directs early-withdrawal questions to human support."
+        },
+        {
+          "fact": "Says applying for a Marketplace loan usually triggers a hard inquiry and Coach does not know her approval odds",
+          "status": "PRESENT",
+          "note": "Reply says 'Applying usually triggers a hard inquiry' and 'I can't estimate your odds.'"
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply states 'Marketplace partners may pay the app when a user is approved.'"
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-012",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 3,
+      "message": "How long until I get my Credit Builder savings back? Would a secured card help me since I've never had a credit card? And would applying for a card in the Marketplace hurt my score?",
+      "skills": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "candidate_routing": [
+        "credit-builder-account",
+        "secured-card",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "**1. Getting your savings back**\nYou get your savings balance after the 24 months end, which is $144 minus any unpaid amounts. You started on 2026-06-01 and have made 4 on-time payments, with 20 payments remaining. Your profile shows a savings balance of $24 so far. The next payment is due 2026-11-01. I don't have an exact payout date, so human support can confirm that (Help > Chat with support).\n\n**2. Would a secured card help?**\nIt could. Right now your only account is an installment loan (fixed payments, set end date). A card is revolving credit (a limit you can borrow from again and again), so it would add a different type of account. The details:\n- You put down a refundable deposit of $50 to $2,000, and that sets your limit.\n- There is no annual fee and no hard inquiry to apply.\n- The APR (yearly interest rate) is a variable 27.99%, charged only on balances you carry month to month.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, the card is reviewed for an upgrade to an unsecured card. An upgrade is not promised.\n\nNo one can promise a score change.\n\n**3. Would a Marketplace application hurt your score?**\nIt might. Applying through a partner usually triggers a hard inquiry (a lender's check of your credit report), and that can affect your score. Your profile shows 0 hard inquiries in the last 12 months. Some issuers offer prequalification, usually a soft inquiry that doesn't affect scores. Prequalification is not approval. Marketplace partners may pay the app when a user is approved. Seeing an offer doesn't say anything about your approval odds.\n\nNext step: If you want a card, compare the secured card terms with a Marketplace offer, and check whether the offer has prequalification before you apply.",
+      "candidate_reply": "**1. Getting your savings back**\nYou get your savings balance back after the full 24 months. That is $144, minus any unpaid amounts. You started on 2026-06-01 and your profile shows 4 on-time payments and 20 payments remaining. Your profile shows a savings balance of $24 so far. Your next payment is due 2026-11-01.\n\n**2. Would a secured card help?**\nIt can. A secured card is a card backed by a refundable deposit, and your limit equals the deposit. You have no revolving account (a card or credit line you can reuse), so a card would add one. Your profile shows no card history.\n\n- The deposit is $50 to $2,000, and there is no annual fee.\n- The APR (yearly interest rate) is a variable 27.99% on balances you carry month to month.\n- The statement balance and payment status are reported monthly to all three bureaus.\n- Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. An upgrade is not promised.\n\nApplying for the secured card does not trigger a hard inquiry (a credit check that can affect your score).\n\n**3. Would a Marketplace card application hurt your score?**\nIt might. Applying through a partner usually triggers a hard inquiry from that issuer. Inquiries and new accounts can affect scores, and the effect depends on your whole report and the scoring model. Your profile shows 0 hard inquiries in the last 12 months. Some issuers offer prequalification, which is typically a soft check that does not affect scores. Prequalification is not approval.\n\nMarketplace partners may pay the app when a user is approved. Applying can be reasonable, and you can compare APR, fees, and terms on each offer page.\n\nNext step: Before you apply for anything, decide whether you want to compare the secured card's terms with a Marketplace offer, and check each offer page for a prequalification option.",
+      "judge_facts": [
+        {
+          "fact": "Says she gets the savings back when the 24-month plan ends, after her 20 remaining payments: $144 minus any unpaid amounts ($24 saved so far)",
+          "status": "PRESENT",
+          "note": "Reply says savings come back \"after the full 24 months,\" \"$144, minus any unpaid amounts,\" with 20 payments remaining and $24 saved so far."
+        },
+        {
+          "fact": "Says the Secured Card's limit equals a refundable $50 to $2,000 deposit, applying needs no hard inquiry, and its statement balance and payments are reported monthly to all three bureaus",
+          "status": "PRESENT",
+          "note": "Reply says \"your limit equals the deposit,\" the deposit is \"$50 to $2,000\" and refundable, there is no hard inquiry, and reporting is \"monthly to all three bureaus.\""
+        },
+        {
+          "fact": "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer",
+          "status": "PRESENT",
+          "note": "Reply says \"Applying through a partner usually triggers a hard inquiry from that issuer.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-016",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "intents": 3,
+      "message": "thinking about cancelling my credit builder. if I do, do I get the $60 I've saved back right away so I can throw it at the store card? would closing it hurt my score or mess up my utilization? and since I got the store card current again on Oct 2, can I write them a letter asking them to take the 30 day late off",
+      "skills": [
+        "credit-builder-account",
+        "score-changes",
+        "utilization",
+        "payment-history"
+      ],
+      "baseline_routing": [
+        "credit-builder-account",
+        "payment-history",
+        "utilization"
+      ],
+      "candidate_routing": [
+        "credit-builder-account",
+        "payment-history",
+        "utilization"
+      ],
+      "baseline_reply": "Three questions, so I'll take them in order.\n\n**1. Will you get your $60 back right away?**\nI can't say. I don't know what happens to savings if you cancel early, and I can't cancel the plan for you. Your profile shows a $60 savings balance. The full $144 comes back only after all 24 months, minus any unpaid amounts. Please ask human support (Help > Chat with support, or support@example.com) before you cancel.\n\n**2. Would closing it hurt your score or utilization?**\n- **Utilization:** No. Credit Builder is an installment loan (fixed payments, set end date), so it isn't part of your 47% utilization (how much of your card limits you're using).\n- **Score:** I can't predict a change. Cancelling closes the account, but it stays on your report with its payment history. You'd lose a steady stream of on-time payments (10 so far, no lates) and some credit mix, meaning a blend of account types. You'd have 14 payments left.\n\n**3. Can you ask the store card to remove the late?**\nYou can send a goodwill letter, which asks them to remove an accurate late payment as a courtesy. They don't have to agree. Paying the past-due amount on Oct 2 brought the account current, but it doesn't erase the 30-day late reported Sept 28. A letter works best for a one-time slip on an otherwise clean account. Say what happened, that you're current now, and that you'd appreciate their consideration. If they say no, the late can stay up to 7 years from the original missed date (Aug 25, 2026).\n\nYour store card balance is $900 on a $1,500 limit, which is 60% on that card. Paying it down helps utilization more than the late-payment letter will.\n\nNext step: Contact human support to ask exactly what you'd get back if you cancel before deciding.",
+      "candidate_reply": "**1. Getting your $60 back**\nI can't say. Your profile shows a $60 savings balance, but I don't know what happens to savings paid in early if you cancel, or how fast. The plan's full payout comes after 24 months. I also can't cancel it for you. Human support can confirm the amount and timing before you decide.\n\n**2. Score and utilization**\n- **Utilization (how much of your card limits you're using):** No change. The Credit Builder plan is an installment loan, so it isn't part of that ratio. Yours is 47% now. The store card is the high one at 60% ($900 of $1,500).\n- **Score:** I can't predict it. Cancelling closes the account, but it stays on your report with its history, up to 10 years if in good standing. You'd lose future on-time payments being reported, though. Payment history is the biggest score factor, and you have 10 on-time payments so far.\n\nPaying down the card before its statement closing date is usually a stronger lever for utilization.\n\n**3. Letter about the late payment**\nYou can send a goodwill letter, which asks the creditor to remove an accurate late mark as a courtesy. They don't have to agree, and I can't promise it works. It fits best for a one-time slip on an otherwise clean account, which is your situation. Paying the account current on Oct 2 didn't erase the mark. Left in place, it can stay up to 7 years from the original missed payment date of Aug 25, 2026, and its weight fades as it ages and on-time payments build up.\n\nIf money feels tight, you can also ask your creditors about hardship programs or payment plans, or talk to a nonprofit credit counselor.\n\nNext step: Open Help > Chat with support and ask what happens to your $60 savings balance if you cancel.",
+      "judge_facts": [
+        {
+          "fact": "Says Coach does not know what happens to the $60 saved so far if the plan is cancelled early, and points that question to human support",
+          "status": "PRESENT",
+          "note": "\"I don't know what happens to savings paid in early if you cancel... Human support can confirm the amount and timing.\""
+        },
+        {
+          "fact": "Says a closed Credit Builder account in good standing can stay on the report for up to 10 years with its payment history",
+          "status": "PRESENT",
+          "note": "\"it stays on your report with its history, up to 10 years if in good standing.\""
+        },
+        {
+          "fact": "Says closing the Credit Builder plan would not change utilization, because installment loans are not part of revolving utilization",
+          "status": "PRESENT",
+          "note": "\"No change. The Credit Builder plan is an installment loan, so it isn't part of that ratio.\""
+        },
+        {
+          "fact": "Says bringing the store card current on 2026-10-02 did not erase the 30-day late already reported",
+          "status": "PRESENT",
+          "note": "\"Paying the account current on Oct 2 didn't erase the mark.\""
+        },
+        {
+          "fact": "Offers a goodwill letter as an optional request that the store card issuer has no obligation to grant",
+          "status": "PRESENT",
+          "note": "\"You can send a goodwill letter... They don't have to agree, and I can't promise it works.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-019",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 3,
+      "message": "Hey, three things. Would signing up for rent reporting actually move my score at all? I'm also thinking of cancelling my Credit Builder plan and putting that $6 a month toward my cards instead, so what happens to the money I've already paid in? And if I cancel, does the account just vanish from my report?",
+      "skills": [
+        "rent-reporting",
+        "credit-builder-account",
+        "score-changes"
+      ],
+      "baseline_routing": [
+        "rent-reporting",
+        "credit-builder-account"
+      ],
+      "candidate_routing": [
+        "rent-reporting",
+        "credit-builder-account"
+      ],
+      "baseline_reply": "**1. Would rent reporting move your score?**\nIt might, but it's not certain. Rent reporting costs $4 per month. Past rent (up to 12 months) can be added for a one-time $25 fee. The app reports on-time rent to TransUnion and Experian only, not Equifax. It also only helps if the lender uses a model that counts rent. Your profile shows your score is VantageScore 3.0, which can count rent. FICO 8 ignores it, and lenders pick their own model and bureaus. Your profile shows no payment problems, so rent would add positive history, but I can't say if or how much your score would change.\n\n**2. What happens to the money you've paid in?**\nI don't know. Your profile shows a savings balance of $42, with 7 on-time payments made and 17 remaining. But I can't see the rules for early cancellation, and I can't cancel for you. Please ask human support (Help > Chat with support, or support@example.com) what happens to savings paid in early and whether any refund applies. Keep in mind that the full $144 savings balance is returned only after all 24 months.\n\n**3. Does the account vanish if you cancel?**\nNo. Cancelling closes the account, but the closed account stays on your report with its payment history. Your 7 on-time payments would stay part of that record.\n\nOne more point for your cards: your profile shows 85% utilization (how much of your card limits you're using), with $2,550 owed on $3,000 in limits. Paying down card balances is the most direct way to lower that. The Credit Builder plan is an installment loan, so it doesn't count in utilization either way.\n\nNext step: Ask human support what happens to your $42 in savings if you cancel, before you decide.",
+      "candidate_reply": "**1. Would rent reporting move your score?**\nIt might, but I can't say it will or by how much. Two things must be true: the score uses TransUnion or Experian data, and the model counts rent. The app does not report rent to Equifax. Your profile shows a VantageScore 3.0 of 655, and that model can count rent. Each lender picks its own model and bureaus, though, and FICO 8 ignores rent.\n\nRent Reporting costs $4 a month. Up to 12 months of past rent can be added for a one-time $25 fee. Your profile shows no rent reporting on file.\n\n**2. What happens to the money you've paid in?**\nI don't know. Your profile shows a savings balance of $42 and 7 on-time payments, with 17 remaining. The plan returns $144 minus any unpaid amounts after 24 months. I can't say what happens to savings paid in early if you cancel, and I can't cancel for you. Human support can confirm that: Help > Chat with support, or support@example.com.\n\n**3. Does the account vanish?**\nNo. Cancelling closes it, but the closed account stays on your report with its payment history. In good standing, it can stay for up to 10 years. Your 7 on-time payments would stay part of that record.\n\nOne note on your plan to redirect the $6: your cards are at 85% utilization (how much of your limits you're using), with $2,550 owed on $3,000 in limits. Paying them down may help your score. The Credit Builder plan is not a card, so it doesn't affect that figure either way.\n\nNext step: Ask human support what happens to your $42 in savings before you decide on cancelling.",
+      "judge_facts": [
+        {
+          "fact": "Says VantageScore 3.0, the model behind her score, can count reported rent",
+          "status": "PRESENT",
+          "note": "Reply says \"Your profile shows a VantageScore 3.0 of 655, and that model can count rent.\""
+        },
+        {
+          "fact": "Describes Rent Reporting neutrally, including its $4 monthly cost, without pushing her to sign up",
+          "status": "PRESENT",
+          "note": "Reply states \"Rent Reporting costs $4 a month\" and \"It might, but I can't say it will,\" without urging her to sign up."
+        },
+        {
+          "fact": "Says Coach does not know what happens to her $42 in Credit Builder savings if she cancels early, and sends that question to human support",
+          "status": "PRESENT",
+          "note": "Reply says \"I can't say what happens to savings paid in early if you cancel\" and points her to human support."
+        },
+        {
+          "fact": "Says cancelling does not remove the account: the closed plan stays on her report with its payment history",
+          "status": "PRESENT",
+          "note": "Reply says \"the closed account stays on your report with its payment history.\""
+        },
+        {
+          "fact": "Says a closed account in good standing can stay on a credit report for up to 10 years",
+          "status": "PRESENT",
+          "note": "Reply says \"In good standing, it can stay for up to 10 years.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-022",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 3,
+      "message": "Can I use your Debt Settlement service on my Credit Builder plan so I end up paying less? And real talk, if I just stopped paying it for like 2 months, how bad would that be on my report, and would I lose any of the savings?",
+      "skills": [
+        "debt-settlement",
+        "credit-builder-account",
+        "payment-history"
+      ],
+      "baseline_routing": [
+        "debt-settlement",
+        "payment-history"
+      ],
+      "candidate_routing": [
+        "debt-settlement",
+        "credit-builder-account",
+        "payment-history"
+      ],
+      "baseline_reply": "**1. Debt Settlement on your Credit Builder plan**\n\nNo. Debt Settlement is only for accounts that are charged off (written off by the lender as unlikely to be repaid) or in collections. Your Credit Builder plan is open and current, so it doesn't qualify. Your profile shows no negative items and 4 on-time payments, and the remaining balance is $120.\n\n**2. What happens if you stop paying for 2 months**\n\nI'd steer you away from this. Here is what I can say from the guidance I have:\n\n- Creditors generally report a payment as late once it is 30 or more days past due. Two months unpaid could mean a 30-day late mark, and then a 60-day mark, which is more severe.\n- Payment history is the biggest FICO factor, about 35% of the score. Your file is thin, with only one account, so a late mark could weigh heavily. I can't predict how many points, though.\n- A late payment can stay on your reports for up to 7 years. Paying later brings the account current but doesn't erase a late mark already reported.\n- Your next payment is due 2026-11-01. Your profile shows a $24 savings balance and 20 payments remaining.\n\n**Your savings:** I don't have the plan's terms for what a missed payment does to your savings balance, so I can't say whether you'd lose any of the $24. Please check the plan terms in the app or ask human support (Help > Chat with support, or support@example.com) before skipping anything.\n\nIf money is tight right now, ask support about options first. A nonprofit credit counselor can also help.\n\nNext step: Set a reminder or autopay for the 2026-11-01 payment so your on-time streak continues.",
+      "candidate_reply": "**1. Debt Settlement on your Credit Builder plan**\n\nNo. Debt Settlement only covers accounts that are charged off (written off by the lender as unlikely to be repaid) or in collections. Your plan is open and current, so it doesn't qualify. Your profile shows 4 on-time payments and 0 late ones.\n\nAlso, the plan is small. You owe $6 a month, and settling would not be a realistic way to cut that cost.\n\n**2. What stopping payments for 2 months would do**\n\n- **Report impact:** A payment 1 to 29 days late is not reported as late. At 30 or more days past due, it is reported. Two months of missed payments would likely mean a 30-day late mark, and then a 60-day one, which is more severe.\n- **Why it matters for you:** Payment history is the biggest part of a FICO score, about 35%. Your plan is your only account, so a late mark would sit on a very thin file. A late can stay on your report for up to 7 years, and paying later does not erase it. I can't say how many points it would cost.\n- **Your savings:** At the end of 24 months, you get back $144 minus any unpaid amounts. So missed payments would reduce what you get back. I don't know what else the plan does after missed payments, so human support would need to confirm that.\n\nIf money is tight, I'd rather you talk to support before you skip anything. They may know of options, and a nonprofit credit counselor can also help.\n\nNext step: Your next payment is due 2026-11-01, so set a reminder or autopay for it, and contact Help > Chat with support if you're worried about covering it.",
+      "judge_facts": [
+        {
+          "fact": "Says her Credit Builder plan does not qualify for Debt Settlement, because the service only takes charged-off or in-collections accounts",
+          "status": "PRESENT",
+          "note": "Reply says Debt Settlement \"only covers accounts that are charged off... or in collections\" and her open, current plan \"doesn't qualify.\""
+        },
+        {
+          "fact": "Does not suggest stopping or skipping Credit Builder payments to qualify for settlement",
+          "status": "PRESENT",
+          "note": "Reply never suggests skipping payments to qualify and says \"I'd rather you talk to support before you skip anything.\""
+        },
+        {
+          "fact": "Says a missed Credit Builder payment is reported as late once it is 30 or more days past due",
+          "status": "PRESENT",
+          "note": "Reply states \"At 30 or more days past due, it is reported.\""
+        },
+        {
+          "fact": "Says a reported late payment can stay on her reports up to 7 years from the original delinquency date",
+          "status": "PRESENT",
+          "note": "Reply says \"A late can stay on your report for up to 7 years,\" though it doesn't name the original delinquency date as the starting point."
+        },
+        {
+          "fact": "Says unpaid payments are subtracted from the savings she gets back when the plan ends ($144 minus any unpaid amounts)",
+          "status": "PRESENT",
+          "note": "Reply says \"you get back $144 minus any unpaid amounts. So missed payments would reduce what you get back.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present. F4 omits that the 7 years runs from the original delinquency date but keeps the core meaning.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-034",
+      "dataset": "multi_intent",
+      "persona": "multi-product",
+      "intents": 2,
+      "message": "Could I just stop paying my Bank credit card for a while so your Debt Settlement service can get the $240 knocked down? lol. Also, once my Credit Builder plan is done, does that account disappear from my credit report or stay on there?",
+      "skills": [
+        "debt-settlement",
+        "credit-builder-account",
+        "score-changes"
+      ],
+      "baseline_routing": [
+        "debt-settlement",
+        "credit-builder-account"
+      ],
+      "candidate_routing": [
+        "debt-settlement",
+        "credit-builder-account"
+      ],
+      "baseline_reply": "**1. Stopping payments on the Bank credit card**\n\nPlease don't do this. Debt Settlement only covers accounts that are charged off (written off by the lender as unlikely to be paid) or in collections. Your profile shows the Bank credit card is open and current, so it doesn't qualify. Skipping payments to try to qualify would also hurt you:\n\n- A payment 30 or more days late can be reported as late and may lower your score.\n- Interest and fees can add to the $240 balance.\n- Even if it did qualify, the service charges 20% of the amount saved, and no result is guaranteed.\n\nYour profile shows no negative items and utilization (how much of your card limits you're using) at 12%. That is a strong spot to protect. If paying ever gets hard, call the card company about hardship options first.\n\n**2. Credit Builder after it's done**\n\nA closed account in good standing generally stays on your report, along with its payment history. I can't confirm exactly how long it stays, and the bureaus control that. Your profile shows 22 on-time payments and 0 late ones, with 2 payments left. The next payment is due 2026-11-01. That clean history stays part of your record after the plan ends.\n\nWhen the plan ends, you get back your savings balance: $144, minus any unpaid amounts. Your profile shows $132 saved so far.\n\nNext step: Make your Credit Builder payment due 2026-11-01 on time.",
+      "candidate_reply": "**1. Stopping payments on your Bank credit card**\n\nI'd steer away from that. Debt Settlement only works for accounts that are charged off (written off by the lender as unlikely to be repaid) or in collections. Your profile shows your Bank credit card as open and current, with a $240 balance, so it doesn't qualify. Skipping payments to qualify would also cost you. A payment 30 or more days late can be reported as late, and your profile shows no late payments or negative items right now.\n\nEven if an account did qualify, the service charges 20% of the amount saved, and any forgiven debt may be taxable. Outcomes vary and creditors don't have to agree.\n\nIf money ever gets tight, ask your card issuer about hardship options or talk with a nonprofit credit counselor first. Both are free or low cost.\n\n**2. Your Credit Builder plan after it ends**\n\nIt doesn't disappear when you finish. Your profile shows 2 payments left, with the next one due 2026-11-01. A closed account in good standing can stay on your report for up to 10 years, and it keeps its payment history. Your profile shows 22 on-time payments and no late ones, so that history is a positive one.\n\nWhen the plan ends, you also get back your savings balance: $144 minus any unpaid amounts.\n\nNext step: Make your Credit Builder payment due 2026-11-01 on time so the plan finishes with a clean record.",
+      "judge_facts": [
+        {
+          "fact": "Says the Debt Settlement service takes only charged-off or in-collections accounts, so the current Bank credit card ($240 balance) does not qualify",
+          "status": "PRESENT",
+          "note": "Reply says Debt Settlement \"only works for accounts that are charged off... or in collections\" and the open, current $240 Bank card \"doesn't qualify.\""
+        },
+        {
+          "fact": "Does not suggest stopping payments on the Bank credit card to make it qualify for settlement",
+          "status": "PRESENT",
+          "note": "Reply says \"I'd steer away from that\" and warns that skipping payments to qualify would cost the member."
+        },
+        {
+          "fact": "Says the Credit Builder account does not disappear when the plan ends: it stays on the report as a closed account with its payment history",
+          "status": "PRESENT",
+          "note": "Reply says \"It doesn't disappear when you finish\" and that it stays as a closed account that \"keeps its payment history.\""
+        },
+        {
+          "fact": "Says a closed account in good standing can stay on the report for up to 10 years",
+          "status": "PRESENT",
+          "note": "Reply says \"A closed account in good standing can stay on your report for up to 10 years.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 1,
+      "candidate_passed": 1,
+      "candidate_runs": 1,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    }
+  ],
+  "verdict": "Passed",
+  "verdict_note": null,
+  "flag_rule": {
+    "min_fails": 1,
+    "baseline_repeats": 1,
+    "candidate_repeats": 1,
+    "text": "a case regresses when it passed in the baseline and fails in the candidate (one run each)"
+  },
+  "paired_test": {
+    "method": "mcnemar_exact",
+    "alpha": 0.05,
+    "ci": null,
+    "family": 3,
+    "correction": "Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha",
+    "overall": {
+      "cases": 17,
+      "left_out": 0,
+      "mean_diff": 0.3529,
+      "improved": 6,
+      "regressed": 0,
+      "p_value": 0.03125,
+      "significant": true
+    },
+    "by_dataset": {
+      "single_topic": {
+        "cases": 2,
+        "left_out": 0,
+        "mean_diff": 0.0,
+        "improved": 0,
+        "regressed": 0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "multi_intent": {
+        "cases": 13,
+        "left_out": 0,
+        "mean_diff": 0.4615,
+        "improved": 6,
+        "regressed": 0,
+        "p_value": 0.03125,
+        "p_holm": 0.09375,
+        "significant": false
+      },
+      "context_use": {
+        "cases": 2,
+        "left_out": 0,
+        "mean_diff": 0.0,
+        "improved": 0,
+        "regressed": 0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      }
+    }
+  },
+  "noise_floor": null,
+  "noise_floor_note": "the baseline ran each case once and no A/A run was given",
+  "hypothesis_result": {
+    "expected": "improve",
+    "observed": "improve",
+    "matches": true
+  },
+  "warnings": [
+    "expected facts differ between the runs, so not compared: mi-021; rerun the baseline to compare them"
+  ]
+}

@@ -285,18 +285,25 @@ export function Dumbbell({
 }
 
 /** A headline number on both bots: value, then the counts, then the change. */
+const BOT_SIDES = [
+  { name: "Before", swatch: "bg-coral" },
+  { name: "After", swatch: "bg-fynn" },
+] as const;
+
 export function PairTile({
   label,
   before,
   after,
   unit,
   hint,
+  sides = BOT_SIDES,
 }: {
   label: string;
   before: { value: number; of: number } | null;
   after: { value: number; of: number } | null;
   unit: string;
   hint?: string;
+  sides?: readonly [{ name: string; swatch: string }, { name: string; swatch: string }]; // names and swatch classes
 }) {
   const rate = (side: { value: number; of: number } | null) => (side && side.of ? side.value / side.of : null);
   const points = deltaPoints(rate(before), rate(after));
@@ -306,8 +313,8 @@ export function PairTile({
       <dl className="mt-2 grid grid-cols-2 gap-3">
         {(
           [
-            ["Before", before, "bg-coral"],
-            ["After", after, "bg-fynn"],
+            [sides[0].name, before, sides[0].swatch],
+            [sides[1].name, after, sides[1].swatch],
           ] as const
         ).map(([name, side, swatch]) => (
           <div key={name}>

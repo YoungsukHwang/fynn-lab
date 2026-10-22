@@ -95,15 +95,18 @@ class AgentRouter:
 
 
 class SkillRouter:
-    def __init__(self, llm: LLM, library: SkillLibrary):
+    def __init__(self, llm: LLM, library: SkillLibrary, max_skills: int | None = None):
+        if max_skills is not None and max_skills < 1:
+            raise ValueError(f"max_skills must be at least 1, not {max_skills}")
         self._llm = llm
         self._library = library
+        self._max_skills = max_skills  # None: config.MAX_NEW_SKILLS_PER_TURN, read on each call
 
     def skill_catalog(self) -> str:
         return "\n".join(f"- {s.name}: {s.description}" for s in self._library.topics)
 
     def route(self, messages: list[dict[str, str]]) -> Routing:
-        max_skills = config.MAX_NEW_SKILLS_PER_TURN
+        max_skills = config.MAX_NEW_SKILLS_PER_TURN if self._max_skills is None else self._max_skills
         schema = {
             "type": "object",
             "properties": {

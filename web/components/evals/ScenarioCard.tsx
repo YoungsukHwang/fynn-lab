@@ -88,7 +88,7 @@ export function RatesTable({ comparison, labels }: { comparison: Comparison; lab
         ))}
         <tr className="align-top">
           <th scope="row" className="py-2 pr-2 font-semibold">
-            All rerun cases
+            All compared cases
           </th>
           <td className="hidden py-2 pr-2 font-semibold sm:table-cell">{report.overall.total}</td>
           <td className="py-2 pr-2">
@@ -255,9 +255,18 @@ export function ScenarioCard({
             <dl className="mt-4 grid gap-4 lg:grid-cols-2">
               <Field label="Selection">
                 <span className="font-semibold">
-                  {report.selection.caseCount} of {comparison.baselineCases ?? (caseCount || "?")} cases rerun.
+                  {run?.cases ?? report.selection.caseCount} of {comparison.baselineCases ?? (caseCount || "?")} cases
+                  rerun.
                 </span>{" "}
                 <span className="text-slate">Rule: {capitalize(report.selection.rule)}.</span>
+                {report.factsChanged.length > 0 && (
+                  <span className="text-slate">
+                    {" "}
+                    Not compared: {report.factsChanged.join(", ")}, because{" "}
+                    {report.factsChanged.length === 1 ? "its expected facts were" : "their expected facts were"} reworded
+                    after the baseline ran.
+                  </span>
+                )}
               </Field>
               <Field label="Runs compared">
                 <span className="text-slate">

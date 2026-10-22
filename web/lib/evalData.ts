@@ -142,6 +142,7 @@ export interface Run {
   bot: string;
   scenario: string | null;
   repeats: number; // runs per case
+  skillCap: number | null; // After bot: the most new topic skills per message; null for Before or older files
   createdAt: string;
   models: Models | null;
   selection: { rule: string; caseIds: string[] } | null;
@@ -271,6 +272,7 @@ export interface Report {
   improvements: ReportFailure[]; // flagged improvements, each with a passing candidate run
   sharpChanges: { dropped: string[]; rose: string[] }; // unstable cases that moved by m of K or more
   baselineErrors: string[];
+  factsChanged: string[]; // left out: their graded expected facts differ between the two runs
   // Null in reports written before the statistics layer.
   flagRule: FlagRule | null;
   pairedTest: PairedTest | null;
@@ -664,6 +666,7 @@ export async function getRun(relativePath: string): Promise<Run | null> {
     bot: str(raw.bot),
     scenario: strOrNull(raw.scenario),
     repeats: repeatsOf(raw.repeats),
+    skillCap: typeof raw.skill_cap === "number" && raw.skill_cap >= 1 ? raw.skill_cap : null,
     createdAt: str(raw.created_at),
     models: toModels(raw.models),
     selection: selection ? { rule: str(selection.rule), caseIds: strList(selection.case_ids) } : null,
@@ -730,6 +733,7 @@ export async function getReport(name: string): Promise<Report | null> {
       rose: isObj(raw.sharp_changes) ? strList(raw.sharp_changes.rose) : [],
     },
     baselineErrors: strList(raw.baseline_errors),
+    factsChanged: strList(raw.facts_changed),
     verdict: str(raw.verdict),
     verdictNote: strOrNull(raw.verdict_note),
     flagRule: toFlagRule(raw.flag_rule),
@@ -1214,5 +1218,71 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
       .map((c) => c.id)
       .filter((id) => [before, after].some((run) => run && !run.cases.some((c) => c.id === id))),
     caseCount: cases.length,
+  };
+}
+
+/* ----------------------------------------------------------------------------------------------
+ * Skill cap: the After bot with a higher cap on new skills per message
+ * -------------------------------------------------------------------------------------------- */
+
+/** The cap-4 After run (run.py --max-skills 4 --out results/cap4.json) and its report (reports/cap4). */
+export const CAP_RUN = { file: "cap4.json", report: "cap4" } as const;
+
+// After runs written before results recorded skill_cap all used 3 (LEGACY_SKILL_CAP in backend/evals/stats.py).
+const LEGACY_SKILL_CAP = 3;
+
+export interface CapCaseSide {
+  passed: boolean;
+  loaded: number; // topic skills the router picked
+  missing: string[]; // labeled skills it did not pick
+}
+
+export interface CapCase {
+  id: string;
+  message: string;
+  skills: string[];
+  baseline: CapCaseSide | null;
+  candidate: CapCaseSide | null;
+}
+
+export interface CapData {
+  baselineCap: number | null;
+  cap: number | null;
+  comparison: Comparison | null;
+  overCap: CapCase[]; // cases labeled with more topic skills than the baseline's cap
+}
+
+function capSide(run: Run | null, evalCase: EvalCase): CapCaseSide | null {
+  const result = run?.cases.find((c) => c.id === evalCase.id);
+  if (!result || result.status === "error") return null;
+  const routed = result.routed ?? [];
+  return { passed: result.passed, loaded: routed.length, missing: evalCase.skills.filter((s) => !routed.includes(s)) };
+}
+
+/** Everything the skill-cap section shows. The baseline cap comes from after.json, or from config.py for older files. */
+export async function getCapData(): Promise<CapData> {
+  "use cache";
+  cacheLife("max");
+
+  const [cases, after, capRun, report, configured] = await Promise.all([
+    getCases(),
+    getRun("after.json"),
+    getRun(CAP_RUN.file),
+    getReport(CAP_RUN.report),
+    getSkillCap(),
+  ]);
+  const baselineCap = after ? (after.skillCap ?? LEGACY_SKILL_CAP) : configured;
+  const overCap = baselineCap === null ? [] : cases.filter((c) => c.skills.length > baselineCap);
+  return {
+    baselineCap,
+    cap: capRun?.skillCap ?? null,
+    comparison: report ? await buildComparison(report, cases) : null,
+    overCap: overCap.map((c) => ({
+      id: c.id,
+      message: c.message,
+      skills: c.skills,
+      baseline: capSide(after, c),
+      candidate: capSide(capRun, c),
+    })),
   };
 }

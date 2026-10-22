@@ -87,6 +87,19 @@ def run_repeats(results: Mapping[str, Any]) -> int:
     return max((len(case_runs(case)) for case in results.get("cases", [])), default=1)
 
 
+# Every After run before results recorded `skill_cap` used a cap of 3 (config.py has had 3 since the
+# first commit). Fixed here, not read from config, so raising the configured cap cannot relabel old files.
+LEGACY_SKILL_CAP = 3
+
+
+def run_skill_cap(results: Mapping[str, Any]) -> int | None:
+    """The After bot's cap on new skills per message in a results file; None for the Before bot."""
+    if results.get("bot") != "after":
+        return None
+    declared = results.get("skill_cap")
+    return declared if isinstance(declared, int) and declared >= 1 else LEGACY_SKILL_CAP
+
+
 def default_min_fails(repeats: int) -> int:
     """A strict majority of K runs: 1 of 1, 2 of 2, 2 of 3, 3 of 5."""
     return repeats // 2 + 1

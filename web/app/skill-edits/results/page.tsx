@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ScenarioCard } from "@/components/evals/ScenarioCard";
 import { Chip, NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
 import { getPersonas, getResultsData } from "@/lib/evalData";
-import { formatTimestamp, KIND_LABELS, pPhrase } from "@/lib/evalLabels";
+import { formatTimestamp, KIND_LABELS, listLabel, plural, pPhrase } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Skill edits results" };
 
@@ -11,15 +11,17 @@ export default async function SkillEditsResultsPage() {
   const [data, personas] = await Promise.all([getResultsData(), getPersonas()]);
   const personaNames = Object.fromEntries(personas.map((p) => [p.id, p.name]));
   const ran = data.scenarios.filter((s) => s.comparison);
-  // Baselines older than the current After run: the edits were compared with a run since replaced.
+  // Edits compared with an After run that a newer one has since replaced.
   const after = data.after?.meta ?? null;
-  const olderBaselines = [
-    ...new Set(ran.map((s) => s.comparison?.report.baseline.createdAt ?? "").filter((t) => t && t !== after?.createdAt)),
-  ];
+  const older = ran.filter((s) => {
+    const baselineAt = s.comparison?.report.baseline.createdAt;
+    return Boolean(baselineAt) && baselineAt !== after?.createdAt;
+  });
+  const olderBaselines = [...new Set(older.map((s) => s.comparison?.report.baseline.createdAt ?? ""))];
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
-      <PageHero eyebrow="Skill edits · Results" title="What the three skill edits did">
+      <PageHero eyebrow="Skill edits · Results" title="What the skill edits did">
         <p>
           Each edit reran only the cases that depend on it and was compared with the After bot&apos;s full run. The
           verdict is Passed only when no case was flagged as regressed; the net-change test next to it says whether the
@@ -27,11 +29,15 @@ export default async function SkillEditsResultsPage() {
         </p>
       </PageHero>
 
-      {after && olderBaselines.length > 0 && (
-        <NotGenerated title="These edits predate the current After run">
-          They were compared with the After run of {olderBaselines.map(formatTimestamp).join(" and ")}, kept in
-          results/archive/. The current After run ({formatTimestamp(after.createdAt)}) covers {after.cases} cases, so
-          cases added since then show here only once the edits are rerun against it.
+      {after && older.length > 0 && (
+        <NotGenerated
+          title={older.length === ran.length ? "These edits predate the current After run" : "Some edits predate the current After run"}
+        >
+          {listLabel(older.map((s) => s.scenario.id.toUpperCase()))} {older.length === 1 ? "was" : "were"} compared with
+          the After run of {listLabel(olderBaselines.map(formatTimestamp))}, kept in results/archive/. The current After
+          run ({formatTimestamp(after.createdAt)}) covers {after.cases} cases, so cases added since then show in{" "}
+          {older.length === 1 ? "that edit" : "those edits"} only once {older.length === 1 ? "it is" : "they are"} rerun
+          against it.
         </NotGenerated>
       )}
 
@@ -73,7 +79,7 @@ export default async function SkillEditsResultsPage() {
                 </tr>
               </thead>
               <tbody className="text-ink">
-                {ran.map(({ scenario, comparison }) => {
+                {ran.map(({ scenario, comparison, run }) => {
                   const report = comparison?.report;
                   if (!report) return null;
                   const test = report.pairedTest;
@@ -85,7 +91,7 @@ export default async function SkillEditsResultsPage() {
                         </a>
                         <span className="block text-xs font-normal text-slate">{KIND_LABELS[scenario.kind] ?? scenario.kind}</span>
                       </th>
-                      <td className="py-2.5 pr-3">{report.selection.caseCount}</td>
+                      <td className="py-2.5 pr-3">{run?.cases ?? report.selection.caseCount}</td>
                       <td className="py-2.5 pr-3">
                         <span className="text-forest">{report.counts.improved}</span>
                         {" / "}
@@ -125,7 +131,7 @@ export default async function SkillEditsResultsPage() {
       )}
 
       <section aria-labelledby="edits" className="flex flex-col gap-4">
-        <SectionHeader id="edits" eyebrow="Each edit" title="The three reports">
+        <SectionHeader id="edits" eyebrow="Each edit" title={`The ${plural(data.scenarios.length, "report")}`}>
           <p>Each card gives the edit, its hypothesis, the cases rerun, and every case that changed.</p>
         </SectionHeader>
         {data.scenarios.length ? (

@@ -156,10 +156,11 @@ export default async function SkillEditsFrameworkPage() {
 
       {/* 3. Scenarios */}
       <section aria-labelledby="scenarios" className="flex flex-col gap-5">
-        <SectionHeader id="scenarios" eyebrow="3 · Scenarios" title="Three skill edits to the After bot">
+        <SectionHeader id="scenarios" eyebrow="3 · Scenarios" title={`${plural(scenarios.length, "skill edit")} to the After bot`}>
           <p>
-            Each scenario edits one skill on the After bot, one per kind of change. Its hypothesis was written down
-            before the scenario ran; the results tab reports whether it held. The real{" "}
+            Each scenario edits one skill on the After bot: a topic skill&apos;s body, its description, or an always-on
+            skill. Its hypothesis was written down before the scenario ran; the results tab reports whether it held. The
+            real{" "}
             <code className="font-mono text-xs text-ink">skills/</code> folder is never modified: a scenario&apos;s
             edited copy is laid over it at run time.
           </p>

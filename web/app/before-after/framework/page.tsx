@@ -264,7 +264,11 @@ export default async function BeforeAfterFrameworkPage() {
             </p>
             <p className="mt-1 text-sm leading-6 text-slate">
               The After router can pick at most {cap} new skills per message, so on these cases it must leave one out.
-              They show what raising the cap would change.
+              They show what raising the cap would change (
+              <Link href="/before-after/results#cap" className="font-medium text-ink underline underline-offset-2">
+                the cap result
+              </Link>
+              ).
             </p>
             <ul className="mt-2 flex flex-wrap gap-1.5">
               {overCap.map((c) => (

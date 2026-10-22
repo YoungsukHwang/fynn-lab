@@ -6,6 +6,7 @@ import pytest
 from evals.report import _p, compare, hypothesis_matches, main, observed_direction, render_markdown
 from evals.scenarios import Scenario
 from evals.stats import permutation_test
+from fynn import config
 
 
 def _case(case_id: str, passed: bool, dataset: str = "single_topic", reply: str = "reply") -> dict:
@@ -538,6 +539,38 @@ def test_a_run_against_its_own_setup_is_an_aa_report() -> None:
     assert "if nothing else changed (code, judge or cases)" in report["verdict_note"]
     assert "This is an A/A comparison" in render_markdown(report)
     assert compare(base, {**again, "skill_fingerprint": {}})["kind"] == "change"
+
+
+def test_a_different_skill_cap_is_a_change_and_old_files_read_as_cap_3(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Raising the configured cap must not relabel files written before the cap was recorded.
+    monkeypatch.setattr(config, "MAX_NEW_SKILLS_PER_TURN", 4)
+    fingerprint = {"score-changes": {"description": "d", "body": "b", "meta": "m"}}
+    base = {**BASELINE, "skill_fingerprint": fingerprint}  # written before the cap was recorded
+    same = {**base, "skill_cap": 3}
+    assert compare(base, same)["kind"] == "aa"
+    assert compare(base, same)["baseline"]["skill_cap"] == 3
+
+    wider = {**base, "skill_cap": 4}
+    report = compare(base, wider)
+    assert report["kind"] == "change"
+    assert any(w.startswith("skill caps differ") for w in report["warnings"])
+    # The Before bot has no skill cap.
+    assert compare({**base, "bot": "before"}, {**wider, "bot": "before"})["candidate"]["skill_cap"] is None
+
+
+def test_cases_whose_expected_facts_changed_are_not_compared() -> None:
+    reworded = _case("st-002", True)
+    reworded["judge"]["facts"][0]["fact"] = "Names 47% of the limit"
+    candidate = _results([_case("st-001", True), reworded])
+    report = compare(BASELINE, candidate)
+
+    assert report["facts_changed"] == ["st-002"]
+    assert report["pass_rates"]["overall"]["total"] == 1
+    assert "st-002" not in [i for ids in report["transitions"].values() for i in ids]
+    assert any(w.startswith("expected facts differ between the runs, so not compared: st-002") for w in report["warnings"])
+    # A case that errored before grading has no facts to compare, so it is still paired.
+    errored = {**_case("st-002", False), "judge": None, "status": "error", "error": "agent: LLMError"}
+    assert compare(BASELINE, _results([errored]))["facts_changed"] == []
 
 
 def test_p_values_near_alpha_keep_enough_digits() -> None:

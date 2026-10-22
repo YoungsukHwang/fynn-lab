@@ -25,9 +25,10 @@ Both bots read the same skill files, see the same member profile and use the sam
 | M2 | Demo site: Before/After columns, routing display, architecture diagrams | Done |
 | M3 | Eval set, code checks, LLM judge, parallel runner | Done |
 | M4 | Regression report, dependent-test selection, three skill-edit scenarios | Done |
-| Later | Batch API runner; compare skill budgets (cap 3/5/none) and answer models (Opus/Sonnet/Haiku) | Planned |
+| Later | Batch API runner; compare more skill caps (5, none) and answer models (Opus/Sonnet/Haiku) | Planned |
 | M5 | Eval pages built from the committed results: Before vs After, Skill edits, Noise & A/A, each with Framework and Results tabs | Done |
 | Stats | Repeated runs, A/A noise floor, paired tests, flag rule, Holm correction (see Noise and significance) | Built; the committed results are still single runs |
+| Skill cap | `run.py --max-skills N` runs the After bot with another cap on new skills per message | Built; one cap-4 run on the 64 cases (see Follow-up edits) |
 | M6 | Optional public deployment | Planned |
 
 ## Evaluation plan (M3 and M4)
@@ -50,10 +51,9 @@ Both bots read the same skill files, see the same member profile and use the sam
 - **Dependent-test selection.** Each skill keeps separate hashes for its description, body and metadata.
   - A body edit reruns only the cases that use the skill.
   - A description or always-on edit reruns everything, because it can change routing or every prompt.
-- **Three skill-edit scenarios on the After bot.** The hypothesis for each is written down before it runs:
-  - a topic-skill body edit;
-  - an always-on edit;
-  - a description edit.
+- **Skill-edit scenarios on the After bot.** The hypothesis for each is written down before it runs:
+  - S1 to S3 try one of each kind of change: a topic-skill body edit, an always-on edit and a description edit;
+  - S4 to S6 fix gaps found in the 64-case run: one body edit and two description edits (see Follow-up edits).
 - **Noise and significance.** LLM replies vary from run to run, so a case can flip with nothing changed. Each report adds a paired test of the net change, an A/A noise floor when one can be measured and, with repeated runs, a stricter flag rule (see below).
 
 The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
@@ -62,7 +62,7 @@ The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
 
 - **What it calls.** The runner calls the Anthropic API for the routers, the answer model and the Opus judge, so it needs `ANTHROPIC_API_KEY` in `backend/.env`. The tests never call the API.
 - **Inputs.** The 64 cases are in `backend/evals/cases/` (four datasets). Each scenario in `scenarios/<id>/` has a `scenario.yaml` with its hypothesis and an edited copy of one skill. The copy is overlaid at run time; `skills/` is never modified.
-- **Outputs.** Results go to `results/` at the repo root. Run the commands from `backend/`. When a new run replaces a results file that a committed report still compares, the old file moves to `results/archive/`, where the site still finds it by name and timestamp.
+- **Outputs.** Results go to `results/` at the repo root. Run the commands from `backend/`. The runner overwrites `--out`. Before a new run replaces a results file that a committed report still compares, move the old file to `results/archive/` yourself (for example `git mv results/after.json results/archive/after-<timestamp>.json`); the site finds it there by name and timestamp.
 
 ```bash
 cd backend
@@ -75,20 +75,25 @@ cd backend
 .venv/bin/python -m evals.run --bot after --repeats 3 --scenario s1 --baseline ../results/after.json --out ../results/scenarios/s1.json
 .venv/bin/python -m evals.run --bot after --repeats 3 --scenario s2 --baseline ../results/after.json --out ../results/scenarios/s2.json
 .venv/bin/python -m evals.run --bot after --repeats 3 --scenario s3 --baseline ../results/after.json --out ../results/scenarios/s3.json
+# S4 to S6 the same way, with --scenario s4, s5 or s6
+
+# The After bot with a different cap on new skills per message; every case reruns
+.venv/bin/python -m evals.run --bot after --repeats 3 --max-skills 4 --baseline ../results/after.json --out ../results/cap4.json
 
 # Regression reports: report.json (for the site) and report.md in each directory
 .venv/bin/python -m evals.report --baseline ../results/before.json --candidate ../results/after.json --out ../results/reports/before-vs-after
 .venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s1.json --out ../results/reports/s1
 .venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s2.json --out ../results/reports/s2
 .venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/scenarios/s3.json --out ../results/reports/s3
+.venv/bin/python -m evals.report --baseline ../results/after.json --candidate ../results/cap4.json --out ../results/reports/cap4
 ```
 
 - **Passing.** A case passes only if the code checks and the judge both pass. A case that errors is recorded with status `error` and counts as not passed; the rest of the run continues.
-- **Selection.** With `--baseline`, a body edit to a topic skill (s1) reruns only the cases labeled with that skill or routed to it in the baseline. An always-on edit (s2) or a description edit (s3) reruns every case.
+- **Selection.** With `--baseline`, a body edit to a topic skill (s1) reruns only the cases labeled with that skill or routed to it in the baseline. An always-on edit (s2) or a description edit (s3) reruns every case, and so does a run whose skill cap differs from the baseline's (files written before the cap was recorded count as cap 3).
 - **Baseline freshness.** Run the scenarios against an `after.json` made from the current `skills/`. The runner warns when the baseline's skill hashes differ.
-- **Reports.** A report compares only the cases in the candidate. The verdict is Passed when no case regressed. A scenario report also says whether the result matches the hypothesis in `scenario.yaml`.
-- **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, and `--workers N` sets parallel case runs (default 8).
-- **Cost.** The token usage recorded in the committed results comes to at most about $2.20 for one bot's single run of the current 64 cases (Sonnet 5.5 answering and an Opus 5.5 judge, at list prices). The first two 40-case runs came to at most about $2.60, and the two 64-case runs of 2026-10-22 used about 1.7 times their tokens. `--repeats K` multiplies that by K: the set of commands above with K=3 is about 816 case runs (before, after, S2 and S3 on 64 cases each, S1 on about 16), roughly $28. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
+- **Reports.** A report compares only the cases in the candidate. The verdict is Passed when no case regressed. A scenario report also says whether the result matches the hypothesis in `scenario.yaml`. A case whose graded expected facts differ between the two runs (a fact was reworded in between) is left out with a warning, since the two runs were graded against different facts. A report warns when the two runs used different skill caps.
+- **Other options.** `--dataset NAME` runs one dataset, `--limit N` runs the first N cases, `--workers N` sets parallel case runs (default 8), and `--max-skills N` sets the After bot's cap on new skills per message (default 3, recorded in the results as `skill_cap`).
+- **Cost.** The token usage recorded in the committed results comes to at most about $2.20 for one bot's single run of the current 64 cases (Sonnet 5.5 answering and an Opus 5.5 judge, at list prices). The first two 40-case runs came to at most about $2.60, and the two 64-case runs of 2026-10-22 used about 1.7 times their tokens. `--repeats K` multiplies that by K: the set of commands above with K=3 is about 1,450 case runs (before, after, S2, S3, S5, S6 and cap 4 on 64 cases each, S1 and S4 on about 16 to 18), roughly $50. Usage inside the SDK's own retries is not recorded, so the billing console is the final word. The runner does not ask before spending, so check the cost first.
 
 ## Noise and significance
 
@@ -150,6 +155,16 @@ A review of every After failure on the new cases, plus the 4 regressions, read e
 - **Reply missed a fact from a loaded skill (5).** `mi-015`, `mi-018`, `mi-025`, `mi-006` and `mi-012`. `mi-012` passes about half the time on both bots.
 - **Grading (2).** In `mi-021` the judge rejected a correct, unhedged statement, prompted by the fact's wording "as the plan's own rule". In `mi-033` the fact bundles "at least the minimum payment" into a reminder suggestion. Both facts are now reworded ("would not be reported as late if it is 1 to 29 days late, without saying the plan may have other rules"; "Suggests setting payment reminders as a backup to autopay"). The committed results graded the old wording, so the next run is the first to use the new one.
 
+### Follow-up edits
+
+Three scenarios target the gaps above, and a cap-4 run tests the four-skill cases. Each ran once per case against the 64-case After run, on 2026-10-22.
+
+- **S4: the closed-account line in credit-builder-account (body edit, 18 cases rerun).** Passed with 6 improved and 0 regressed (p = 0.031), as the hypothesis expected. The three targeted cases (`mi-016`, `mi-019`, `mi-034`) now state the 10-year rule with the same routing as the baseline, so that gain is the edit's. `mi-008` and `mi-012` flipped on facts the edit does not touch, and `mi-022` was routed differently, so those three are most likely run-to-run noise. `mi-021` was left out because its fact was reworded after the baseline ran. The p = 0.031 counts all six flips; the three that come from the edit alone would give 3 against 0, p = 0.25. So the evidence for the edit is the mechanism (same routing, and the 10-year line now present), not the p-value; a K=3 baseline is needed for a test.
+- **S5: payment-history description (every case rerun).** 7 improved and 3 regressed (p = 0.344), so Not passed, and the hypothesis (at most one regression) did not match. Both targets were fixed through routing: `mi-024` now loads payment-history for free reports, and `sb-001` loads it for the recovery question.
+- **S6: score-changes description (every case rerun).** 8 improved and 3 regressed (p = 0.227), Not passed. It fixed one of its two targets: `mi-019` now loads score-changes, but in `mi-034` the router still left it out. S4's body edit fixed both, so for this gap the body fix is the sturdier one.
+- **Cap 4 (`--max-skills 4`, every case rerun; results in `results/cap4.json`).** 49 of 62 compared cases passed against 42 at cap 3: 9 improved and 2 regressed (p = 0.065). Three of the five four-skill cases were fixed because the router now loaded the fourth skill (`mi-020`, `mi-028`, `mi-036`). In `mi-016` the router still picked only three. `mi-008` passed with the same three skills as before, so its flip is noise.
+- **Every regression in S5, S6 and cap 4 had unchanged routing.** The answering agent sees only skill bodies, so in a description or cap change a case routed the same way got the same prompt as in the baseline. Its flips are run-to-run noise by construction. Across the three runs, 22 of the 163 such cases flipped (about 13%), 14 to pass and 8 to fail. That is a free estimate of single-run noise, and the reason the verdicts above read Not passed. `mi-012`, `mi-015` and `mi-022` flipped to pass in most runs, which points to chance failures in the one baseline run. A K=3 baseline would separate the two.
+
 ## Layout
 
 ```
@@ -185,7 +200,7 @@ Settings in `backend/.env` are loaded before anything else, and variables export
 - The router picks up to `MAX_NEW_SKILLS_PER_TURN` (3) topic skills for the latest message.
 - Skills picked on the previous turn stay loaded for one more turn, up to `MAX_CARRIED_SKILLS` (2). This keeps a follow-up question from losing the guidance behind the answer it follows. The CLI tracks this for you. API clients pass the previous reply's `routing.selected` back as `carry_skills`.
 
-Both limits are this project's design choices; the post does not mention them. M3 will compare settings. They are set in `backend/fynn/config.py`.
+Both limits are this project's design choices; the post does not mention them. They are set in `backend/fynn/config.py`. `evals.run --max-skills N` overrides the new-skill cap for one eval run and saves it as `skill_cap` (see Follow-up edits for the cap-4 run). The evals are single-turn, so the carry limit is not exercised by them.
 
 ### Models
 
@@ -220,7 +235,7 @@ npm run dev                 # http://localhost:3000
 - **CORS.** The API allows `localhost:3000` and `127.0.0.1:3000`. Set `FYNN_CORS_ORIGINS` in `backend/.env` for any other origin.
 - **Eval pages.** Three sections, each with a Framework tab and a Results tab, all built from the committed results and reports:
   - `/before-after`: how the two bots are compared (designs, the domain map, the eval set, scoring), and what the eval found, split by whether a case needs a second domain, by number of questions and by dataset;
-  - `/skill-edits`: the regression loop and dependent-test selection, and the three scenario reports;
+  - `/skill-edits`: the regression loop and dependent-test selection, and the scenario reports;
   - `/noise`: the statistics (repeats, flag rule, net-change tests, A/A noise floor, calibration and power), and every comparison's noise check with the runs behind it.
   The old `/framework` and `/results` paths redirect to the Before vs After tabs.
 - **Checks.** `npm run typecheck` (generates route types, then runs `tsc`) and `npm run lint`.

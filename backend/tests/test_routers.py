@@ -45,6 +45,21 @@ def test_skill_router_keeps_known_unique_and_capped(
     assert llm.json_calls[0]["schema"]["properties"]["skills"]["items"]["enum"] == mini_library.topic_names
 
 
+def test_skill_router_cap_override_beats_config(mini_library: SkillLibrary) -> None:
+    llm = FakeLLM([{"reason": "several questions", "skills": MANY_PICKS}])
+    routing = SkillRouter(llm, mini_library, max_skills=4).route(THREE_PART)
+
+    assert config.MAX_NEW_SKILLS_PER_TURN != 4
+    assert routing.selected == ["score-changes", "secured-card", "collections", "utilization"]
+    assert "Choose at most 4," in llm.json_calls[0]["system"]
+
+
+@pytest.mark.parametrize("cap", [0, -1])
+def test_skill_router_rejects_a_cap_below_one(mini_library: SkillLibrary, cap: int) -> None:
+    with pytest.raises(ValueError, match="at least 1"):
+        SkillRouter(FakeLLM([]), mini_library, max_skills=cap)
+
+
 def test_skill_router_allows_no_skills(mini_library: SkillLibrary) -> None:
     llm = FakeLLM([{"reason": "greeting", "skills": []}])
     assert SkillRouter(llm, mini_library).route([{"role": "user", "content": "hi"}]).selected == []

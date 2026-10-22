@@ -120,9 +120,9 @@ class AfterBot(_BaseBot):
 
     name: BotName = "after"
 
-    def __init__(self, llm: LLM, library: SkillLibrary):
+    def __init__(self, llm: LLM, library: SkillLibrary, max_skills: int | None = None):
         super().__init__(llm, library)
-        self._router = SkillRouter(llm, library)
+        self._router = SkillRouter(llm, library, max_skills)
 
     def reply(
         self, persona: Persona, messages: list[dict[str, str]], carry_skills: list[str] | None = None
@@ -139,5 +139,6 @@ class AfterBot(_BaseBot):
         return self._answer(routing, after_system_prompt(self._library, skills, persona), messages)
 
 
-def build_bots(llm: LLM, library: SkillLibrary) -> dict[BotName, Bot]:
-    return {"before": BeforeBot(llm, library), "after": AfterBot(llm, library)}
+def build_bots(llm: LLM, library: SkillLibrary, max_skills: int | None = None) -> dict[BotName, Bot]:
+    """`max_skills` overrides the After bot's cap on new skills per message (config.MAX_NEW_SKILLS_PER_TURN)."""
+    return {"before": BeforeBot(llm, library), "after": AfterBot(llm, library, max_skills)}

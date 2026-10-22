@@ -43,12 +43,17 @@ class ScriptedLLM:
         self.reply = reply
         self.lock = threading.Lock()
         self.calls: list[str] = []
+        self.router_systems: list[str] = []
 
-    def generate_json(self, *, schema: dict[str, Any], messages: list[dict[str, str]], **_: Any):
+    def generate_json(
+        self, *, schema: dict[str, Any], messages: list[dict[str, str]], system: str = "", **_: Any
+    ):
         prompt = messages[-1]["content"]
         props = schema["properties"]
         with self.lock:
             self.calls.append("judge" if "facts" in props else "router")
+            if "skills" in props:
+                self.router_systems.append(system)
         if "facts" in props:
             if "JUDGE-FAIL" in prompt:
                 raise LLMError("judge stopped with max_tokens", Usage(input_tokens=7))
@@ -158,10 +163,11 @@ def test_run_cases_after_bot(mini_library: SkillLibrary, personas, tmp_path: Pat
     saved = json.loads(out.read_text(encoding="utf-8"))
 
     assert set(saved) == {
-        "name", "bot", "scenario", "repeats", "created_at", "models", "skill_fingerprint", "selection", "cases",
-        "summary",
+        "name", "bot", "scenario", "repeats", "skill_cap", "created_at", "models", "skill_fingerprint", "selection",
+        "cases", "summary",
     }
     assert saved["repeats"] == 1
+    assert saved["skill_cap"] == config.MAX_NEW_SKILLS_PER_TURN
     assert (first["repeats"], first["passes"], first["pass_fraction"]) == (1, 1, 1.0) and "runs" not in first
     assert saved["models"] == {"router": config.ROUTER_MODEL, "agent": config.AGENT_MODEL, "judge": config.JUDGE_MODEL}
     assert saved["skill_fingerprint"]["score-changes"] == {
@@ -247,6 +253,52 @@ def test_cli_full_run_then_scenario_with_selection_then_report(
     assert report["selection"]["case_count"] == 2
     assert report["hypothesis_result"] == {"expected": "improve", "observed": "no change", "matches": False}
     assert (tmp_path / "report" / "report.md").exists()
+
+
+def test_cli_skill_cap_reruns_every_case_and_is_recorded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    bot_llm = ScriptedLLM()
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (bot_llm, ScriptedLLM()))
+    baseline_path = tmp_path / "after.json"
+    evals.run.main(["--bot", "after", "--out", str(baseline_path)])
+
+    cap = config.MAX_NEW_SKILLS_PER_TURN + 1
+    candidate_path = tmp_path / "cap.json"
+    bot_llm.router_systems.clear()
+    candidate = evals.run.main(
+        ["--bot", "after", "--max-skills", str(cap), "--baseline", str(baseline_path), "--out", str(candidate_path)]
+    )
+    # The cap reaches the router, not only the results file.
+    assert bot_llm.router_systems and all(f"Choose at most {cap}," in s for s in bot_llm.router_systems)
+    # Skills did not change, but the cap can change routing for any message, so every case reruns.
+    assert candidate["skill_cap"] == cap
+    assert len(candidate["cases"]) == 4
+    assert candidate["selection"]["rule"] == f"all cases: the skill cap changed from {config.MAX_NEW_SKILLS_PER_TURN} to {cap}"
+
+    report = report_cli.main(
+        ["--baseline", str(baseline_path), "--candidate", str(candidate_path), "--out", str(tmp_path / "report")]
+    )
+    assert report["kind"] == "change"
+    assert report["candidate"]["skill_cap"] == cap
+    assert f"skill caps differ: baseline {config.MAX_NEW_SKILLS_PER_TURN}, candidate {cap}" in report["warnings"]
+
+    # Back to the default cap against the higher-cap baseline: also a cap change, so every case reruns.
+    back = evals.run.main(["--bot", "after", "--baseline", str(candidate_path), "--out", str(tmp_path / "back.json")])
+    assert back["skill_cap"] == config.MAX_NEW_SKILLS_PER_TURN
+    assert len(back["cases"]) == 4
+    assert back["selection"]["rule"] == f"all cases: the skill cap changed from {cap} to {config.MAX_NEW_SKILLS_PER_TURN}"
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    [(["--bot", "before", "--max-skills", "4"], "only to the after bot"), (["--bot", "after", "--max-skills", "0"], "at least 1")],
+)
+def test_cli_rejects_a_bad_skill_cap(
+    argv: list[str], message: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit):
+        evals.run.parse_args([*argv, "--out", str(tmp_path / "x.json")])
+    assert message in capsys.readouterr().err
 
 
 def test_cli_rejects_a_baseline_from_the_other_bot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

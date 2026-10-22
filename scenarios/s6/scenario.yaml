@@ -1,0 +1,20 @@
+id: s6
+title: Route closed-account questions to score changes
+kind: description
+skill: score-changes
+change: >-
+  Widens the score-changes description so the router also picks it when the user asks whether
+  and how long a closed account stays on a report.
+motivation: >-
+  The routing alternative to s4, as s3 was to s1. In the 2026-10-22 run the score-changes
+  description named closed accounts only as a reason a score changed, so for "does my Credit
+  Builder account disappear once the plan is done" the router left score-changes out and the
+  10-year line was never loaded (mi-019, mi-034).
+hypothesis:
+  expected: improve
+  detail: >-
+    A description edit can change routing for any message, so every case reruns. mi-019 and
+    mi-034 should improve, since the router had a free slot in both. In mi-016 the router
+    already needs four skills, so loading score-changes would push out another one. Messages
+    about closing a card may now pull score-changes in next to utilization. Expected: some
+    improvements; a regression is possible where the cap binds.

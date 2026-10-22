@@ -3,6 +3,8 @@
     python -m evals.run --bot after --repeats 3 --out ../results/after.json
     python -m evals.run --bot after --repeats 3 --scenario s1 --baseline ../results/after.json \
         --out ../results/scenarios/s1.json
+    python -m evals.run --bot after --max-skills 4 --baseline ../results/after.json \
+        --out ../results/cap4.json
 
 Each case is single-turn: the case message is the only user message and nothing is carried.
 With --repeats K each case runs K times, so the report can tell a real change from run-to-run noise.
@@ -25,7 +27,7 @@ from evals.checks import run_checks
 from evals.judge import Judge
 from evals.scenarios import Scenario, load_scenario, scenario_library
 from evals.selection import select_cases, select_changed
-from evals.stats import case_runs, run_repeats
+from evals.stats import case_runs, run_repeats, run_skill_cap
 from fynn import config
 from fynn.bots import Bot, BotName, build_bots
 from fynn.llm import LLM, LLMError, Usage
@@ -174,12 +176,15 @@ def build_results(
     selection: tuple[list[str], str] | None = None,
     judge_model: str = config.JUDGE_MODEL,
     repeats: int = 1,
+    skill_cap: int | None = None,
 ) -> dict[str, Any]:
     return {
         "name": name,
         "bot": bot,
         "scenario": scenario.id if scenario else None,
         "repeats": repeats,
+        # After bot only: the most new topic skills its router may pick per message.
+        "skill_cap": (config.MAX_NEW_SKILLS_PER_TURN if skill_cap is None else skill_cap) if bot == "after" else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "models": {"router": config.ROUTER_MODEL, "agent": config.AGENT_MODEL, "judge": judge_model},
         "skill_fingerprint": {name: asdict(hashes) for name, hashes in library.fingerprint().items()},
@@ -220,9 +225,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=1,
         help=f"runs per case (default 1; {RECOMMENDED_REPEATS} recommended, so reports can separate change from noise)",
     )
+    parser.add_argument(
+        "--max-skills",
+        type=int,
+        help=f"After bot only: the most new topic skills the router may pick per message (default {config.MAX_NEW_SKILLS_PER_TURN})",
+    )
     args = parser.parse_args(argv)
     if args.repeats < 1:
         parser.error("--repeats must be at least 1")
+    if args.max_skills is not None:
+        if args.bot != "after":
+            parser.error("--max-skills applies only to the after bot")
+        if args.max_skills < 1:
+            parser.error("--max-skills must be at least 1")
     return args
 
 
@@ -251,6 +266,11 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
             selection = select_cases(cases, base_lib, library, baseline)
         else:
             selection = select_changed(cases, baseline, library)
+        base_cap = run_skill_cap(baseline)
+        cap = config.MAX_NEW_SKILLS_PER_TURN if args.max_skills is None else args.max_skills
+        if args.bot == "after" and cap != base_cap:
+            # A different cap can change routing for any message, so every case reruns.
+            selection = ([c.id for c in cases], f"all cases: the skill cap changed from {base_cap} to {cap}")
         wanted = set(selection[0])
         cases = [c for c in cases if c.id in wanted]
         print(f"selection: {selection[1]}")
@@ -261,11 +281,12 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     case_results: list[dict[str, Any]] = []
     if cases:  # an empty selection needs no API client at all
         bot_llm, judge_llm = make_llms()
-        bot = build_bots(bot_llm, library)[args.bot]
+        bot = build_bots(bot_llm, library, args.max_skills)[args.bot]
         judge = Judge(judge_llm)
         label = f" scenario {scenario.id}" if scenario else ""
         times = f" x {args.repeats} runs" if args.repeats > 1 else ""
-        print(f"running {len(cases)} cases{times} on the {args.bot} bot{label} with {args.workers} workers")
+        cap = f", skill cap {args.max_skills}" if args.max_skills is not None else ""
+        print(f"running {len(cases)} cases{times} on the {args.bot} bot{label}{cap} with {args.workers} workers")
         case_results = run_cases(
             cases, bot=bot, judge=judge, personas=personas, repeats=args.repeats, workers=args.workers
         )
@@ -278,6 +299,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
         scenario=scenario,
         selection=selection,
         repeats=args.repeats,
+        skill_cap=args.max_skills,
     )
     write_results(args.out, results)
 
