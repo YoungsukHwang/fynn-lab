@@ -43,11 +43,11 @@ def test_cost_uses_list_prices_and_the_cache_write_premium() -> None:
 
 def test_split_takes_the_router_off_an_old_style_answer() -> None:
     old = _case("st-001", ["score-changes"], True)
-    answer, router, estimated = mr._split(old, {"st-001": ROUTER})
+    answer, router, estimated = mr._split(old, "st-001", {"st-001": ROUTER})
     assert answer["input_tokens"] == 600 and answer["output_tokens"] == 60 and router == ROUTER and estimated
     new = _case("st-001", ["score-changes"], True, routing_usage=ROUTER)
-    assert mr._split(new, {}) == (U, ROUTER, False)  # already split by the runner
-    assert mr._split(old, {})[2] is True  # no router record to split with: still an estimate
+    assert mr._split(new, "st-001", {}) == (U, ROUTER, False)  # already split by the runner
+    assert mr._split(old, "st-001", {})[2] is True  # no router record to split with: still an estimate
 
 
 def test_model_row_counts_groups_facts_lengths_and_cost(mini_library: SkillLibrary) -> None:
@@ -57,8 +57,9 @@ def test_model_row_counts_groups_facts_lengths_and_cost(mini_library: SkillLibra
         _case("st-002", ["rent-reporting"], False),
     ])
     row = mr.model_row("after-sonnet", results, {}, mini_library)
-    assert (row["passed"], row["cases"], row["errors"]) == (2, 3, 0)
-    assert row["by_group"] == {"cross": {"cases": 1, "passed": 1}, "single": {"cases": 2, "passed": 1}}
+    assert (row["passed"], row["cases"], row["runs"], row["repeats"], row["errors"]) == (2, 3, 3, 1, 0)
+    assert row["by_group"] == {"cross": {"runs": 1, "passed": 1}, "single": {"runs": 2, "passed": 1}}
+    assert row["flip_rate"] is None and row["unstable_cases"] == 0  # one run per case: no flip rate
     assert row["facts"] == {"present": 2, "graded": 3}
     assert row["passed_if_over_300_fails"] == 1
     assert row["lengths"]["over_limit"] == 1
@@ -70,8 +71,29 @@ def test_model_row_counts_groups_facts_lengths_and_cost(mini_library: SkillLibra
 def test_paired_counts_flips_with_and_without_the_length_cap() -> None:
     a = _run("m1", [_case("c1", [], True), _case("c2", [], False), _case("c3", [], True, words=400)])
     b = _run("m2", [_case("c1", [], True), _case("c2", [], True), _case("c3", [], True)])
-    assert mr.paired(a, b) == {"cases": 3, "up": 1, "down": 0, "p": 1.0}
+    assert mr.paired(a, b) == {
+        "cases": 3, "left_out": 0, "method": "mcnemar_exact", "up": 1, "down": 0, "mean_diff": 0.3333, "p": 1.0,
+    }
     assert mr.paired(a, b, cap=True)["up"] == 2  # c3 fails on a once its 400 words count
+
+
+def _repeated(case_id: str, outcomes: list[bool]) -> dict[str, Any]:
+    runs = []
+    for ok in outcomes:
+        run = _case(case_id, ["score-changes"], ok)
+        runs.append({k: v for k, v in run.items() if k not in ("id", "skills")})
+    return {"id": case_id, "skills": ["score-changes"], "passed": sum(outcomes) * 2 > len(outcomes), "runs": runs}
+
+
+def test_repeated_runs_count_every_run_and_give_a_flip_rate(mini_library: SkillLibrary) -> None:
+    results = _run("claude-sonnet-5-5", [_repeated("c1", [True, True, False]), _repeated("c2", [True, True, True])])
+    row = mr.model_row("after", results, {}, mini_library)
+    assert (row["cases"], row["repeats"], row["runs"], row["passed"]) == (2, 3, 6, 5)
+    assert row["unstable_cases"] == 1
+    assert row["flip_rate"] == round((2 / 3 + 0) / 2, 4)  # c1: 2 of its 3 pairs of runs disagree; c2: none
+    other = _run("claude-haiku-5-5", [_repeated("c1", [False, False, False]), _repeated("c2", [True, False, False])])
+    test = mr.paired(other, results)
+    assert (test["method"], test["up"], test["down"]) == ("run_permutation", 2, 0)
 
 
 def _regrade(label: str, model: str, source: str, rows: list[tuple[str, bool]]) -> dict[str, Any]:
@@ -130,3 +152,15 @@ def test_cli_writes_the_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert report["router_usage_from"]["name"] == "after"
     assert all(r["cost_per_1000"]["router"] > 0 for r in report["models"])
     assert (tmp_path / "models" / "report.md").exists()
+
+
+def test_a_case_whose_every_run_errored_is_left_out(mini_library: SkillLibrary) -> None:
+    errored = _repeated("c2", [False, False, False])
+    for run in errored["runs"]:
+        run["status"] = "error"
+    a = _run("m1", [_repeated("c1", [True, False, False]), _repeated("c2", [True, True, True])])
+    b = _run("m2", [_repeated("c1", [True, True, True]), errored])
+    test = mr.paired(a, b)
+    assert (test["cases"], test["left_out"], test["up"], test["down"]) == (1, 1, 1, 0)  # c2 is not a "down"
+    row = mr.model_row("b", b, {}, mini_library)
+    assert row["flip_rate"] == 0.0 and row["unstable_cases"] == 0  # only c1, which never flips, measures noise

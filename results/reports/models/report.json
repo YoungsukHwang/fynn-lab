@@ -1,10 +1,7 @@
 {
   "kind": "models",
-  "created_at": "2026-10-23T19:06:44+00:00",
-  "router_usage_from": {
-    "name": "after",
-    "created_at": "2026-10-23T19:06:17+00:00"
-  },
+  "created_at": "2026-10-23T20:18:42+00:00",
+  "router_usage_from": null,
   "prices": {
     "claude-haiku-5-5": {
       "input": 0.1,
@@ -32,78 +29,86 @@
       "served": [
         "claude-haiku-5-5"
       ],
-      "created_at": "2026-10-23T15:02:26+00:00",
+      "created_at": "2026-10-23T20:00:54+00:00",
       "cases": 64,
-      "passed": 34,
+      "repeats": 3,
+      "runs": 192,
+      "passed": 129,
       "errors": 0,
       "by_group": {
         "cross": {
-          "cases": 33,
-          "passed": 16
+          "runs": 99,
+          "passed": 63
         },
         "single": {
-          "cases": 31,
-          "passed": 18
+          "runs": 93,
+          "passed": 66
         }
       },
       "facts": {
-        "present": 223,
-        "graded": 262
+        "present": 711,
+        "graded": 786
       },
       "lengths": {
-        "replies": 64,
-        "median_words": 228.0,
-        "mean_words": 233.6,
+        "replies": 192,
+        "median_words": 238.0,
+        "mean_words": 235.7,
         "limit": 250,
-        "over_limit": 25,
-        "over_300": 14
+        "over_limit": 84,
+        "over_300": 50
       },
-      "passed_if_over_300_fails": 30,
+      "passed_if_over_300_fails": 102,
+      "flip_rate": 0.2708,
+      "unstable_cases": 26,
       "cost_per_1000": {
-        "answer": 0.49,
+        "answer": 0.5,
         "router": 0.32,
-        "total": 0.81,
-        "estimated_split": true
+        "total": 0.82,
+        "estimated_split": false
       }
     },
     {
-      "source": "after-sonnet",
+      "source": "after",
       "model": "claude-sonnet-5-5",
       "served": [
         "claude-sonnet-5-5"
       ],
-      "created_at": "2026-10-23T15:23:18+00:00",
+      "created_at": "2026-10-23T20:01:10+00:00",
       "cases": 64,
-      "passed": 47,
+      "repeats": 3,
+      "runs": 192,
+      "passed": 165,
       "errors": 0,
       "by_group": {
         "cross": {
-          "cases": 33,
-          "passed": 22
+          "runs": 99,
+          "passed": 78
         },
         "single": {
-          "cases": 31,
-          "passed": 25
+          "runs": 93,
+          "passed": 87
         }
       },
       "facts": {
-        "present": 243,
-        "graded": 262
+        "present": 757,
+        "graded": 786
       },
       "lengths": {
-        "replies": 64,
-        "median_words": 272.5,
-        "mean_words": 265.8,
+        "replies": 192,
+        "median_words": 270.5,
+        "mean_words": 261.6,
         "limit": 250,
-        "over_limit": 44,
-        "over_300": 16
+        "over_limit": 128,
+        "over_300": 45
       },
-      "passed_if_over_300_fails": 37,
+      "passed_if_over_300_fails": 137,
+      "flip_rate": 0.1042,
+      "unstable_cases": 10,
       "cost_per_1000": {
-        "answer": 9.22,
+        "answer": 9.25,
         "router": 0.32,
-        "total": 9.53,
-        "estimated_split": true
+        "total": 9.57,
+        "estimated_split": false
       }
     },
     {
@@ -112,91 +117,113 @@
       "served": [
         "claude-opus-5-5"
       ],
-      "created_at": "2026-10-23T15:05:47+00:00",
+      "created_at": "2026-10-23T20:03:20+00:00",
       "cases": 64,
-      "passed": 46,
+      "repeats": 3,
+      "runs": 192,
+      "passed": 174,
       "errors": 0,
       "by_group": {
         "cross": {
-          "cases": 33,
-          "passed": 21
+          "runs": 99,
+          "passed": 85
         },
         "single": {
-          "cases": 31,
-          "passed": 25
+          "runs": 93,
+          "passed": 89
         }
       },
       "facts": {
-        "present": 244,
-        "graded": 262
+        "present": 767,
+        "graded": 786
       },
       "lengths": {
-        "replies": 64,
-        "median_words": 266.0,
-        "mean_words": 260.1,
+        "replies": 192,
+        "median_words": 269.0,
+        "mean_words": 259.0,
         "limit": 250,
-        "over_limit": 42,
-        "over_300": 6
+        "over_limit": 141,
+        "over_300": 18
       },
-      "passed_if_over_300_fails": 41,
+      "passed_if_over_300_fails": 161,
+      "flip_rate": 0.1042,
+      "unstable_cases": 10,
       "cost_per_1000": {
-        "answer": 21.78,
+        "answer": 23.17,
         "router": 0.32,
-        "total": 22.1,
-        "estimated_split": true
+        "total": 23.49,
+        "estimated_split": false
       }
     }
   ],
   "paired": [
     {
       "a": "after-haiku",
-      "b": "after-sonnet",
+      "b": "after",
       "cases": 64,
-      "up": 17,
-      "down": 4,
-      "p": 0.0072
+      "left_out": 0,
+      "method": "run_permutation",
+      "up": 31,
+      "down": 6,
+      "mean_diff": 0.1875,
+      "p": 0.0
     },
     {
-      "a": "after-sonnet",
+      "a": "after",
       "b": "after-opus",
       "cases": 64,
-      "up": 7,
-      "down": 8,
-      "p": 1.0
+      "left_out": 0,
+      "method": "run_permutation",
+      "up": 8,
+      "down": 6,
+      "mean_diff": 0.0469,
+      "p": 0.0988
     },
     {
       "a": "after-haiku",
       "b": "after-opus",
       "cases": 64,
-      "up": 19,
-      "down": 7,
-      "p": 0.029
+      "left_out": 0,
+      "method": "run_permutation",
+      "up": 30,
+      "down": 3,
+      "mean_diff": 0.2344,
+      "p": 0.0
     }
   ],
   "paired_if_over_300_fails": [
     {
       "a": "after-haiku",
-      "b": "after-sonnet",
+      "b": "after",
       "cases": 64,
-      "up": 12,
-      "down": 5,
-      "p": 0.1435
+      "left_out": 0,
+      "method": "run_permutation",
+      "up": 29,
+      "down": 6,
+      "mean_diff": 0.1823,
+      "p": 0.0
     },
     {
-      "a": "after-sonnet",
+      "a": "after",
       "b": "after-opus",
       "cases": 64,
-      "up": 9,
+      "left_out": 0,
+      "method": "run_permutation",
+      "up": 21,
       "down": 5,
-      "p": 0.424
+      "mean_diff": 0.125,
+      "p": 0.0002
     },
     {
       "a": "after-haiku",
       "b": "after-opus",
       "cases": 64,
-      "up": 15,
-      "down": 4,
-      "p": 0.0192
+      "left_out": 0,
+      "method": "run_permutation",
+      "up": 33,
+      "down": 2,
+      "mean_diff": 0.3073,
+      "p": 0.0
     }
   ],
   "judges": [
@@ -344,5 +371,10 @@
       "fact_agreement": 0.958,
       "cost_per_run": 0.5
     }
+  ],
+  "regraded_runs": [
+    "after-haiku",
+    "after-opus",
+    "after-sonnet"
   ]
 }

@@ -22,7 +22,7 @@ from typing import Any
 from evals.judge_validation import judge_vs_judge, load_regrades, source_name
 from evals.quality import LONG, reply_lengths
 from evals.run import write_results
-from evals.stats import mcnemar_exact
+from evals.stats import case_runs, expected_flips, mcnemar_exact, ok_runs, permutation_test, valid_counts
 from fynn.skills import SkillLibrary
 
 # Per million tokens: input, output, cache read (list prices, 2026-10). A 5-minute cache write is 1.25x input.
@@ -46,50 +46,80 @@ def cost(usage: Mapping[str, int], model: str) -> float | None:
     ) / 1e6
 
 
-def _split(case: Mapping[str, Any], router: Mapping[str, Mapping[str, int]]) -> tuple[dict[str, int], dict[str, int], bool]:
-    """(answer usage, router usage, estimated) for one case."""
-    usage = case.get("usage") or {}
-    recorded = (case.get("routing") or {}).get("usage")
+def _split(
+    run: Mapping[str, Any], case_id: str, router: Mapping[str, Mapping[str, int]]
+) -> tuple[dict[str, int], dict[str, int], bool]:
+    """(answer usage, router usage, estimated) for one run of a case."""
+    usage = run.get("usage") or {}
+    recorded = (run.get("routing") or {}).get("usage")
     if recorded is not None:
         return dict(usage), dict(recorded), False
-    other = router.get(case["id"])
+    other = router.get(case_id)
     if other is None:
         return dict(usage), {}, True
     answer = {k: max(0, usage.get(k, 0) - other.get(k, 0)) for k in TOKEN_FIELDS}
     return answer, {k: other.get(k, 0) for k in TOKEN_FIELDS}, True
 
 
+def _words(run: Mapping[str, Any]) -> int:
+    return len((run.get("reply") or "").split())
+
+
 def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapping[str, int]], library: SkillLibrary) -> dict[str, Any]:
+    """One answer model's results. Every run of every case counts: with K runs per case, passes are
+    out of K times the cases, and cost is the mean over all runs."""
     domains = {s.name: s.domain for s in library.topics}
     cases = results["cases"]
     models = results.get("models") or {}
-    groups = {"cross": {"cases": 0, "passed": 0}, "single": {"cases": 0, "passed": 0}}
+    groups = {"cross": {"runs": 0, "passed": 0}, "single": {"runs": 0, "passed": 0}}
     answer_cost = router_cost = 0.0
     estimated = False
+    runs = passed = errors = capped = 0
+    facts_present = facts_graded = 0
+    served: set[str] = set()
+    flips: list[float] = []
     for case in cases:
         group = "cross" if len({domains[s] for s in case.get("skills", []) if s in domains}) > 1 else "single"
-        groups[group]["cases"] += 1
-        groups[group]["passed"] += bool(case.get("passed"))
-        answer, routed, guessed = _split(case, router)
-        estimated |= guessed
-        answer_cost += cost(answer, models.get("agent", "")) or 0.0
-        router_cost += cost(routed, models.get("router", "")) or 0.0
-    facts = [f for c in cases for f in (c.get("judge") or {}).get("facts", [])]
-    words = {c["id"]: len((c.get("reply") or "").split()) for c in cases}
-    per_1000 = 1000 / len(cases) if cases else 0
+        for run in case_runs(case):
+            ok = bool(run.get("passed"))
+            runs += 1
+            passed += ok
+            errors += run.get("status") == "error"
+            capped += ok and _words(run) <= LONG
+            groups[group]["runs"] += 1
+            groups[group]["passed"] += ok
+            facts = (run.get("judge") or {}).get("facts", [])
+            facts_graded += len(facts)
+            facts_present += sum(1 for f in facts if f.get("status") == "PRESENT")
+            if run.get("agent_model"):
+                served.add(run["agent_model"])
+            answer, routed, guessed = _split(run, case["id"], router)
+            estimated |= guessed
+            answer_cost += cost(answer, models.get("agent", "")) or 0.0
+            router_cost += cost(routed, models.get("router", "")) or 0.0
+        # Only runs that did not error say anything about the model's noise.
+        flip = expected_flips(*valid_counts(case)) if ok_runs(case) >= 2 else None
+        if flip is not None:
+            flips.append(flip)
+    per_1000 = 1000 / runs if runs else 0
     return {
         "source": source,
         "model": models.get("agent"),
-        "served": sorted({c["agent_model"] for c in cases if c.get("agent_model")}),
+        "served": sorted(served),
         "created_at": results.get("created_at"),
         "cases": len(cases),
-        "passed": sum(1 for c in cases if c.get("passed")),
-        "errors": sum(1 for c in cases if c.get("status") == "error"),
+        "repeats": max((len(case_runs(c)) for c in cases), default=1),
+        "runs": runs,
+        "passed": passed,  # passing runs
+        "errors": errors,
         "by_group": groups,
-        "facts": {"present": sum(1 for f in facts if f.get("status") == "PRESENT"), "graded": len(facts)},
+        "facts": {"present": facts_present, "graded": facts_graded},
         "lengths": reply_lengths(results),
         # Sensitivity: the response rules ask for about 250 words and nothing grades it.
-        "passed_if_over_300_fails": sum(1 for c in cases if c.get("passed") and words[c["id"]] <= LONG),
+        "passed_if_over_300_fails": capped,
+        # With K >= 2: the chance that two single runs of a case disagree, averaged over cases.
+        "flip_rate": round(sum(flips) / len(flips), 4) if flips else None,
+        "unstable_cases": sum(1 for c in cases if ok_runs(c) and 0 < valid_counts(c)[0] < valid_counts(c)[1]),
         "cost_per_1000": {
             "answer": round(answer_cost * per_1000, 2),
             "router": round(router_cost * per_1000, 2),
@@ -99,19 +129,39 @@ def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapp
     }
 
 
-def paired(a: Mapping[str, Any], b: Mapping[str, Any], *, cap: bool = False) -> dict[str, Any]:
-    """Cases only `b` passes (up) and only `a` passes (down), with the exact McNemar p-value."""
-    def ok(results: Mapping[str, Any]) -> dict[str, bool]:
-        return {
-            c["id"]: bool(c.get("passed")) and (not cap or len((c.get("reply") or "").split()) <= LONG)
-            for c in results["cases"]
-        }
+def _counts(case: Mapping[str, Any], cap: bool) -> tuple[int, int]:
+    """(runs passed, runs that did not error); with `cap`, a reply over 300 words fails."""
+    runs = [r for r in case_runs(case) if r.get("status") != "error"]
+    return sum(1 for r in runs if r.get("passed") and (not cap or _words(r) <= LONG)), len(runs)
 
-    pa, pb = ok(a), ok(b)
-    ids = sorted(set(pa) & set(pb))
-    up = sum(1 for i in ids if pb[i] and not pa[i])
-    down = sum(1 for i in ids if pa[i] and not pb[i])
-    return {"cases": len(ids), "up": up, "down": down, "p": round(mcnemar_exact(up, down), 4)}
+
+def paired(a: Mapping[str, Any], b: Mapping[str, Any], *, cap: bool = False) -> dict[str, Any]:
+    """Cases where `b` passes more often than `a` (up) and less often (down). One run per case on
+    both sides gives the exact McNemar test; more runs give the run-permutation test, as in report.py."""
+    ca = {c["id"]: _counts(c, cap) for c in a["cases"]}
+    cb = {c["id"]: _counts(c, cap) for c in b["cases"]}
+    # A case with no run that did not error on one side says nothing about either model (stats.testable).
+    ids = sorted(i for i in set(ca) & set(cb) if ca[i][1] and cb[i][1])
+    share = {i: (ca[i][0] / ca[i][1], cb[i][0] / cb[i][1]) for i in ids}
+    up = sum(1 for i in ids if share[i][1] > share[i][0])
+    down = sum(1 for i in ids if share[i][1] < share[i][0])
+    single = all(ca[i][1] == 1 and cb[i][1] == 1 for i in ids)
+    if not ids:
+        method, p = "mcnemar_exact", 1.0
+    elif single:
+        method, p = "mcnemar_exact", mcnemar_exact(up, down)
+    else:
+        method, p = "run_permutation", permutation_test([(*ca[i], *cb[i]) for i in ids])
+    mean = sum(s[1] - s[0] for s in share.values()) / len(ids) if ids else None
+    return {
+        "cases": len(ids),
+        "left_out": len(set(ca) & set(cb)) - len(ids),
+        "method": method,
+        "up": up,
+        "down": down,
+        "mean_diff": None if mean is None else round(mean, 4),
+        "p": round(p, 4),
+    }
 
 
 def judge_rows(runs: Mapping[str, Mapping[str, Any]], regrades: Sequence[Mapping[str, Any]], cases: Sequence[Any]) -> list[dict[str, Any]]:
@@ -160,7 +210,10 @@ def build_report(
     regrades: Sequence[Mapping[str, Any]],
     cases: Sequence[Any],
     library: SkillLibrary,
+    regraded_runs: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    """`regraded_runs` are the results files the regrades graded, when they are not `runs` (for
+    example, single runs regraded before a repeated rerun replaced them in the comparison)."""
     router = {
         c["id"]: (c.get("routing") or {}).get("usage")
         for c in (router_from or {}).get("cases", [])
@@ -184,29 +237,34 @@ def build_report(
         "models": rows,
         "paired": [{"a": a, "b": b, **paired(runs[a], runs[b])} for a, b in comparisons],
         "paired_if_over_300_fails": [{"a": a, "b": b, **paired(runs[a], runs[b], cap=True)} for a, b in comparisons],
-        "judges": judge_rows(runs, regrades, cases),
+        "judges": judge_rows(regraded_runs if regraded_runs is not None else runs, regrades, cases),
+        "regraded_runs": sorted(regraded_runs if regraded_runs is not None else runs),
     }
 
 
 def render_markdown(report: Mapping[str, Any]) -> str:
     lines = ["# Answer model and judge", "", "## Answer models", ""]
     lines += [
-        "| Answer model | Passed | Needs a second domain | One domain | Facts present | Median words | Over 250 | "
-        "Cost per 1,000 (answer + router) |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Answer model | Passing runs | Needs a second domain | One domain | Facts present | Same-prompt flip rate | "
+        "Median words | Over 250 | Cost per 1,000 (answer + router) |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in report["models"]:
         g, c = r["by_group"], r["cost_per_1000"]
+        flip = "n/a" if r["flip_rate"] is None else f"{r['flip_rate'] * 100:.0f}%"
         lines.append(
-            f"| {r['model']} | {r['passed']} of {r['cases']} | {g['cross']['passed']} of {g['cross']['cases']} | "
-            f"{g['single']['passed']} of {g['single']['cases']} | {r['facts']['present']} of {r['facts']['graded']} | "
+            f"| {r['model']} | {r['passed']} of {r['runs']} | {g['cross']['passed']} of {g['cross']['runs']} | "
+            f"{g['single']['passed']} of {g['single']['runs']} | {r['facts']['present']} of {r['facts']['graded']} | {flip} | "
             f"{r['lengths']['median_words']} | {r['lengths']['over_limit']} | ${c['total']:.2f} (${c['answer']:.2f} + ${c['router']:.2f}) |"
         )
-    lines += ["", "Paired, exact McNemar (up: only the second passes):", ""]
+    def pval(p: float) -> str:
+        return "p < 0.001" if p < 0.001 else f"p = {p}"
+
+    lines += ["", "Paired by case (up: the second passes more often):", ""]
     for p, q in zip(report["paired"], report["paired_if_over_300_fails"], strict=True):
         lines.append(
-            f"- {p['a']} to {p['b']}: {p['up']} up, {p['down']} down, p = {p['p']}; "
-            f"if replies over 300 words fail: {q['up']} up, {q['down']} down, p = {q['p']}"
+            f"- {p['a']} to {p['b']} ({p['method']}): {p['up']} up, {p['down']} down, {pval(p['p'])}; "
+            f"if replies over 300 words fail: {q['up']} up, {q['down']} down, {pval(q['p'])}"
         )
     if report["judges"]:
         lines += ["", "## Judges regrading the same replies", ""]
@@ -224,14 +282,20 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     parser.add_argument("--runs", nargs="+", required=True, type=Path, help="After-bot results files, one per answer model")
     parser.add_argument("--router-from", type=Path, help="a results file that records routing.usage per case")
     parser.add_argument("--regrades", nargs="*", default=[], type=Path, help="regrade files or directories")
+    parser.add_argument("--regraded-runs", nargs="*", type=Path, help="the results files the regrades graded (default: --runs)")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
 
     runs = {source_name(p): json.loads(p.read_text(encoding="utf-8")) for p in args.runs}
+    regraded = (
+        {source_name(p): json.loads(p.read_text(encoding="utf-8")) for p in args.regraded_runs}
+        if args.regraded_runs
+        else None
+    )
     router_from = json.loads(args.router_from.read_text(encoding="utf-8")) if args.router_from else None
     warnings: list[str] = []
-    regrades = [r for r in load_regrades(args.regrades, warnings) if r["source"] in runs]
-    report = build_report(runs, router_from, regrades, load_cases(), SkillLibrary.load())
+    regrades = [r for r in load_regrades(args.regrades, warnings) if r["source"] in (regraded or runs)]
+    report = build_report(runs, router_from, regrades, load_cases(), SkillLibrary.load(), regraded)
     args.out.mkdir(parents=True, exist_ok=True)
     write_results(args.out / "report.json", report)
     (args.out / "report.md").write_text(render_markdown(report), encoding="utf-8")

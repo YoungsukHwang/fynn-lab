@@ -700,10 +700,11 @@ def _quality_section(report: Mapping[str, Any]) -> list[str]:
     for side in ("baseline", "candidate"):
         r, n = routing[side], lengths[side]
         cross, single = r["by_group"]["cross"], r["by_group"]["single"]
+        unit = "runs" if r["runs"] > r["cases"] else "cases"
         lines.append(
             f"- {side.capitalize()}: every labeled skill reached the answering agent in {r['all_available']} of "
-            f"{r['cases']} cases ({cross['all_available']} of {cross['cases']} that need a second domain, "
-            f"{single['all_available']} of {single['cases']} that do not). Replies: median {n['median_words']} words, "
+            f"{r['runs']} {unit} ({cross['all_available']} of {cross['runs']} that need a second domain, "
+            f"{single['all_available']} of {single['runs']} that do not). Replies: median {n['median_words']} words, "
             f"{n['over_limit']} of {n['replies']} over the {n['limit']}-word limit."
         )
     return lines + [""]

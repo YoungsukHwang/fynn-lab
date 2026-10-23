@@ -9,17 +9,22 @@
 from __future__ import annotations
 
 import statistics
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any
 
+from evals.stats import case_runs
 from fynn.skills import SkillLibrary
 
 WORD_LIMIT = 250  # skills/response-rules.md: "Keep the reply under about 250 words"
 LONG = 300
 
 
-def _ok(results: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    return [c for c in results.get("cases", []) if c.get("status") == "ok"]
+def _ok_runs(results: Mapping[str, Any]) -> Iterator[tuple[Mapping[str, Any], Mapping[str, Any]]]:
+    """(case, run) for every run that did not error; a case that ran once is its own run."""
+    for case in results.get("cases", []):
+        for run in case_runs(case):
+            if run.get("status") == "ok":
+                yield case, run
 
 
 def available_skills(routing: Mapping[str, Any], domains: Mapping[str, str | None]) -> set[str]:
@@ -32,21 +37,22 @@ def available_skills(routing: Mapping[str, Any], domains: Mapping[str, str | Non
 
 def routing_quality(results: Mapping[str, Any], library: SkillLibrary) -> dict[str, Any]:
     """How often the answering agent had every labeled skill, overall and by whether a case needs
-    a second domain, plus per skill how often it was labeled, available, and (After) picked."""
+    a second domain, plus per skill how often it was labeled, available, and (After) picked. Every
+    run counts, so with K runs per case the counts are out of K times the cases."""
     domains = {s.name: s.domain for s in library.topics}
-    rows = [c for c in _ok(results) if c.get("routing")]
-    strategy = rows[0]["routing"].get("strategy") if rows else None
-    groups = {"cross": {"cases": 0, "all_available": 0}, "single": {"cases": 0, "all_available": 0}}
+    rows = [(case, run) for case, run in _ok_runs(results) if run.get("routing")]
+    strategy = rows[0][1]["routing"].get("strategy") if rows else None
+    groups = {"cross": {"runs": 0, "all_available": 0}, "single": {"runs": 0, "all_available": 0}}
     skills: dict[str, dict[str, int]] = {}
     covered = 0
-    for case in rows:
+    for case, run in rows:
         labeled = {s for s in case.get("skills", []) if s in domains}
-        available = available_skills(case["routing"], domains)
-        picked = set(case["routing"].get("selected") or []) if strategy == "skills" else set()
+        available = available_skills(run["routing"], domains)
+        picked = set(run["routing"].get("selected") or []) if strategy == "skills" else set()
         group = "cross" if len({domains[s] for s in labeled}) > 1 else "single"
         has_all = labeled <= available
         covered += has_all
-        groups[group]["cases"] += 1
+        groups[group]["runs"] += 1
         groups[group]["all_available"] += has_all
         for skill in labeled | picked:
             row = skills.setdefault(skill, {"labeled": 0, "available": 0, "picked": 0, "picked_unlabeled": 0})
@@ -58,7 +64,8 @@ def routing_quality(results: Mapping[str, Any], library: SkillLibrary) -> dict[s
                 row["picked_unlabeled"] += skill not in labeled
     return {
         "strategy": strategy,
-        "cases": len(rows),
+        "cases": len({case["id"] for case, _ in rows}),
+        "runs": len(rows),  # all_available and by_group count runs
         "all_available": covered,
         "by_group": groups,
         "skills": dict(sorted(skills.items())),
@@ -66,8 +73,8 @@ def routing_quality(results: Mapping[str, Any], library: SkillLibrary) -> dict[s
 
 
 def reply_lengths(results: Mapping[str, Any]) -> dict[str, Any]:
-    """Words per reply (split on whitespace, so markdown markers count as words)."""
-    words = [len((c.get("reply") or "").split()) for c in _ok(results) if c.get("reply")]
+    """Words per reply over every run (split on whitespace, so markdown markers count as words)."""
+    words = [len((run.get("reply") or "").split()) for _, run in _ok_runs(results) if run.get("reply")]
     return {
         "replies": len(words),
         "median_words": statistics.median(words) if words else None,

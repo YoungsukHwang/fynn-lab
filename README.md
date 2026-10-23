@@ -13,12 +13,12 @@ Both bots read the same skill files, see the same member profile and use the sam
 
 ## What it found
 
-- **After wins where a question needs a second domain.** On the 33 eval cases whose skills span two or more Before domains, After passes 25 and Before 4: a Before agent holds only one domain's skills, and in none of those cases did its prompt have every labeled skill (After's had them in all 33). On the 31 cases that fit in one domain the gap is much smaller (29 against 25). Overall After passes 54 of 64 and Before 29 (exact McNemar test on the 27 cases that flipped, p < 0.001). The overall rate depends on how many multi-domain questions the set holds, so the per-group rates are the comparison. These are the 2026-10-23 runs, after S3, S5, S6 and the cap of 4 shipped; the 10-22 runs gave 42 against 31.
-- **The shipped edits closed the cases every model failed.** Eight cases failed with Haiku, Sonnet and Opus answering, and seven of them were routing gaps no answer model can fix. With S3, S5, S6, the cap of 4 and three small skill-text fixes, all eight pass. Against the previous After run the bundle fixed 12 cases and broke 7 (p = 0.36), so outside its targets the flips are hard to tell from noise.
-- **The same prompt does not always give the same result.** In cases where an edit left the prompt unchanged, about one in eight flipped between runs. So a skill edit's flips are split into fixed or broken by the edit (the edit could reach the case) and chance (it could not).
+- **After wins where a question needs a second domain.** Three runs per case, on the skills shipped 2026-10-23: on the 33 eval cases whose skills span two or more Before domains, After passes 78 of 99 runs and Before 16; a Before agent holds only one domain's skills, and in none of those runs did its prompt have every labeled skill (After's had them in 92 of 99). On the 31 cases that fit in one domain they are about even (87 against 85 of 93). Overall After passes 165 of 192 runs (86%) and Before 101 (53%): a mean gain of 33 points per case, p < 0.001 on a run-permutation test, and 22 cases improved with none regressed under the flag rule. The overall rate depends on how many multi-domain questions the set holds, so the per-group rates are the comparison.
+- **The shipped edits closed the cases every model failed.** Eight cases failed with Haiku, Sonnet and Opus answering, and seven of them were routing gaps no answer model can fix. With S3, S5, S6, the cap of 4 and three small skill-text fixes, they pass in 23 of 24 runs with Sonnet answering and 24 of 24 with Opus (Haiku: 15). In single runs against the previous After run the bundle fixed 12 cases and broke 7 (p = 0.36), so outside its targets the flips are hard to tell from noise.
+- **The same prompt does not always give the same result.** With three runs per case, two runs of the same bot disagree on 10% of cases with Sonnet or Opus answering and 27% with Haiku. The judge alone accounts for about 3%: grading the same replies again changed 6 of 192 verdicts. So a skill edit's flips are split into fixed or broken by the edit (the edit could reach the case) and chance (it could not).
 - **Skill edits:** a body edit that put a missing fact into the skill the router already picks (S4) fixed its targets and broke nothing, and shipped. Routing fixes through skill descriptions (S3, S5, S6) and a higher skill cap also fixed their targets, though less reliably, and shipped on 2026-10-23. Shortening the always-on response rules (S2) broke more than it fixed.
-- **Answer model:** with the After bot as it was before the 10-23 edits shipped (cap of 3), and the same Opus judge, Sonnet passed 47 cases and Opus 46 (not distinguishable, p = 1.0) at about $9.50 against $22 per 1,000 conversations; Haiku cost $0.81 and passed 34 (p = 0.007 against Sonnet). The ranking also leans on a rule nothing grades: if replies over the response rules' length counted (over 300 words fails), Sonnet's lead over Haiku would not be significant (p = 0.14) and Opus would lead Sonnet 41 to 37 (p = 0.42).
-- **The judge:** grading the same 192 replies again, Opus changed 6 verdicts (3%), so most run-to-run flips come from the answers. Sonnet and Haiku as judges each changed 17. Human labels on a blind sample are in progress.
+- **Answer model:** the After bot with each model, the same Opus judge, three runs per case. Haiku passed 129 of 192 runs (67%) at $0.82 per 1,000 conversations, Sonnet 165 (86%) at $9.57, Opus 174 (91%) at $23.49. Sonnet against Opus is not significant (p = 0.10); Haiku is clearly behind both (p < 0.001). The ranking leans on a rule nothing grades: if replies over 300 words counted as failures, Opus would lead Sonnet clearly (161 against 137 runs, p < 0.001).
+- **The judge:** Opus grading the same 192 replies again changed 6 verdicts; Sonnet and Haiku as judges each changed 17 and cost $0.50 and $0.04 per 64 replies, against $1.16 for Opus. Human labels on a blind sample are in progress.
 
 | Edit | What changed | Decision |
 |---|---|---|
@@ -30,7 +30,7 @@ Both bots read the same skill files, see the same member profile and use the sam
 | S6 | score-changes description: how long closed accounts stay | Ship (shipped) |
 | Cap 4 | the After router may pick 4 new skills instead of 3 | Ship (shipped) |
 
-Every result is from one run per case. A decision is a lead to read: a case an edit could reach may still have flipped by chance.
+Skill-edit results are from one run per case; Before vs After and the answer models ran three times per case. A decision is a lead to read: a case an edit could reach may still have flipped by chance.
 
 ## How it works
 
@@ -68,9 +68,11 @@ cd backend
 # After a fatal API error (a bad key, no credit) the run stops and writes <out>.partial.json; rerun only what errored
 .venv/bin/python -m evals.run --bot after --rerun-errors ../results/after.partial.json --out ../results/after.json
 
-# The After bot with another answer model, then the answer model and judge report (no API for the report)
-FYNN_AGENT_MODEL=claude-haiku-5-5 .venv/bin/python -m evals.run --bot after --out ../results/models/after-haiku.json
-.venv/bin/python -m evals.models_report --runs ../results/models/after-*.json --router-from ../results/after.json \
+# The After bot with another answer model (three runs per case), then the answer model and judge report (no API).
+# The regrades graded earlier single runs, so those are passed with --regraded-runs.
+FYNN_AGENT_MODEL=claude-haiku-5-5 .venv/bin/python -m evals.run --bot after --repeats 3 --out ../results/models/k3/after-haiku.json
+.venv/bin/python -m evals.models_report --runs ../results/models/k3/after-haiku.json ../results/after.json \
+  ../results/models/k3/after-opus.json --regraded-runs ../results/models/after-*.json \
   --regrades ../results/validation/regrades --out ../results/reports/models
 
 # Judge check: draw a blind sample to label and its page (no API), regrade stored replies with another judge
@@ -88,7 +90,7 @@ FYNN_AGENT_MODEL=claude-haiku-5-5 .venv/bin/python -m evals.run --bot after --ou
 
 - **Cost.** At most about $2.20 per bot for one run of the 64 cases at list prices (Sonnet answering, Opus judging, roughly half each). Older results files add the router's tokens to the answer's, so that figure prices them at Sonnet rates. Each case's result now records the router's, the answering model's and the judge's tokens apart (`routing.usage`, `usage`, `judge.usage`), since the three run on different models. The billing console is the final word, and the runner does not ask before spending.
 - **Safety nets.** Results record fingerprints of the skills, the bot and judge code, and the settings, so a run against a baseline reruns every case when any of those or the models changed. A report leaves out cases whose expected facts were reworded between the two runs. The runner overwrites `--out`, so move an old results file to `results/archive/` first if a committed report still compares it.
-- **More statistics.** `backend/evals/stats.py` also has repeated runs with a stricter flag rule, an A/A noise floor, a permutation test and Holm correction. They are kept for later and are not shown on the site; see SPEC.md.
+- **More statistics.** `backend/evals/stats.py` handles repeated runs: `--repeats K` gives a stricter flag rule and the run-permutation test, which the site uses for Before vs After and the answer models (three runs per case). Its A/A noise floor and Holm correction appear only in the report Markdown; see SPEC.md.
 
 ## Layout
 
