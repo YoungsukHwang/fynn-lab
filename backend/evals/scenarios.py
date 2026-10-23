@@ -5,6 +5,7 @@ The real skills/ directory is never modified; a scenario's files are overlaid at
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Literal
 
@@ -42,6 +43,7 @@ class Scenario(BaseModel):
     change: str
     motivation: str
     hypothesis: Hypothesis
+    shipped: date | None = None  # when the edit was copied into skills/; a shipped scenario no longer runs
 
     _directory: Path | None = PrivateAttr(default=None)
 
@@ -87,6 +89,8 @@ def scenario_library(scenario: Scenario, skills_dir: Path | None = None) -> Skil
     candidate = SkillLibrary(list(skills.values()))
 
     changes = diff_libraries(base, candidate)
+    if scenario.shipped and not changes:
+        raise ScenarioError(f"{scenario.id} was shipped to skills/ on {scenario.shipped}, so there is no edit left to run")
     expected = {"body": ("body",), "description": ("description",)}.get(scenario.kind)
     problems = []
     if [c.skill for c in changes] != [scenario.skill]:

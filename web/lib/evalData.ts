@@ -87,6 +87,7 @@ export interface Scenario {
   change: string;
   motivation: string;
   hypothesis: { expected: string; detail: string };
+  shipped: string | null; // YYYY-MM-DD the edit was copied into skills/
 }
 
 // Counts runs: with K runs per case, total is K times the case count and rate the mean pass fraction.
@@ -603,6 +604,8 @@ export async function getScenarios(): Promise<Scenario[]> {
       change: str(raw.change).trim(),
       motivation: str(raw.motivation).trim(),
       hypothesis: { expected: str(hypothesis.expected), detail: str(hypothesis.detail).trim() },
+      shipped:
+        typeof raw.shipped === "string" ? raw.shipped : raw.shipped instanceof Date ? raw.shipped.toISOString().slice(0, 10) : null,
     });
   }
   return scenarios;

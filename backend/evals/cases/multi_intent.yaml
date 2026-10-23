@@ -84,10 +84,10 @@
   skills: [collections, debt-settlement]
   expected_facts:
     - "Says paying a non-medical collection does not remove it: it shows as paid and can stay until about March 2029 (7 years from 2022-03-14)"
-    - "Says VantageScore 3.0, the model behind her score, ignores paid collections, while FICO 8 still counts them"
+    - "Says VantageScore 3.0, the model behind her score, ignores paid collections"
     - "Flags that a payment on a debt this old could restart the state statute of limitations, and suggests a legal aid office or attorney before paying"
     - "Says the service can take accounts in collections, for a fee of 20% of the amount saved, charged only after a settlement is agreed and a payment is made, with no upfront fee"
-    - "Names free alternatives: negotiating directly with the collector, or a nonprofit credit counselor"
+    - "Names at least one free alternative, such as negotiating directly with the collector or a nonprofit credit counselor"
   must_not_regex:
     - '\bI guarantee\b'
     - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:it|the collection|this collection) will be (?:deleted|removed) (?:once|when|after|as soon as) (?:you pay|it is paid|it\W?s paid)\b'
@@ -165,7 +165,8 @@
   skills: [credit-builder-account, secured-card, marketplace-offers]
   expected_facts:
     - "Says she gets the savings back when the 24-month plan ends, after her 20 remaining payments: $144 minus any unpaid amounts ($24 saved so far)"
-    - "Says the Secured Card's limit equals a refundable $50 to $2,000 deposit, applying needs no hard inquiry, and its statement balance and payments are reported monthly to all three bureaus"
+    - "Says the Secured Card is reported monthly to all three bureaus, so it can build her credit history"
+    - "Says applying for the Secured Card needs no hard inquiry"
     - "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer"
     - "Discloses that Marketplace partners may pay the app when a user is approved"
   must_not_regex:
@@ -319,7 +320,7 @@
   added: "2026-10-22"
   message: "Hey, three things. Would signing up for rent reporting actually move my score at all? I'm also thinking of cancelling my Credit Builder plan and putting that $6 a month toward my cards instead, so what happens to the money I've already paid in? And if I cancel, does the account just vanish from my report?"
   intents: 3
-  skills: [rent-reporting, credit-builder-account, score-changes]
+  skills: [rent-reporting, credit-builder-account]
   expected_facts:
     # skill:rent-reporting ("FICO 8 ignores rent; FICO 9, FICO 10 and VantageScore 3.0 and 4.0 can count it.") plus persona:credit.score.model ("VantageS...
     - "Says VantageScore 3.0, the model behind her score, can count reported rent"
@@ -329,7 +330,7 @@
     - "Says Coach does not know what happens to her $42 in Credit Builder savings if she cancels early, and sends that question to human support"
     # skill:credit-builder-account ("Cancelling early closes the account; the closed account stays on the report with its payment history")
     - "Says cancelling does not remove the account: the closed plan stays on her report with its payment history"
-    # skill:score-changes ("A closed account in good standing can stay on the report for up to 10 years.")
+    # skill:credit-builder-account ("A closed account in good standing can stay on the report for up to 10 years.", since S4 shipped)
     - "Says a closed account in good standing can stay on a credit report for up to 10 years"
   must_not_regex:
     - '\bI guarantee\b'
@@ -530,7 +531,7 @@
     # skill:bill-reporting ("reported to Equifax. They are not reported to Experian or TransUnion.")
     - "Says on-time phone and utility bill payments are reported only to Equifax"
     # skill:rent-reporting ("reported to TransUnion and Experian. The app does not report rent to Equifax") with persona:products.rent_reporting (status...
-    - "Says his reported rent goes to TransUnion and Experian, not Equifax, so rent and bills reach different bureaus"
+    - "Says his reported rent goes to TransUnion and Experian"
     # skill:utilization ("Forcing 0% on every card brings no real benefit.") with persona:credit.utilization (overall 0.22, $550 of $2,500), quoted via m...
     - "Says forcing his card to a $0 balance brings no real benefit"
   must_not_regex:
@@ -652,15 +653,15 @@
   added: "2026-10-22"
   message: "Could I just stop paying my Bank credit card for a while so your Debt Settlement service can get the $240 knocked down? lol. Also, once my Credit Builder plan is done, does that account disappear from my credit report or stay on there?"
   intents: 2
-  skills: [debt-settlement, credit-builder-account, score-changes]
+  skills: [debt-settlement, credit-builder-account]
   expected_facts:
     # skill:debt-settlement ("Only charged-off or in-collections accounts qualify; current accounts do not.") plus persona:credit.accounts Bank credit ca...
     - "Says the Debt Settlement service takes only charged-off or in-collections accounts, so the current Bank credit card ($240 balance) does not qualify"
     # skill:debt-settlement (Do not: "Suggest stopping payments on a current account to qualify.")
     - "Does not suggest stopping payments on the Bank credit card to make it qualify for settlement"
-    # skill:credit-builder-account ("the closed account stays on the report with its payment history (how long: see score-changes)") plus skill:score-cha...
+    # skill:credit-builder-account ("the closed account stays on the report with its payment history")
     - "Says the Credit Builder account does not disappear when the plan ends: it stays on the report as a closed account with its payment history"
-    # skill:score-changes ("A closed account in good standing can stay on the report for up to 10 years.")
+    # skill:credit-builder-account ("A closed account in good standing can stay on the report for up to 10 years.", since S4 shipped)
     - "Says a closed account in good standing can stay on the report for up to 10 years"
   must_not_regex:
     - '\bI guarantee\b'

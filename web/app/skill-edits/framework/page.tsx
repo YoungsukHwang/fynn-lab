@@ -174,6 +174,7 @@ export default async function SkillEditsFrameworkPage() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Chip tone="dark">{scenario.id.toUpperCase()}</Chip>
                     <Chip tone="fynn">{KIND_LABELS[scenario.kind] ?? scenario.kind}</Chip>
+                    {scenario.shipped && <Chip tone="lime">Shipped {scenario.shipped}</Chip>}
                   </div>
                   <h3 className="mt-2 text-base font-semibold leading-6 text-ink">{scenario.title}</h3>
                   <p className="mt-1 text-xs text-slate">

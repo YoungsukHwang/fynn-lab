@@ -11,7 +11,7 @@ domain: credit-products
 - Each payment is reported to Equifax, Experian and TransUnion as an installment account, monthly, a few days after it posts.
 - A payment 1 to 29 days late is not reported as late. At 30 or more days past due it is reported as late (impact: see payment-history).
 - After 24 months the user gets back the savings balance: $144 minus any unpaid amounts.
-- Cancelling early closes the account; the closed account stays on the report with its payment history (how long: see score-changes).
+- Cancelling early closes the account; the closed account stays on the report with its payment history. A closed account in good standing can stay on the report for up to 10 years.
 - A FICO score needs at least one account open 6 months or more and at least one account reported in the past 6 months.
 
 ## How to answer

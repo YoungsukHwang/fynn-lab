@@ -203,6 +203,7 @@ export function ScenarioCard({
             <div className="flex flex-wrap items-center gap-1.5">
               <Chip tone="dark">{scenario.id.toUpperCase()}</Chip>
               <Chip tone="fynn">{KIND_LABELS[scenario.kind] ?? scenario.kind}</Chip>
+              {scenario.shipped && <Chip tone="lime">Shipped {scenario.shipped}</Chip>}
               <Chip mono>{scenario.skill}</Chip>
             </div>
             <h3 id={headingId} className="mt-2 text-xl font-semibold tracking-tight text-ink">

@@ -1,6 +1,7 @@
 id: s4
 title: Closed-account reporting time in the Credit Builder skill
 kind: body
+shipped: "2026-10-22"
 skill: credit-builder-account
 change: >-
   Replaces the pointer "(how long: see score-changes)" in credit-builder-account with the line

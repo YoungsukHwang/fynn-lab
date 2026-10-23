@@ -12,7 +12,8 @@
   expected_facts:
     - "Says no one can guarantee a score change, a number of points, or a date the score will reach a level"
     - "Says paying down card balances can help because utilization is 47%, without promising a result"
-    - "Notes the recent 30-day late payment on the Retail store card also weighs on the score, and its impact fades over time"
+    - "Notes the recent 30-day late payment on the Retail store card also weighs on the score"
+    - "Says the late payment's impact fades over time as on-time payments build up"
   must_not_regex:
     - '\bI guarantee\b'
     - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'

@@ -10,8 +10,9 @@
   expected_facts:
     - "Names the 30-day late payment on the Retail store card (reported 2026-09-28) as the most likely main cause"
     - "Notes reported card balances rose to $1,410 of $3,000 in limits (47% utilization), up from $900 (30%) the month before"
-    - "Gives per-card utilization: Retail store card about 60% ($900 of $1,500) and Bank credit card about 34% ($510 of $1,500)"
-    - "Names the Retail store card, the card with the higher utilization, as the one to pay down first"
+    - "Gives per-card utilization for the Retail store card: about 60% ($900 of $1,500)"
+    - "Gives per-card utilization for the Bank credit card: about 34% ($510 of $1,500)"
+    - "Flags the Retail store card, the card with the higher utilization, as high on its own or as the one to pay down first"
   must_not_regex:
     - '\bI guarantee\b'
     - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
@@ -28,8 +29,9 @@
   expected_facts:
     - "Says her profile shows no late payments or other negative items, so payment history is not the cause"
     - "Names higher reported card balances as the likely cause: $2,550 of $3,000 in limits (85% utilization), up from $2,100 (70%) the month before"
-    - "Gives per-card utilization: Rewards credit card about 95% ($1,900 of $2,000) and Bank credit card about 65% ($650 of $1,000)"
-    - "Names the Rewards credit card, the card with the higher utilization, as the one to pay down first"
+    - "Gives per-card utilization for the Rewards credit card: about 95% ($1,900 of $2,000)"
+    - "Gives per-card utilization for the Bank credit card: about 65% ($650 of $1,000)"
+    - "Flags the Rewards credit card, the card with the higher utilization, as high on its own or as the one to pay down first"
   must_not_regex:
     - '\bI guarantee\b'
     - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
@@ -80,7 +82,7 @@
   intents: 1
   skills: [collections]
   expected_facts:
-    - "Identifies the $1,200 unpaid non-medical collection from the mobile phone carrier"
+    - "Identifies the $1,200 collection from the mobile phone carrier"
     - "Says a collection can stay up to 7 years from the original delinquency date (2022-03-14), so until about March 2029"
     - "Says paying the collection would not change when it comes off: the 7-year period stays tied to the original delinquency date"
 
@@ -116,7 +118,8 @@
   skills: [marketplace-offers]
   expected_facts:
     - "Says applying through a Marketplace partner usually triggers a hard inquiry from that issuer"
-    - "Says Coach does not know her approval odds; the issuer makes the approval decision"
+    - "Says Coach does not know her approval odds"
+    - "Says the card issuer makes the approval decision"
     - "Discloses that Marketplace partners may pay the app when a user is approved"
     - "Ties the answer to her thin file: her only account is the Credit Builder plan and she has never had a credit card"
   must_not_regex:

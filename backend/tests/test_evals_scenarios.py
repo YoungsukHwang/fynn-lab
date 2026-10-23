@@ -122,6 +122,12 @@ REAL = {
 def test_real_scenarios(scenario_id: str) -> None:
     scenario = load_scenario(scenario_id)
     assert (scenario.kind, scenario.skill, scenario.hypothesis.expected) == REAL[scenario_id]
+    if scenario.shipped:
+        # Its edit is in skills/ now, so the overlay changes nothing and the scenario refuses to run.
+        with pytest.raises(ScenarioError, match="shipped to skills/"):
+            scenario_library(scenario)
+        assert "up to 10 years" in SkillLibrary.load().get(scenario.skill).body
+        return
     library = scenario_library(scenario)  # also checks the overlay changes only what `kind` says
     skill = library.get(scenario.skill)
     base = SkillLibrary.load().get(scenario.skill)
