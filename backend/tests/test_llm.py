@@ -89,6 +89,14 @@ def test_generate_sends_effort_fallback_and_cache_breakpoints(fake_api: FakeAPI,
     ]
 
 
+def test_generate_sends_no_fallback_to_haiku(fake_api: FakeAPI, llm: AnthropicLLM) -> None:
+    fake_api.responses.append(_message("short answer", model="claude-haiku-5-5"))
+    llm.generate(
+        model="claude-haiku-5-5", system=[PromptBlock("g")], messages=[{"role": "user", "content": "hi"}], effort="low", max_tokens=50
+    )
+    assert "fallbacks" not in fake_api.requests[0]["body"]
+
+
 def test_generate_json_sends_schema_without_fallback(fake_api: FakeAPI, llm: AnthropicLLM) -> None:
     fake_api.responses.append(_message('{"reason": "r", "skills": ["utilization"]}', model="claude-haiku-5-5"))
     schema = {"type": "object", "properties": {"skills": {"type": "array"}}, "required": ["skills"]}

@@ -20,6 +20,8 @@ from fynn.prompts import PromptBlock
 
 # Server-side refusal fallback ("default" picks the recommended model per refusal category).
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+# Models with no server-side fallback: sending `fallbacks` to them is a 400.
+NO_FALLBACK_PREFIXES = ("claude-haiku-",)
 
 
 @dataclass(frozen=True)
@@ -122,14 +124,16 @@ class AnthropicLLM:
     def generate(
         self, *, model: str, system: list[PromptBlock], messages: list[dict[str, str]], effort: str, max_tokens: int
     ) -> Generation:
+        fallback: dict[str, Any] = (
+            {} if model.startswith(NO_FALLBACK_PREFIXES) else {"betas": [FALLBACK_BETA], "fallbacks": "default"}
+        )
         response = self._text_client.beta.messages.create(
             model=model,
             max_tokens=max_tokens,
             system=system_param(system),
             messages=messages,
             output_config={"effort": effort},
-            betas=[FALLBACK_BETA],
-            fallbacks="default",
+            **fallback,
         )
         text = "".join(block.text for block in response.content if block.type == "text")
         return Generation(text=text, model=response.model, stop_reason=response.stop_reason, usage=_usage(response))

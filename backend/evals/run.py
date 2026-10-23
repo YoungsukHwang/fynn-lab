@@ -93,6 +93,7 @@ def run_case(case: EvalCase, persona: Persona, bot: Bot, judge: Judge) -> dict[s
             "error": routing.error,
         }
         result["reply"] = reply.text
+        result["agent_model"] = reply.model  # the model that answered, which a server-side fallback can change
         result["usage"] = _usage_dict(reply.usage)
 
         checks = run_checks(case, reply.text)
