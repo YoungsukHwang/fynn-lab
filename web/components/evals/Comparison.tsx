@@ -43,15 +43,18 @@ export function TransitionStats({
   labels,
 }: {
   comparison: Comparison;
-  labels: { improved: string; regressed: string; unchanged_pass: string; unchanged_fail: string };
+  labels: { improved: string; regressed: string; unchanged_pass: string; unchanged_fail: string; unstable?: string };
 }) {
   const { counts } = comparison.report;
+  // With repeated runs a case can also vary across runs; then it is its own tile, so the tiles add up to every case.
+  const unstable = counts.unstable > 0;
   return (
-    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <dl className={`grid grid-cols-2 gap-2 ${unstable ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
       <Stat label={labels.improved} value={counts.improved} tone="good" />
       <Stat label={labels.regressed} value={counts.regressed} tone="bad" />
       <Stat label={labels.unchanged_pass} value={counts.unchanged_pass} tone="neutral" />
       <Stat label={labels.unchanged_fail} value={counts.unchanged_fail} tone="neutral" />
+      {unstable && <Stat label={labels.unstable ?? "Varied across runs"} value={counts.unstable} tone="neutral" />}
     </dl>
   );
 }

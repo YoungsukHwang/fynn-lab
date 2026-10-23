@@ -291,8 +291,9 @@ export interface Report {
 export interface RoutingQuality {
   strategy: string | null;
   cases: number;
+  runs: number; // allAvailable and byGroup count runs; equal to cases when each case ran once
   allAvailable: number;
-  byGroup: { cross: { cases: number; allAvailable: number }; single: { cases: number; allAvailable: number } };
+  byGroup: { cross: { runs: number; allAvailable: number }; single: { runs: number; allAvailable: number } };
   skills: { name: string; labeled: number; available: number; picked: number; pickedUnlabeled: number }[];
 }
 
@@ -783,14 +784,16 @@ export async function getReport(name: string): Promise<Report | null> {
 
 function toRoutingQuality(raw: Obj): RoutingQuality {
   const groups = isObj(raw.by_group) ? raw.by_group : {};
+  // Reports written before repeated runs counted cases, one run each.
   const group = (value: unknown) => ({
-    cases: isObj(value) ? num(value.cases) : 0,
+    runs: isObj(value) ? num(value.runs, num(value.cases)) : 0,
     allAvailable: isObj(value) ? num(value.all_available) : 0,
   });
   const skills = isObj(raw.skills) ? raw.skills : {};
   return {
     strategy: strOrNull(raw.strategy),
     cases: num(raw.cases),
+    runs: num(raw.runs, num(raw.cases)),
     allAvailable: num(raw.all_available),
     byGroup: { cross: group(groups.cross), single: group(groups.single) },
     skills: Object.entries(skills)
@@ -1399,12 +1402,16 @@ export interface ModelRow {
   served: string[];
   createdAt: string;
   cases: number;
-  passed: number;
+  repeats: number;
+  runs: number;
+  passed: number; // passing runs
   errors: number;
-  byGroup: { cross: { cases: number; passed: number }; single: { cases: number; passed: number } };
+  byGroup: { cross: { runs: number; passed: number }; single: { runs: number; passed: number } };
   facts: { present: number; graded: number };
   lengths: ReplyLengths;
   passedIfOver300Fails: number;
+  flipRate: number | null; // chance that two single runs of a case disagree; null with one run per case
+  unstableCases: number;
   costPer1000: { answer: number; router: number; total: number; estimatedSplit: boolean };
 }
 
@@ -1412,8 +1419,10 @@ export interface PairedFlip {
   a: string;
   b: string;
   cases: number;
-  up: number;
+  method: string; // "mcnemar_exact" with one run per case, else "run_permutation"
+  up: number; // cases b passes more often
   down: number;
+  meanDiff: number | null; // b's pass share minus a's, averaged over cases
   p: number | null;
 }
 
@@ -1440,6 +1449,7 @@ export interface HumanJudgeRow {
 export interface ModelsData {
   createdAt: string | null;
   routerUsageFrom: { name: string; createdAt: string } | null;
+  regradedRuns: string[]; // the results files the judge regrades graded
   models: ModelRow[];
   paired: PairedFlip[];
   pairedIfOver300Fails: PairedFlip[];
@@ -1448,7 +1458,16 @@ export interface ModelsData {
 }
 
 function toPaired(raw: Obj): PairedFlip {
-  return { a: str(raw.a), b: str(raw.b), cases: num(raw.cases), up: num(raw.up), down: num(raw.down), p: numOrNull(raw.p) };
+  return {
+    a: str(raw.a),
+    b: str(raw.b),
+    cases: num(raw.cases),
+    method: str(raw.method, "mcnemar_exact"),
+    up: num(raw.up),
+    down: num(raw.down),
+    meanDiff: numOrNull(raw.mean_diff),
+    p: numOrNull(raw.p),
+  };
 }
 
 /** The answer-model comparison and the judge regrades, plus human agreement once labels exist. */
@@ -1467,10 +1486,11 @@ export async function getModelsData(): Promise<ModelsData> {
   return {
     createdAt: strOrNull(report.created_at),
     routerUsageFrom: router ? { name: str(router.name), createdAt: str(router.created_at) } : null,
+    regradedRuns: strList(report.regraded_runs),
     models: objList(report.models).map((m) => {
       const groups = isObj(m.by_group) ? m.by_group : {};
       const group = (value: unknown) => ({
-        cases: isObj(value) ? num(value.cases) : 0,
+        runs: isObj(value) ? num(value.runs, num(value.cases)) : 0,
         passed: isObj(value) ? num(value.passed) : 0,
       });
       const facts = isObj(m.facts) ? m.facts : {};
@@ -1481,12 +1501,16 @@ export async function getModelsData(): Promise<ModelsData> {
         served: strList(m.served),
         createdAt: str(m.created_at),
         cases: num(m.cases),
+        repeats: Math.max(1, num(m.repeats, 1)),
+        runs: num(m.runs, num(m.cases)),
         passed: num(m.passed),
         errors: num(m.errors),
         byGroup: { cross: group(groups.cross), single: group(groups.single) },
         facts: { present: num(facts.present), graded: num(facts.graded) },
         lengths: toReplyLengths(isObj(m.lengths) ? m.lengths : {}),
         passedIfOver300Fails: num(m.passed_if_over_300_fails),
+        flipRate: numOrNull(m.flip_rate),
+        unstableCases: num(m.unstable_cases),
         costPer1000: {
           answer: num(cost.answer),
           router: num(cost.router),

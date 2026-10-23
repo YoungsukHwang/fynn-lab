@@ -24,6 +24,7 @@ const BOT_TRANSITIONS = {
   regressed: "Pass on Before only",
   unchanged_pass: "Pass on both",
   unchanged_fail: "Fail on both",
+  unstable: "Varied across runs",
 };
 
 /** "Before 26 of 31, After 25 of 31" (passing runs when cases ran more than once). */
@@ -61,10 +62,13 @@ export default async function BeforeAfterResultsPage() {
         {cross?.after && single?.after ? (
           <p>
             On the {plural(cross.after.cases, "case")} that need skills from more than one domain, the After bot passes{" "}
-            {cross.after.passed} and the Before bot {cross.before?.passed ?? "n/a"}: a Before agent holds only one
-            domain&apos;s skills. On the {single.after.cases} that fit in one domain{" "}
-            {Math.abs(single.after.passed - (single.before?.passed ?? 0)) <= 2 ? "the bots are about even" : "the gap is much smaller"} (
-            {passed(single)}). So the overall rate depends on how many such questions the eval set holds.
+            {cross.after.passed}
+            {repeated ? ` of ${cross.after.runs} runs` : ""} and the Before bot {cross.before?.passed ?? "n/a"}: a Before
+            agent holds only one domain&apos;s skills. On the {single.after.cases} that fit in one domain{" "}
+            {Math.abs((single.after.rate ?? 0) - (single.before?.rate ?? 0)) <= 0.05
+              ? "the bots are about even"
+              : "the gap is much smaller"}{" "}
+            ({passed(single)}). So the overall rate depends on how many such questions the eval set holds.
           </p>
         ) : (
           <p>The case groups need both results files.</p>
@@ -133,7 +137,10 @@ export default async function BeforeAfterResultsPage() {
         <p className="text-sm leading-6 text-slate">
           LLM answers vary, so the same case can pass once and fail the next time. The net-change test asks whether the
           overall gap is bigger than that.{" "}
-          {test && `Here it gives ${pPhrase(test.overall.pValue, test.alpha)}, from the cases that flipped.`}
+          {test &&
+            `Here it gives ${pPhrase(test.overall.pValue, test.alpha)}, from the cases ${
+              repeated ? "whose runs did not all agree" : "that flipped"
+            }.`}
         </p>
       </section>
 
@@ -146,21 +153,21 @@ export default async function BeforeAfterResultsPage() {
             </p>
           </SectionHeader>
           <PairTile
-            label="Cases where every labeled skill reached the agent"
-            unit="cases"
-            before={{ value: routing.baseline.allAvailable, of: routing.baseline.cases }}
-            after={{ value: routing.candidate.allAvailable, of: routing.candidate.cases }}
-            hint={`needing a second domain: Before ${routing.baseline.byGroup.cross.allAvailable} of ${routing.baseline.byGroup.cross.cases}, After ${routing.candidate.byGroup.cross.allAvailable} of ${routing.candidate.byGroup.cross.cases}`}
+            label={`${repeated ? "Runs" : "Cases"} where every labeled skill reached the agent`}
+            unit={repeated ? "runs" : "cases"}
+            before={{ value: routing.baseline.allAvailable, of: routing.baseline.runs }}
+            after={{ value: routing.candidate.allAvailable, of: routing.candidate.runs }}
+            hint={`needing a second domain: Before ${routing.baseline.byGroup.cross.allAvailable} of ${routing.baseline.byGroup.cross.runs}, After ${routing.candidate.byGroup.cross.allAvailable} of ${routing.candidate.byGroup.cross.runs}`}
           />
           <p className="text-sm leading-6 text-slate">
             {afterMisses.length
               ? `The After router left out a labeled skill in ${plural(
-                  routing.candidate.cases - routing.candidate.allAvailable,
-                  "case",
+                  routing.candidate.runs - routing.candidate.allAvailable,
+                  repeated ? "run" : "case",
                 )} (missing: ${afterMisses.map((s) => s.name).join(", ")}).`
               : "The After router picked every labeled skill."}{" "}
             {lengths &&
-              `Replies run long on both bots: a median of ${lengths.baseline.medianWords} words for Before and ${lengths.candidate.medianWords} for After, and ${lengths.baseline.overLimit} and ${lengths.candidate.overLimit} of ${lengths.candidate.replies} go over the ${lengths.candidate.limit}-word rule, which nothing grades.`}
+              `Replies run long on both bots: a median of ${lengths.baseline.medianWords} words for Before and ${lengths.candidate.medianWords} for After, and ${lengths.baseline.overLimit} of ${lengths.baseline.replies} and ${lengths.candidate.overLimit} of ${lengths.candidate.replies} replies go over the ${lengths.candidate.limit}-word rule, which nothing grades.`}
           </p>
         </section>
       )}
@@ -182,6 +189,7 @@ export default async function BeforeAfterResultsPage() {
               [
                 ["improved", comparison.improved],
                 ["regressed", comparison.regressed],
+                ["unstable", comparison.unstable],
               ] as const
             ).map(([key, changes]) =>
               changes.length > 0 ? (
