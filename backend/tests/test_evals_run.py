@@ -2,6 +2,7 @@
 
 import json
 import threading
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -12,14 +13,14 @@ import evals.run
 import evals.scenarios
 from evals import report as report_cli
 from evals.cases import load_cases
-from evals.judge import Judge
-from evals.run import SKIPPED_ERROR, build_results, combine_runs, is_fatal, run_cases, write_results
+from evals.judge import Judge, fact_ids
+from evals.run import SKIPPED_ERROR, build_results, combine_runs, is_fatal, run_case, run_cases, write_results
 from fynn import config
 from fynn.bots import build_bots
 from fynn.llm import Generation, LLMError, Usage
 from fynn.personas import load_personas
 from fynn.skills import SkillLibrary
-from tests.conftest import AGENT_USAGE, ROUTER_USAGE
+from tests.conftest import AGENT_USAGE, ROUTER_USAGE, FakeLLM
 
 FIXTURE_CASES = Path(__file__).parent / "fixtures" / "eval_cases"
 
@@ -145,15 +146,11 @@ def test_run_cases_after_bot(mini_library: SkillLibrary, personas, tmp_path: Pat
         "carried": [],
         "reason": "r",
         "error": None,
+        "usage": asdict(ROUTER_USAGE),
     }
     assert first["checks"] == {"passed": True, "failures": []}
     assert [f["status"] for f in first["judge"]["facts"]] == ["PRESENT", "PRESENT"]
-    assert first["usage"] == {
-        "input_tokens": 110,
-        "output_tokens": 55,
-        "cache_read_input_tokens": 3001,
-        "cache_creation_input_tokens": 42,
-    }
+    assert first["usage"] == asdict(AGENT_USAGE)  # the answering model's call only
     multi = results[2]
     assert multi["routing"]["selected"] == ["score-changes", "secured-card"]
 
@@ -184,6 +181,43 @@ def test_run_cases_after_bot(mini_library: SkillLibrary, personas, tmp_path: Pat
     assert summary["by_intents"]["2"]["total"] == 1 and summary["by_intents"]["1"]["total"] == 3
 
 
+def _graded(case: evals.cases.EvalCase) -> dict[str, Any]:
+    return {"facts": [{"id": i, "status": "PRESENT", "note": "n"} for i in fact_ids(case)], "reason": "graded"}
+
+
+@pytest.mark.parametrize(
+    ("bot_name", "route"),
+    [
+        ("after", {"reason": "r", "skills": ["score-changes"]}),
+        ("before", {"reason": "r", "agent": "score-and-reports"}),
+    ],
+)
+def test_run_case_records_router_usage_apart_from_the_answer(
+    mini_library: SkillLibrary, personas, bot_name: str, route: dict[str, Any]
+) -> None:
+    # The router and the answering model are priced differently, so a result keeps their tokens apart.
+    case = next(c for c in load_cases(FIXTURE_CASES) if c.id == "st-001")
+    llm = FakeLLM([route, _graded(case)])
+    result = run_case(case, personas[case.persona], build_bots(llm, mini_library)[bot_name], Judge(llm))
+
+    assert result["status"] == "ok"
+    assert result["routing"]["usage"] == asdict(ROUTER_USAGE)
+    assert result["usage"] == asdict(AGENT_USAGE)
+    assert result["judge"]["usage"] == asdict(ROUTER_USAGE)  # FakeLLM bills every structured call the same
+
+
+def test_run_case_keeps_a_failed_router_calls_tokens_under_routing(mini_library: SkillLibrary, personas) -> None:
+    case = next(c for c in load_cases(FIXTURE_CASES) if c.id == "st-001")
+    failed = Usage(input_tokens=9, output_tokens=4)
+    llm = FakeLLM([LLMError("router stopped with max_tokens", failed), _graded(case)])
+    result = run_case(case, personas[case.persona], build_bots(llm, mini_library)["after"], Judge(llm))
+
+    assert result["status"] == "ok" and result["routing"]["selected"] == []
+    assert result["routing"]["error"] == "router stopped with max_tokens"
+    assert result["routing"]["usage"] == asdict(failed)
+    assert result["usage"] == asdict(AGENT_USAGE)
+
+
 def test_failures_and_errors_do_not_crash_the_run(mini_library: SkillLibrary, personas) -> None:
     base = load_cases(FIXTURE_CASES)
     boom = base[1].model_copy(update={"message": "BOOM rent question"})
@@ -202,7 +236,7 @@ def test_failures_and_errors_do_not_crash_the_run(mini_library: SkillLibrary, pe
     assert errored["status"] == "error" and not errored["passed"]
     assert errored["error"].startswith("bot: LLMError: answer call failed")
     assert errored["reply"] is None
-    assert errored["usage"]["input_tokens"] == 3
+    assert errored["usage"]["input_tokens"] == 3  # the failed answer call's tokens
 
     judge_fail = run_cases([base[0]], bot=build_bots(ScriptedLLM("47% JUDGE-FAIL"), mini_library)["after"],
                            judge=Judge(ScriptedLLM()), personas=personas, progress=None)[0]

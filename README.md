@@ -64,7 +64,7 @@ cd backend
 .venv/bin/python -m evals.run --bot after --rerun-errors ../results/after.partial.json --out ../results/after.json
 ```
 
-- **Cost.** About $2.20 per bot for one run of the 64 cases at list prices (Sonnet answering, Opus judging, roughly half each). The billing console is the final word, and the runner does not ask before spending.
+- **Cost.** At most about $2.20 per bot for one run of the 64 cases at list prices (Sonnet answering, Opus judging, roughly half each). Older results files add the router's tokens to the answer's, so that figure prices them at Sonnet rates. Each case's result now records the router's, the answering model's and the judge's tokens apart (`routing.usage`, `usage`, `judge.usage`), since the three run on different models. The billing console is the final word, and the runner does not ask before spending.
 - **Safety nets.** Results record fingerprints of the skills, the bot and judge code, and the settings, so a run against a baseline reruns every case when any of those or the models changed. A report leaves out cases whose expected facts were reworded between the two runs. The runner overwrites `--out`, so move an old results file to `results/archive/` first if a committed report still compares it.
 - **More statistics.** `backend/evals/stats.py` also has repeated runs with a stricter flag rule, an A/A noise floor, a permutation test and Holm correction. They are kept for later and are not shown on the site; see SPEC.md.
 

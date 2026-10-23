@@ -18,7 +18,7 @@ import json
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -31,7 +31,7 @@ from evals.selection import select_cases, select_changed
 from evals.setup import setup_changes, setup_fingerprint
 from evals.stats import case_runs, run_repeats, run_skill_cap
 from fynn import config
-from fynn.bots import Bot, BotName, build_bots
+from fynn.bots import Bot, BotName, BotReply, build_bots
 from fynn.llm import LLM, LLMError, Usage
 from fynn.personas import Persona, load_personas
 from fynn.skills import SkillLibrary
@@ -53,6 +53,13 @@ def is_fatal(error: str | None) -> bool:
 
 def _usage_dict(usage: Usage) -> dict[str, int]:
     return asdict(usage)
+
+
+def _answer_usage(reply: BotReply) -> Usage:
+    """The answering model's tokens alone. A reply's usage also counts the router's call, which
+    runs on a different model and so has a different price."""
+    total, router = reply.usage, reply.routing.usage
+    return Usage(**{f.name: getattr(total, f.name) - getattr(router, f.name) for f in fields(Usage)})
 
 
 def _blank_result(case: EvalCase) -> dict[str, Any]:
@@ -91,10 +98,11 @@ def run_case(case: EvalCase, persona: Persona, bot: Bot, judge: Judge) -> dict[s
             "carried": list(routing.carried),
             "reason": routing.reason,
             "error": routing.error,
+            "usage": _usage_dict(routing.usage),  # the router's call, kept apart from the answer's
         }
         result["reply"] = reply.text
         result["agent_model"] = reply.model  # the model that answered, which a server-side fallback can change
-        result["usage"] = _usage_dict(reply.usage)
+        result["usage"] = _usage_dict(_answer_usage(reply))
 
         checks = run_checks(case, reply.text)
         result["checks"] = {"passed": checks.passed, "failures": list(checks.failures)}
