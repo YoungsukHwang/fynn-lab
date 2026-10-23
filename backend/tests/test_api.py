@@ -174,7 +174,7 @@ def test_router_path_errors_are_handled_too(make_client) -> None:
 def test_architecture_describes_both_bots(client: TestClient) -> None:
     body = client.get("/architecture").json()
     assert body["always_on"] == ["guardrails", "tone"]
-    assert body["max_new_skills_per_turn"] == 3
+    assert body["max_new_skills_per_turn"] == 4
     assert body["max_carried_skills"] == 2
     assert body["limits"] == {"max_messages": 20, "max_user_message_chars": 2000}
     assert [d["id"] for d in body["domains"]] == [

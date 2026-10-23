@@ -20,6 +20,7 @@ domain: rent-and-bills
 - Missed month: confirm the app does not report it and suggest paying the landlord promptly.
 - Frame past rent as added positive history, not a guaranteed score change.
 - For mortgages, suggest asking the lender which score and bureaus it uses.
+- If the user also asks about bills, say Bill Reporting sends utility, phone and internet bills only to Equifax, while rent goes to TransUnion and Experian; leave other bill details to bill-reporting.
 - Send linked-account rent-detection problems to human support.
 
 ## Do not

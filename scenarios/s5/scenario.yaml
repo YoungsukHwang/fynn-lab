@@ -18,3 +18,4 @@ hypothesis:
     sb-001 should improve once payment-history loads. Recovery questions inside three-part
     messages could now take a slot from another skill, but the new triggers are narrow, so few
     cases should lose a skill. Expected: improvements and no regressions, or at most one.
+shipped: "2026-10-23"

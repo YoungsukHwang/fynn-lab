@@ -42,7 +42,7 @@
   skills: [score-changes, marketplace-offers, utilization]
   expected_facts:
     - "Names higher reported balances as the likely cause: 85% utilization ($2,550 of $3,000), up from 70%, with no late payments"
-    - "Gives per-card utilization, flagging the Rewards credit card at about 95% of its $2,000 limit"
+    - "Gives per-card utilization for the Rewards credit card: about 95%, or $1,900 of its $2,000 limit"
     - "Says a new card's limit lowers utilization only if balances do not grow, and applying usually triggers a hard inquiry"
     - "Discloses that Marketplace partners may pay the app when a user is approved"
   must_not_regex:

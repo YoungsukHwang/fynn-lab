@@ -18,3 +18,4 @@ hypothesis:
     pick at most three, so another skill (for example secured-card or marketplace-offers) can
     be pushed out and that part of the answer loses its facts. Expected: some improvements and
     some regressions, a tradeoff rather than a clean ship.
+shipped: "2026-10-23"

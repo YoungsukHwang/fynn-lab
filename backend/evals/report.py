@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from evals.cases import DATASETS
+from evals.quality import reply_lengths, routing_quality
 from evals.scenarios import Scenario, load_scenario
 from evals.setup import PART_LABELS
 from fynn.skills import SkillLibrary
@@ -538,6 +539,17 @@ def compare(
         "noise_floor_note": noise_note,
         "hypothesis_result": hypothesis_result,
         "warnings": warnings,
+        # Not part of the verdict: whether each bot's answering agent had every labeled skill, and
+        # reply length against the response rules' limit, which neither the checks nor the judge grade.
+        # Both on the compared cases only, so a selected run is set against the same cases.
+        "routing": {
+            "baseline": routing_quality({"cases": [b for b, _ in compared]}, SkillLibrary.load()),
+            "candidate": routing_quality({"cases": [c for _, c in compared]}, SkillLibrary.load()),
+        },
+        "lengths": {
+            "baseline": reply_lengths({"cases": [b for b, _ in compared]}),
+            "candidate": reply_lengths({"cases": [c for _, c in compared]}),
+        },
     }
 
 
@@ -677,6 +689,24 @@ def noise_summary(
     if noise.get("unmeasured"):
         text += f" Left out for lack of runs: {', '.join(noise['unmeasured'])}."
     return text
+
+
+def _quality_section(report: Mapping[str, Any]) -> list[str]:
+    """Routing coverage and reply length for each side; neither enters the verdict."""
+    routing, lengths = report.get("routing"), report.get("lengths")
+    if not routing or not lengths:
+        return []
+    lines = ["## Routing and length", ""]
+    for side in ("baseline", "candidate"):
+        r, n = routing[side], lengths[side]
+        cross, single = r["by_group"]["cross"], r["by_group"]["single"]
+        lines.append(
+            f"- {side.capitalize()}: every labeled skill reached the answering agent in {r['all_available']} of "
+            f"{r['cases']} cases ({cross['all_available']} of {cross['cases']} that need a second domain, "
+            f"{single['all_available']} of {single['cases']} that do not). Replies: median {n['median_words']} words, "
+            f"{n['over_limit']} of {n['replies']} over the {n['limit']}-word limit."
+        )
+    return lines + [""]
 
 
 def _stats_section(report: Mapping[str, Any]) -> list[str]:
@@ -919,6 +949,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
 
     if "flag_rule" in report:
         lines += _stats_section(report)
+    lines += _quality_section(report)
     lines += ["## Transitions", ""]
     labels = {
         "improved": "Improved",

@@ -47,11 +47,11 @@ def test_skill_router_keeps_known_unique_and_capped(
 
 def test_skill_router_cap_override_beats_config(mini_library: SkillLibrary) -> None:
     llm = FakeLLM([{"reason": "several questions", "skills": MANY_PICKS}])
-    routing = SkillRouter(llm, mini_library, max_skills=4).route(THREE_PART)
+    routing = SkillRouter(llm, mini_library, max_skills=2).route(THREE_PART)
 
-    assert config.MAX_NEW_SKILLS_PER_TURN != 4
-    assert routing.selected == ["score-changes", "secured-card", "collections", "utilization"]
-    assert "Choose at most 4," in llm.json_calls[0]["system"]
+    assert config.MAX_NEW_SKILLS_PER_TURN != 2
+    assert routing.selected == ["score-changes", "secured-card"]
+    assert "Choose at most 2," in llm.json_calls[0]["system"]
 
 
 @pytest.mark.parametrize("cap", [0, -1])

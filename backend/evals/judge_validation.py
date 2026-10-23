@@ -507,7 +507,9 @@ def judge_vs_judge(
         if source is None:
             warnings.append(f"{name}: pass that results file with --runs to compare it with the original judge.")
             continue
-        original = {c["id"]: c for c in source["cases"] if eligible(c, by_id.get(c["id"]))}
+        # Matched on the facts both graded, not on today's case files, so a later fact edit does not
+        # drop a reply that both judges graded the same way.
+        original = {c["id"]: c for c in source["cases"] if c.get("status") == "ok" and c.get("reply")}
         pairs: list[tuple[str, str]] = []
         clusters: list[str] = []
         passes = {"original": 0, "regrade": 0, "both": 0}

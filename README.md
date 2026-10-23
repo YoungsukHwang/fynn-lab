@@ -9,23 +9,26 @@ It is a study project and is not affiliated with Kikoff. The products the bots t
 
 Both bots read the same skill files, see the same member profile and use the same answer model. They differ only in routing and prompt composition.
 
-**Fynn Lab additions, not from the post:** the After bot caps new skills at 3 per message and carries up to 2 of the previous turn's skills for one more turn; the products, personas and the four Before agents are this project's own.
+**Fynn Lab additions, not from the post:** the After bot caps new skills at 4 per message (3 until the cap experiment below) and carries up to 2 of the previous turn's skills for one more turn; the products, personas and the four Before agents are this project's own.
 
 ## What it found
 
-- **After wins where a question needs a second domain.** On the 33 eval cases whose skills span two or more Before domains, After passes 17 and Before 5: a Before agent holds only one domain's skills. On the 31 cases that fit in one domain they are about even (25 against 26). Overall After passes 42 of 64 and Before 31 (exact McNemar test on the 19 cases that flipped, p = 0.019). The overall rate depends on how many multi-domain questions the set holds, so the per-group rates are the comparison.
+- **After wins where a question needs a second domain.** On the 33 eval cases whose skills span two or more Before domains, After passes 25 and Before 4: a Before agent holds only one domain's skills, and in none of those cases did its prompt have every labeled skill (After's had them in all 33). On the 31 cases that fit in one domain the gap is much smaller (29 against 25). Overall After passes 54 of 64 and Before 29 (exact McNemar test on the 27 cases that flipped, p < 0.001). The overall rate depends on how many multi-domain questions the set holds, so the per-group rates are the comparison. These are the 2026-10-23 runs, after S3, S5, S6 and the cap of 4 shipped; the 10-22 runs gave 42 against 31.
+- **The shipped edits closed the cases every model failed.** Eight cases failed with Haiku, Sonnet and Opus answering, and seven of them were routing gaps no answer model can fix. With S3, S5, S6, the cap of 4 and three small skill-text fixes, all eight pass. Against the previous After run the bundle fixed 12 cases and broke 7 (p = 0.36), so outside its targets the flips are hard to tell from noise.
 - **The same prompt does not always give the same result.** In cases where an edit left the prompt unchanged, about one in eight flipped between runs. So a skill edit's flips are split into fixed or broken by the edit (the edit could reach the case) and chance (it could not).
-- **Skill edits:** a body edit that put a missing fact into the skill the router already picks (S4) fixed its targets and broke nothing, and shipped. Routing fixes through skill descriptions (S5, S6) and a higher skill cap also fixed their targets, though less reliably. Shortening the always-on response rules (S2) broke more than it fixed.
+- **Skill edits:** a body edit that put a missing fact into the skill the router already picks (S4) fixed its targets and broke nothing, and shipped. Routing fixes through skill descriptions (S3, S5, S6) and a higher skill cap also fixed their targets, though less reliably, and shipped on 2026-10-23. Shortening the always-on response rules (S2) broke more than it fixed.
+- **Answer model:** with the After bot as it was before the 10-23 edits shipped (cap of 3), and the same Opus judge, Sonnet passed 47 cases and Opus 46 (not distinguishable, p = 1.0) at about $9.50 against $22 per 1,000 conversations; Haiku cost $0.81 and passed 34 (p = 0.007 against Sonnet). The ranking also leans on a rule nothing grades: if replies over the response rules' length counted (over 300 words fails), Sonnet's lead over Haiku would not be significant (p = 0.14) and Opus would lead Sonnet 41 to 37 (p = 0.42).
+- **The judge:** grading the same 192 replies again, Opus changed 6 verdicts (3%), so most run-to-run flips come from the answers. Sonnet and Haiku as judges each changed 17. Human labels on a blind sample are in progress.
 
 | Edit | What changed | Decision |
 |---|---|---|
 | S1 | score-changes body: give per-card utilization on a score drop | Tradeoff |
 | S2 | response-rules: answers under 120 words instead of 250 | Do not ship |
-| S3 | utilization description: also route score-drop questions | Ship |
+| S3 | utilization description: also route score-drop questions | Ship (shipped) |
 | S4 | credit-builder-account body: closed accounts can stay up to 10 years | Ship (shipped) |
-| S5 | payment-history description: free reports, score recovery | Ship |
-| S6 | score-changes description: how long closed accounts stay | Ship |
-| Cap 4 | the After router may pick 4 new skills instead of 3 | Ship |
+| S5 | payment-history description: free reports, score recovery | Ship (shipped) |
+| S6 | score-changes description: how long closed accounts stay | Ship (shipped) |
+| Cap 4 | the After router may pick 4 new skills instead of 3 | Ship (shipped) |
 
 Every result is from one run per case. A decision is a lead to read: a case an edit could reach may still have flipped by chance.
 
@@ -36,6 +39,7 @@ Every result is from one run per case. A decision is a lead to read: a case an e
 - **Judge check.** `evals.judge_validation` draws a blind sample of graded replies for a person to label with the judge's own rules, regrades stored replies with other judge models, and reports how often each judge agrees with the person and with the original judge.
 - **Before vs After.** Both bots answer every case; the report pairs the cases and tests the net change.
 - **Skill edits.** A scenario in `scenarios/<id>/` holds an edited copy of one skill, laid over `skills/` for the run. Only the cases the edit can affect rerun: a body edit reruns the cases labeled with that skill or routed to it, a description edit, an always-on edit or a cap change reruns all. The report then counts a flip for the edit only when the edit could reach that case's prompt: the edited skill was loaded (body edit), the routing changed (description or cap), or always (always-on edit).
+- **Answer model and judge.** The After bot is run with each answer model (Haiku, Sonnet, Opus 5.5) and the stored replies are regraded by other judge models; `evals.models_report` sums up cost, cases passed, reply length and judge agreement. Every report also says whether each case's answering agent had every labeled skill and how long the replies are (`evals/quality.py`).
 - **Online evaluation.** The site has a framework page for evaluating the bots on real traffic: metrics, A/B tests, and causal inference when a change cannot be randomized. It has no data.
 
 The detailed design notes are in [SPEC.md](SPEC.md), which is written in Korean.
@@ -54,8 +58,8 @@ cd backend
 # A skill edit on the After bot; --baseline picks the cases it can affect
 .venv/bin/python -m evals.run --bot after --scenario s5 --baseline ../results/after.json --out ../results/scenarios/s5.json
 
-# The After bot with a higher skill cap; every case reruns
-.venv/bin/python -m evals.run --bot after --max-skills 4 --baseline ../results/after.json --out ../results/cap4.json
+# The After bot with another skill cap (the default is 4 since the cap experiment); every case reruns
+.venv/bin/python -m evals.run --bot after --max-skills 5 --baseline ../results/after.json --out ../results/cap5.json
 
 # Reports: report.json (for the site) and report.md
 .venv/bin/python -m evals.report --baseline ../results/before.json --candidate ../results/after.json --out ../results/reports/before-vs-after
@@ -63,6 +67,11 @@ cd backend
 
 # After a fatal API error (a bad key, no credit) the run stops and writes <out>.partial.json; rerun only what errored
 .venv/bin/python -m evals.run --bot after --rerun-errors ../results/after.partial.json --out ../results/after.json
+
+# The After bot with another answer model, then the answer model and judge report (no API for the report)
+FYNN_AGENT_MODEL=claude-haiku-5-5 .venv/bin/python -m evals.run --bot after --out ../results/models/after-haiku.json
+.venv/bin/python -m evals.models_report --runs ../results/models/after-*.json --router-from ../results/after.json \
+  --regrades ../results/validation/regrades --out ../results/reports/models
 
 # Judge check: draw a blind sample to label and its page (no API), regrade stored replies with another judge
 # model (API), then compare. The committed sample's exact arguments are in its "args"; it is not overwritten without --force.
@@ -139,6 +148,7 @@ npm run dev                 # http://localhost:3000
 
 - **Demo** (`/`): pick a synthetic member and send one message to both bots; each column shows the reply, the router's decision and the skills used.
 - **Before vs After** and **Skill edits**: each has a Framework tab (how it is measured) and a Results tab (what was found), built from the committed results and reports.
+- **Models**: the answer-model comparison (cost against cases passed, reply length) and the judge check.
 - **Online evaluation**: a framework page for evaluating the bots on real traffic.
 - `NEXT_PUBLIC_API_URL` points the site at another backend (read at build time); `FYNN_CORS_ORIGINS` in `backend/.env` allows other origins. In `npm run dev`, hard-reload a page to pick up new results files.
 - **Checks.** `npm run typecheck` and `npm run lint`.

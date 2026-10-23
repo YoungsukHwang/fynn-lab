@@ -18,3 +18,4 @@ hypothesis:
     already needs four skills, so loading score-changes would push out another one. Messages
     about closing a card may now pull score-changes in next to utilization. Expected: some
     improvements; a regression is possible where the cap binds.
+shipped: "2026-10-23"

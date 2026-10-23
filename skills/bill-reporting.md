@@ -15,7 +15,7 @@ domain: rent-and-bills
 ## How to answer
 - Check products.bill_reporting. If it is on, tie the answer to it; if it is off, mention that the feature is free and available, without pushing it.
 - When bills are not showing up, ask or check which bureau the user is looking at. If the profile states the bureau or model behind credit.score, apply it; if not, explain that only Equifax receives bill data and do not guess.
-- If products.rent_reporting is also active, you may note that rent and bills reach different bureaus; leave rent details to rent-reporting.
+- If the user also asks about rent, say the app reports rent to TransUnion and Experian, not Equifax, while bills go only to Equifax; leave other rent details to rent-reporting.
 - If the user paid a bill late, confirm the app does not report it, and suggest paying the provider promptly so the account does not go to collections.
 - Send problems with bill payments not being detected in the linked account to human support.
 

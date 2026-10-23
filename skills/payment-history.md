@@ -1,7 +1,7 @@
 ---
 name: payment-history
 description: >-
-  Explains payment history: when late payments get reported, how long they stay, how their impact fades, and honest options for dealing with them (goodwill letters for accurate lates, disputes for inaccurate ones). Use when the user mentions a late or missed payment, "30 days late", "I paid a few days late, will it hurt", "can you remove my late payment", "how long does a late stay on my report", goodwill letters, disputing a late payment or other account error on a report, or building an on-time streak. Accounts already in collections or charged off belong to collections.
+  Explains payment history: when late payments get reported, how long they stay, how their impact fades, and honest options for dealing with them (goodwill letters for accurate lates, disputes for inaccurate ones). Use when the user mentions a late or missed payment, "30 days late", "I paid a few days late, will it hurt", "can you remove my late payment", "how long does a late stay on my report", goodwill letters, disputing a late payment or other account error on a report, or building an on-time streak. Also use when the user asks how to see or get their credit reports for free, or whether or when a score will recover or reach a target, since a recent late and how it fades often set that pace. Accounts already in collections or charged off belong to collections.
 type: topic
 domain: score-and-reports
 ---

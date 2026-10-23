@@ -27,7 +27,7 @@ AGENT_MAX_TOKENS = 16000
 
 # After bot skill budget per message. Both values are design choices to compare in M3.
 # New: skills the router picks for the latest message.
-MAX_NEW_SKILLS_PER_TURN = 3
+MAX_NEW_SKILLS_PER_TURN = 4
 # Carried: skills picked on the previous turn that stay loaded, so the agent still has
 # the guidance behind its earlier answer.
 MAX_CARRIED_SKILLS = 2

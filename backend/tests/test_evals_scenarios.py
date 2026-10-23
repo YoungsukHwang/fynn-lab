@@ -126,10 +126,9 @@ def test_real_scenarios(scenario_id: str) -> None:
         # Its edit is in skills/ now, so the overlay changes nothing and the scenario refuses to run.
         with pytest.raises(ScenarioError, match="shipped to skills/"):
             scenario_library(scenario)
-        assert "up to 10 years" in SkillLibrary.load().get(scenario.skill).body
-        return
-    library = scenario_library(scenario)  # also checks the overlay changes only what `kind` says
-    skill = library.get(scenario.skill)
+        skill = SkillLibrary.load().get(scenario.skill)
+    else:
+        skill = scenario_library(scenario).get(scenario.skill)  # also checks the overlay changes only `kind`
     base = SkillLibrary.load().get(scenario.skill)
     if scenario_id == "s2":
         assert "120 words" in skill.body and "250 words" not in skill.body

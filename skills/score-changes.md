@@ -1,7 +1,7 @@
 ---
 name: score-changes
 description: >-
-  Explains why a credit score goes up or down from month to month, why scores differ between Equifax, Experian and TransUnion and between scoring models (FICO vs VantageScore), and how long changes take to show. Use for "why did my score drop", "why did my score go up", "I lost 20 points", "my score is different on another site or at my lender", "when will my score update", or how a past hard inquiry, a newly opened account, or a closed account changed a score. When the user asks only how utilization or late payments work, use utilization or payment-history instead; questions about whether applying for a card or loan offer will hurt belong to marketplace-offers.
+  Explains why a credit score goes up or down from month to month, why scores differ between Equifax, Experian and TransUnion and between scoring models (FICO vs VantageScore), and how long changes take to show. Use for "why did my score drop", "why did my score go up", "I lost 20 points", "my score is different on another site or at my lender", "when will my score update", how a past hard inquiry, a newly opened account, or a closed account changed a score, or whether and how long a closed account stays on a report. When the user asks only how utilization or late payments work, use utilization or payment-history instead; questions about whether applying for a card or loan offer will hurt belong to marketplace-offers.
 type: topic
 domain: score-and-reports
 ---

@@ -10,8 +10,8 @@
   expected_facts:
     - "Names the 30-day late payment on the Retail store card (reported 2026-09-28) as the most likely main cause"
     - "Notes reported card balances rose to $1,410 of $3,000 in limits (47% utilization), up from $900 (30%) the month before"
-    - "Gives per-card utilization for the Retail store card: about 60% ($900 of $1,500)"
-    - "Gives per-card utilization for the Bank credit card: about 34% ($510 of $1,500)"
+    - "Gives per-card utilization for the Retail store card: about 60%, or $900 of its $1,500 limit"
+    - "Gives per-card utilization for the Bank credit card: about 34%, or $510 of its $1,500 limit"
     - "Flags the Retail store card, the card with the higher utilization, as high on its own or as the one to pay down first"
   must_not_regex:
     - '\bI guarantee\b'

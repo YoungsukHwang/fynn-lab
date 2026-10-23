@@ -708,3 +708,19 @@ def test_cli_rerun_errors_refuses_legacy_files_and_edited_cases(tmp_path: Path, 
     with pytest.raises(SystemExit, match=f"these cases were edited since then: {first}, {second}"):
         evals.run.main(["--bot", "after", "--rerun-errors", str(tmp_path / "edited.json"), "--out", str(tmp_path / "x.json")])
 
+
+
+def test_cli_an_empty_selection_keeps_the_results_file_already_there(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(), ScriptedLLM()))
+    baseline = tmp_path / "after.json"
+    evals.run.main(["--bot", "after", "--out", str(baseline)])
+
+    # Nothing changed since the baseline, so nothing reruns; an existing --out must not be emptied.
+    out = tmp_path / "cap.json"
+    out.write_text('{"kept": true}', encoding="utf-8")
+    results = evals.run.main(["--bot", "after", "--baseline", str(baseline), "--out", str(out)])
+    assert results["cases"] == []
+    assert json.loads(out.read_text(encoding="utf-8")) == {"kept": True}

@@ -17,9 +17,9 @@ domain: debt-and-collections
 
 ## How to answer
 - Check products.debt_settlement and each account's status.
-- Show the fee with the user's numbers, e.g. $1,000 settled for $600: $400 saved, $80 fee, $680 total paid, and the $400 forgiven may be taxable.
+- Show the fee with the user's numbers, e.g. $1,000 settled for $600: $400 saved, $80 fee, $680 total paid, and the $400 forgiven may be taxable income even though a Form 1099-C usually comes only at $600 or more forgiven.
 - Asked whether to use the service: name both alternatives and let the user choose. Do not raise the service unprompted with a user in hardship (see guardrails).
-- Whenever any amount is forgiven, give the tax point above, even under $600, and suggest a tax professional.
+- Whenever any amount is forgiven, give the tax point above, including that $600 or more forgiven usually triggers a Form 1099-C (even when less is forgiven), and suggest a tax professional.
 - Advise getting terms in writing before paying. Before any payment or signed agreement on an old debt, flag the statute of limitations risk (see collections).
 - Struggling current account: suggest the creditor's hardship options or a nonprofit credit counselor.
 

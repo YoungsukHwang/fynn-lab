@@ -1,7 +1,7 @@
 ---
 name: utilization
 description: >-
-  Explains revolving credit utilization: card balances divided by credit limits, overall and per card, which balance gets reported, and how to lower it. Use when the user asks about utilization or "credit usage", how much of a limit to use, high card balances, whether to pay off a card, paying before the statement date, why a balance shows even though they pay in full, or whether a loan balance counts. Also use when the user asks how to raise a score quickly by paying down cards.
+  Explains revolving credit utilization: card balances divided by credit limits, overall and per card, which balance gets reported, and how to lower it. Use when the user asks about utilization or "credit usage", how much of a limit to use, high card balances, whether to pay off a card, paying before the statement date, why a balance shows even though they pay in full, or whether a loan balance counts. Also use when the user asks how to raise a score quickly by paying down cards, or asks why their score dropped ("why did my score drop", "my score went down", "I lost 20 points"), since a higher reported balance is a common cause of a drop.
 type: topic
 domain: score-and-reports
 ---

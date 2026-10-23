@@ -3,8 +3,8 @@
     python -m evals.run --bot after --repeats 3 --out ../results/after.json
     python -m evals.run --bot after --repeats 3 --scenario s1 --baseline ../results/after.json \
         --out ../results/scenarios/s1.json
-    python -m evals.run --bot after --max-skills 4 --baseline ../results/after.json \
-        --out ../results/cap4.json
+    python -m evals.run --bot after --max-skills 5 --baseline ../results/after.json \
+        --out ../results/cap5.json
     python -m evals.run --bot after --rerun-errors ../results/after.partial.json --out ../results/after.json
 
 Each case is single-turn: the case message is the only user message and nothing is carried.
@@ -404,6 +404,10 @@ def _finish(args: argparse.Namespace, results: dict[str, Any]) -> dict[str, Any]
             f"stopped: {fatal}\nwrote the finished runs to {partial}; once the cause is fixed, run the rest with "
             f"--rerun-errors {partial} --out {args.out}"
         )
+    if not results["cases"] and args.out.exists():
+        # Nothing was selected to rerun: keep the results file already there rather than empty it.
+        print(f"nothing to rerun, so {args.out} is left as it is")
+        return results
     write_results(args.out, results)
     rerun_from = getattr(args, "rerun_errors", None)
     if rerun_from and rerun_from.name.endswith(".partial.json") and rerun_from.resolve() != args.out.resolve():

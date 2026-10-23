@@ -65,12 +65,12 @@ v1에서 말하는 "모니터링"은 **출시 전 회귀 테스트**입니다. �
 - 예시 질문:
   - 블로그 예시 질문은 우리 도메인 구성에서 Before 에이전트 2개에 걸칩니다 (점수, 상품).
   - 그래서 블로그 다이어그램의 "3개 중 1개" 상황을 재현하는 "세 도메인" 예시를 추가했습니다. 점수, 렌트, 추심에 걸칩니다.
-- 출처 구분: After 칼럼과 다이어그램에 "Fynn Lab 추가 사항 (블로그에 없음)"을 따로 표시합니다. 대상은 새 스킬 최대 3개, 직전 턴 이월입니다. 이월은 라우터가 아니라 앱이 한다는 점도 함께 보여줍니다.
+- 출처 구분: After 칼럼과 다이어그램에 "Fynn Lab 추가 사항 (블로그에 없음)"을 따로 표시합니다. 대상은 새 스킬 최대 4개(상한 실험 전에는 3개), 직전 턴 이월입니다. 이월은 라우터가 아니라 앱이 한다는 점도 함께 보여줍니다.
 - 사이트 문구는 모두 영어입니다. 한국어는 이 SPEC에만 씁니다.
 
 ### 1-2. 평가 섹션
 
-상단 메뉴는 Demo, Before vs After, Skill edits, Online evaluation입니다. Before vs After와 Skill edits에는 Framework 탭(어떻게 재는가)과 Results 탭(무엇이 나왔는가)이 있고, Online evaluation은 프레임워크 한 페이지입니다. 예전 `/framework`, `/results`는 Before vs After로, `/noise`는 Online evaluation으로 넘어갑니다.
+상단 메뉴는 Demo, Before vs After, Skill edits, Models, Online evaluation입니다. Before vs After와 Skill edits에는 Framework 탭(어떻게 재는가)과 Results 탭(무엇이 나왔는가)이 있고, Online evaluation은 프레임워크 한 페이지입니다. 예전 `/framework`, `/results`는 Before vs After로, `/noise`는 Online evaluation으로 넘어갑니다.
 
 - **Before vs After** (`/before-after`)
   - Framework: 두 설계의 차이, Before 도메인별로 에이전트가 보는 스킬, 두 번째 도메인이 필요한 케이스, 평가셋, 채점
@@ -79,6 +79,7 @@ v1에서 말하는 "모니터링"은 **출시 전 회귀 테스트**입니다. �
 - **Skill edits** (`/skill-edits`)
   - Framework: 수정, 재실행, 집계, 결정의 반복 과정, 다시 돌리는 범위, 고침·망가뜨림·우연을 가리는 법, 수정 목록과 미리 적은 기대
   - Results: 점수판 하나(수정마다 한 줄, 뒤집힌 케이스를 고침 +, 망가뜨림 −, 우연 ↑↓ 칸으로 표시, 결정), 수정별 카드(고친 케이스와 망가뜨린 케이스는 펼쳐서 답변 비교)
+- **Models** (`/models`): 답변 모델별 비용과 통과 수, 답변 길이, judge 재채점 결과와 사람 라벨 일치도를 한 페이지에 보여 줍니다. `results/reports/models/report.json`(`evals/models_report.py`)과 `results/validation/agreement/agreement.json`을 읽습니다.
 - **Online evaluation** (`/online-evaluation`): 실제 트래픽으로 평가한다면 어떻게 할지에 대한 프레임워크입니다. 온라인 지표, A/B 테스트 설계, 무작위 배정을 못 할 때의 인과추론, 오프라인 평가와의 연결, 출시 순서를 다룹니다. 데이터는 없습니다.
 - 결과는 미리 돌려서 커밋한 JSON을 읽어서 보여줍니다. 사이트에서 평가를 실시간으로 돌리지 않습니다 (비용과 재현성 때문).
 
@@ -112,7 +113,7 @@ v1에서 말하는 "모니터링"은 **출시 전 회귀 테스트**입니다. �
 ### After: skill-based
 
 ```
-메시지 -> Skill Router (작은 LLM): 스킬 카탈로그(이름+설명) 보고 새로 0~3개 선택 (JSON 출력)
+메시지 -> Skill Router (작은 LLM): 스킬 카탈로그(이름+설명) 보고 새로 0~4개 선택 (JSON 출력)
        -> + 직전 턴에 고른 스킬 최대 2개 이월
        -> [정체성 + 상시 스킬 | 회원 프로필 | 이번 메시지의 주제 스킬] -> 답변 LLM -> 응답
 ```
@@ -120,8 +121,8 @@ v1에서 말하는 "모니터링"은 **출시 전 회귀 테스트**입니다. �
 - 상시 스킬: `tone`, `response-rules`, `guardrails`
 - 주제 스킬 10개: 위 표의 스킬 전부
 - 프롬프트는 바뀌지 않는 것부터 쌓습니다(`|`가 블록 경계). 앞의 두 블록에 캐시 지점을 둡니다. 조립은 `fynn/prompts.py`가 합니다.
-- **스킬 예산 (설정값, M3에서 비교).** 새로 고르는 스킬은 최대 3개(`MAX_NEW_SKILLS_PER_TURN`), 직전 턴에서 이월하는 스킬은 최대 2개(`MAX_CARRIED_SKILLS`)입니다.
-  - 상한 3은 블로그에서 온 숫자가 아니라 설계 선택입니다. 상한을 두는 이유는 지침 집중도와 라우터의 과다 선택 방지입니다.
+- **스킬 예산 (설정값, M3에서 비교).** 새로 고르는 스킬은 최대 4개(`MAX_NEW_SKILLS_PER_TURN`), 직전 턴에서 이월하는 스킬은 최대 2개(`MAX_CARRIED_SKILLS`)입니다.
+  - 상한은 블로그에서 온 숫자가 아니라 설계 선택입니다. 상한을 두는 이유는 지침 집중도와 라우터의 과다 선택 방지입니다. 처음에는 3이었고, 상한 4 실험이 Ship으로 나와 2026-10-23부터 4입니다.
   - `run.py --max-skills N`으로 설정을 바꾸지 않고 다른 상한으로 돌릴 수 있습니다. 결과 파일에 `skill_cap`이 남고, 기준선과 상한이 다르면 모든 케이스를 다시 돌립니다(이 필드가 없는 옛 파일은 상한 3으로 봅니다). 리포트는 두 실행의 상한이 다르면 경고합니다.
 - **멀티턴 이월 (2026-10-19 실측 버그 대응).** 스킬을 메시지마다 새로 고르기 때문에, 후속 질문에서 앞 답변의 근거 스킬이 빠지는 일이 생겼습니다. 실제로 After 봇이 1턴에 맞게 안내한 내용을 2턴에 "확인할 수 없다"며 철회했습니다.
   - 대응 1: 직전 턴에 고른 스킬을 한 턴 더 유지합니다.
@@ -177,18 +178,20 @@ domain: credit-products     # Before 버전에서 어느 에이전트에 들어�
 - `mi-013`~`mi-036`은 페르소나마다 4건이고, 모두 두 번째 도메인이 필요합니다(두 개 15건, 세 개 9건, 모든 도메인 쌍 포함).
 - Before 라우터가 고를 도메인 밖의 질문마다, 그 주제 스킬에만 있는 사실(가격, 수수료, 신용평가사 목록, 기준값, 답변 규칙)에 걸리는 기대 사실을 둡니다. 프로필, 상시 스킬, 일반 상식으로는 알 수 없는 것이어야 합니다.
 - 기대 사실은 하나에 주장 하나이고, 메시지가 묻지 않은 절은 넣지 않습니다. 사실마다 위에 출처(스킬 줄이나 프로필 필드) 주석을 달았습니다.
-- 네 건(`mi-016`, `mi-020`, `mi-028`, `mi-036`)은 주제 스킬이 4개 필요합니다. After 봇의 새 스킬 상한 3개보다 하나 많아서, 상한을 4로 올리는 실험에 씁니다.
+- 네 건(`mi-016`, `mi-020`, `mi-028`, `mi-036`)은 주제 스킬이 4개 필요합니다. 처음 상한 3개보다 하나 많아서 상한을 4로 올리는 실험에 썼고, 그 결과 상한이 4가 됐습니다.
 - 전체 통과율은 이런 케이스를 얼마나 담느냐에 따라 달라지므로, 결과는 "한 도메인으로 충분한 케이스"와 "두 번째 도메인이 필요한 케이스"로 나눠 읽습니다.
 
 #### 결과 요약 (케이스당 1회)
 
-- **전체.** After 42/64(66%), Before 31/64(48%). After만 통과 15건, Before만 통과 4건으로 정확 McNemar p = 0.019입니다.
-- **차이가 나는 곳.** 두 번째 도메인이 필요한 33건에서 After 17건, Before 5건. 도메인 하나로 충분한 31건에서는 25건 대 26건입니다.
+- **전체 (2026-10-23, S3·S5·S6·상한 4 반영 후).** After 54/64(84%), Before 29/64(45%). After만 통과 26건, Before만 통과 1건으로 정확 McNemar p < 0.001입니다. 10-22 실행에서는 42 대 31(p = 0.019)이었습니다.
+- **차이가 나는 곳.** 두 번째 도메인이 필요한 33건에서 After 25건, Before 4건. 도메인 하나로 충분한 31건에서는 29건 대 25건입니다.
+- **정답 스킬이 답변에 닿았나.** 두 번째 도메인이 필요한 33건에서 Before 에이전트는 한 건도 정답 스킬을 다 갖지 못했고, After는 33건 모두 가졌습니다. After 라우터가 정답 스킬을 빠뜨린 건 64건 중 1건입니다(`evals/quality.py`).
+- **모든 답변 모델이 틀리던 8건.** 7건이 라우팅 빈틈(상한, 스킬 설명)이었고 1건은 스킬 예시가 사실을 빠뜨렸습니다. S3·S5·S6·상한 4와 스킬 문구 세 곳(bill-reporting, rent-reporting의 서로의 보고처, debt-settlement의 $600 기준)을 고친 뒤 8건 모두 통과합니다. 이전 After 실행과 비교하면 12건을 고치고 7건이 깨져(p = 0.36), 목표 밖의 뒤집힘은 노이즈와 가리기 어렵습니다. 판정이 애매했던 복합 사실 두 곳(mi-003 F2, st-001 F3·F4)은 어느 표현이든 인정하도록 문구를 고쳤습니다.
 
-After의 실패와 퇴보를 모두 검토했습니다(답변, judge 판정, 출처 주석, 스킬 대조). 원인은 다섯 가지였습니다.
+아래는 10-22 실행(상한 3, S3·S5·S6 반영 전)의 After 실패와 퇴보를 모두 검토한 결과입니다(답변, judge 판정, 출처 주석, 스킬 대조). 원인은 다섯 가지였고, 앞의 두 가지는 10-23에 고쳤습니다.
 
-- **상한.** 스킬 4개가 필요한 케이스에서 라우터가 3개만 고를 수 있어 하나가 빠졌습니다.
-- **스킬 설명이 필요를 드러내지 않음.** 닫힌 계좌가 최대 10년 남는다는 줄은 score-changes 본문에만 있고, credit-builder-account는 그쪽을 가리키기만 했습니다(S4로 고침). 무료 신용 보고서 줄은 payment-history에 있는데 그 설명은 신용 보고서를 언급하지 않습니다.
+- **상한.** 스킬 4개가 필요한 케이스에서 라우터가 3개만 고를 수 있어 하나가 빠졌습니다(상한 4로 고침).
+- **스킬 설명이 필요를 드러내지 않음.** 닫힌 계좌가 최대 10년 남는다는 줄은 score-changes 본문에만 있고, credit-builder-account는 그쪽을 가리키기만 했습니다(S4로 고침). 무료 신용 보고서 줄은 payment-history에 있는데 그 설명은 신용 보고서를 언급하지 않았습니다(S5로 고침).
 - **설명이 분명한데 라우터가 놓침.**
 - **불러온 스킬의 사실을 답변이 놓침.**
 - **채점.** 사실 문구가 judge를 헷갈리게 한 두 건(`mi-021`, `mi-033`)은 문구를 고쳤습니다.
@@ -240,6 +243,7 @@ judge가 사람과 같은 판정을 내리는지, 더 싼 judge 모델로 바꿔
   - 첫머리: 같은 봇의 두 실행이면 결정과 고침·망가뜨림·우연 목록, Before vs After면 두 봇의 통과 수. 그리고 짝지은 검정 한 줄
   - 데이터셋별 통과율, 실패 상세(케이스마다 이전 답, 새 답, judge 이유, 고침·망가뜨림·우연 표시)
   - Details: 플래그 규칙 판정(Passed/Not passed), A/A 노이즈 기준선, 가설 일치, 실행 정보, 전이 목록
+  - 판정에 들어가지 않는 두 지표(`evals/quality.py`): 양쪽 실행에서 답변 에이전트가 케이스의 정답 스킬을 다 가졌는지(Before는 고른 도메인의 스킬 전부, After는 라우터가 고른 스킬), 그리고 답변 길이(중앙값, 응답 규칙의 약 250단어를 넘은 수). 길이는 코드 체크도 judge도 보지 않습니다.
 - 형식: JSON (사이트가 읽음) + Markdown (터미널에서 읽음)
 
 ### 노이즈와 유의성
@@ -325,11 +329,11 @@ Before/After 비교는 "아키텍처를 바꾼 게 맞았나"를 봅니다. 시�
 |---|---|
 | S1 score-changes 본문 | Tradeoff |
 | S2 response-rules (상시) | Do not ship |
-| S3 utilization description | Ship |
+| S3 utilization description | Ship, `skills/`에 반영함 (`shipped`, 2026-10-23) |
 | S4 credit-builder-account 본문 | Ship, `skills/`에 반영함 (`shipped`) |
-| S5 payment-history description | Ship |
-| S6 score-changes description | Ship |
-| 상한 4 (`--max-skills 4`) | Ship |
+| S5 payment-history description | Ship, `skills/`에 반영함 (`shipped`, 2026-10-23) |
+| S6 score-changes description | Ship, `skills/`에 반영함 (`shipped`, 2026-10-23) |
+| 상한 4 (`--max-skills 4`) | Ship, `config.py`에 반영함 (2026-10-23) |
 
 - S4는 목표 세 건을 모두 고치고 아무것도 망가뜨리지 않아서 `skills/credit-builder-account.md`에 반영했습니다. 시나리오에는 `shipped`가 붙어 더 이상 실행되지 않습니다. 같은 빈틈을 라우팅으로 고친 S6는 목표 두 건 중 하나만 고쳤으므로, 이 빈틈에는 본문 수정이 더 튼튼합니다.
 
@@ -356,7 +360,7 @@ fynn report results/a.json results/b.json
   - FastAPI로 HTTP API를 엽니다.
   - Anthropic Python SDK, pydantic (구조화 출력과 데이터 검증), PyYAML (테스트 케이스), pytest를 씁니다.
 - **프론트엔드 (Next.js + TypeScript)**
-  - 상단 내비: `/` Demo, 평가 섹션 2개(`/before-after`, `/skill-edits`, 각각 Framework와 Results 탭), `/online-evaluation` 프레임워크 페이지.
+  - 상단 내비: `/` Demo, 평가 섹션 2개(`/before-after`, `/skill-edits`, 각각 Framework와 Results 탭), `/models` 한 페이지, `/online-evaluation` 프레임워크 페이지.
   - Tailwind로 스타일링합니다. 차트는 차트 라이브러리 없이 서버 컴포넌트로 직접 그립니다 (`web/components/evals/charts.tsx`의 덤벨과 수치 타일 등).
   - API 키는 백엔드 `.env`에만 둡니다. 프론트는 키를 절대 보지 않습니다.
 - **평가 결과**
@@ -474,6 +478,7 @@ fynn-lab/
     │   ├── page.tsx          # Demo
     │   ├── before-after/     # layout.tsx + framework/page.tsx + results/page.tsx
     │   ├── skill-edits/      # 같은 구조
+    │   ├── models/             # layout.tsx + page.tsx (답변 모델과 judge)
     │   └── online-evaluation/  # layout.tsx + page.tsx (프레임워크 한 페이지)
     └── components/           # ChatColumn, ArchitectureDiagram, PersonaCard, evals/ (charts, EditResults, Comparison, LoopDiagram 등)
 ```
@@ -501,5 +506,5 @@ fynn-lab/
 | 라우터 / 답변 / judge 모델 | Haiku 5.5 / Sonnet 5.5 / Opus 5.5 (답변 모델은 2026-10-19 Opus에서 변경) |
 | 데모 입력 | 입력창 하나로 양쪽에 동시 전송 |
 | UI 언어 | 영어 (문서는 한국어 병행) |
-| 스킬 예산 | 새로 고르는 스킬 3개 + 직전 턴 이월 2개 (설정값, M3에서 비교) |
+| 스킬 예산 | 새로 고르는 스킬 4개(상한 실험 전에는 3개) + 직전 턴 이월 2개 (설정값) |
 | 남은 것 | 배포 여부와 배포 환경 인증 방식 (M6에서 결정) |
