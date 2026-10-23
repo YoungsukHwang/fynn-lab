@@ -14,6 +14,7 @@ export const metadata: Metadata = { title: "Before vs After results" };
 const SECTIONS = [
   { href: "#headline", label: "Headline" },
   { href: "#where", label: "Where they differ" },
+  { href: "#skills", label: "Skills reaching the answer" },
   { href: "#cases", label: "Case by case" },
 ];
 
@@ -38,6 +39,9 @@ export default async function BeforeAfterResultsPage() {
   const cross = data.byDomains.find((g) => g.key === "cross");
   const single = data.byDomains.find((g) => g.key === "single");
   const test = comparison?.report.pairedTest ?? null;
+  const routing = comparison?.report.routing ?? null;
+  const lengths = comparison?.report.lengths ?? null;
+  const afterMisses = routing ? routing.candidate.skills.filter((s) => s.available < s.labeled) : [];
   const repeated = (before?.meta.repeats ?? 1) > 1 || (after?.meta.repeats ?? 1) > 1;
 
   if (!before && !after) {
@@ -58,8 +62,9 @@ export default async function BeforeAfterResultsPage() {
           <p>
             On the {plural(cross.after.cases, "case")} that need skills from more than one domain, the After bot passes{" "}
             {cross.after.passed} and the Before bot {cross.before?.passed ?? "n/a"}: a Before agent holds only one
-            domain&apos;s skills. On the {single.after.cases} that fit in one domain they are about even ({passed(single)}).
-            So the overall rate depends on how many such questions the eval set holds.
+            domain&apos;s skills. On the {single.after.cases} that fit in one domain{" "}
+            {Math.abs(single.after.passed - (single.before?.passed ?? 0)) <= 2 ? "the bots are about even" : "the gap is much smaller"} (
+            {passed(single)}). So the overall rate depends on how many such questions the eval set holds.
           </p>
         ) : (
           <p>The case groups need both results files.</p>
@@ -112,7 +117,7 @@ export default async function BeforeAfterResultsPage() {
         <Dumbbell
           id="groups"
           title="Pass rate on each bot"
-          description="Only on the highlighted row can a Before agent lack one of a case's skills."
+          description="On the highlighted row a Before agent always lacks one of a case's skills; elsewhere only a misrouted message does."
           caption="Pass rate on each bot, by whether a case needs a second domain"
           emphasisLabel="Can differ"
           groups={[
@@ -131,6 +136,34 @@ export default async function BeforeAfterResultsPage() {
           {test && `Here it gives ${pPhrase(test.overall.pValue, test.alpha)}, from the cases that flipped.`}
         </p>
       </section>
+
+      {routing && (
+        <section aria-labelledby="skills" className="flex flex-col gap-4">
+          <SectionHeader id="skills" eyebrow="Skills reaching the answer" title="Did the answering agent get every skill it needed?">
+            <p>
+              A case is labeled with the topic skills its answer needs. A Before agent has every skill of its one domain;
+              the After agent has the skills its router picked.
+            </p>
+          </SectionHeader>
+          <PairTile
+            label="Cases where every labeled skill reached the agent"
+            unit="cases"
+            before={{ value: routing.baseline.allAvailable, of: routing.baseline.cases }}
+            after={{ value: routing.candidate.allAvailable, of: routing.candidate.cases }}
+            hint={`needing a second domain: Before ${routing.baseline.byGroup.cross.allAvailable} of ${routing.baseline.byGroup.cross.cases}, After ${routing.candidate.byGroup.cross.allAvailable} of ${routing.candidate.byGroup.cross.cases}`}
+          />
+          <p className="text-sm leading-6 text-slate">
+            {afterMisses.length
+              ? `The After router left out a labeled skill in ${plural(
+                  routing.candidate.cases - routing.candidate.allAvailable,
+                  "case",
+                )} (missing: ${afterMisses.map((s) => s.name).join(", ")}).`
+              : "The After router picked every labeled skill."}{" "}
+            {lengths &&
+              `Replies run long on both bots: a median of ${lengths.baseline.medianWords} words for Before and ${lengths.candidate.medianWords} for After, and ${lengths.baseline.overLimit} and ${lengths.candidate.overLimit} of ${lengths.candidate.replies} go over the ${lengths.candidate.limit}-word rule, which nothing grades.`}
+          </p>
+        </section>
+      )}
 
       <section aria-labelledby="cases" className="flex flex-col gap-4">
         <SectionHeader id="cases" eyebrow="Case by case" title="The cases that came out differently">

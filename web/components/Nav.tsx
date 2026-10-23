@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // Short labels on phones keep the nav on one line; the full label shows from the sm breakpoint.
-// The two eval sections have Framework and Results tabs (the nav opens Results); Online evaluation is one page.
+// The two eval sections have Framework and Results tabs (the nav opens Results); Models and Online evaluation are one page each.
 const LINKS = [
   { href: "/", section: "/", label: "Demo", short: "Demo" },
   { href: "/before-after/results", section: "/before-after", label: "Before vs After", short: "B vs A" },
   { href: "/skill-edits/results", section: "/skill-edits", label: "Skill edits", short: "Edits" },
+  { href: "/models", section: "/models", label: "Models", short: "Models" },
   { href: "/online-evaluation", section: "/online-evaluation", label: "Online evaluation", short: "Online" },
 ];
 

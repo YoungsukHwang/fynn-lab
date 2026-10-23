@@ -33,7 +33,7 @@ export default async function SkillEditsResultsPage() {
       skill: null,
       change: `The After router may pick up to ${capData.cap ?? "?"} new topic skills per message instead of ${capData.baselineCap ?? "?"}.`,
       why: `${capData.overCap.length} cases are labeled with more topic skills than the cap of ${capData.baselineCap ?? "?"}, so the router had to leave one out.`,
-      shipped: null,
+      shipped: capData.shipped,
       rerun: capData.runCases,
       outOf: capData.comparison.baselineCases,
       comparison: capData.comparison,

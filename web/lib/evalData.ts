@@ -282,6 +282,27 @@ export interface Report {
   hypothesisResult: { expected: string; observed: string; matches: boolean } | null;
   attribution: Attribution | null; // which flips the change could have caused; null for Before vs After
   warnings: string[];
+  // Not part of the verdict; null in reports written before evals/quality.py.
+  routing: { baseline: RoutingQuality; candidate: RoutingQuality } | null;
+  lengths: { baseline: ReplyLengths; candidate: ReplyLengths } | null;
+}
+
+/** Whether the answering agent had every topic skill a case is labeled with (evals/quality.py). */
+export interface RoutingQuality {
+  strategy: string | null;
+  cases: number;
+  allAvailable: number;
+  byGroup: { cross: { cases: number; allAvailable: number }; single: { cases: number; allAvailable: number } };
+  skills: { name: string; labeled: number; available: number; picked: number; pickedUnlabeled: number }[];
+}
+
+/** Words per reply against the response rules' limit, which nothing grades. */
+export interface ReplyLengths {
+  replies: number;
+  medianWords: number | null;
+  limit: number;
+  overLimit: number;
+  over300: number;
 }
 
 /* ----------------------------------------------------------------------------------------------
@@ -749,6 +770,48 @@ export async function getReport(name: string): Promise<Report | null> {
       ? { expected: str(hypothesis.expected), observed: str(hypothesis.observed), matches: hypothesis.matches === true }
       : null,
     warnings: strList(raw.warnings),
+    routing:
+      isObj(raw.routing) && isObj(raw.routing.baseline) && isObj(raw.routing.candidate)
+        ? { baseline: toRoutingQuality(raw.routing.baseline), candidate: toRoutingQuality(raw.routing.candidate) }
+        : null,
+    lengths:
+      isObj(raw.lengths) && isObj(raw.lengths.baseline) && isObj(raw.lengths.candidate)
+        ? { baseline: toReplyLengths(raw.lengths.baseline), candidate: toReplyLengths(raw.lengths.candidate) }
+        : null,
+  };
+}
+
+function toRoutingQuality(raw: Obj): RoutingQuality {
+  const groups = isObj(raw.by_group) ? raw.by_group : {};
+  const group = (value: unknown) => ({
+    cases: isObj(value) ? num(value.cases) : 0,
+    allAvailable: isObj(value) ? num(value.all_available) : 0,
+  });
+  const skills = isObj(raw.skills) ? raw.skills : {};
+  return {
+    strategy: strOrNull(raw.strategy),
+    cases: num(raw.cases),
+    allAvailable: num(raw.all_available),
+    byGroup: { cross: group(groups.cross), single: group(groups.single) },
+    skills: Object.entries(skills)
+      .filter((entry): entry is [string, Obj] => isObj(entry[1]))
+      .map(([name, row]) => ({
+        name,
+        labeled: num(row.labeled),
+        available: num(row.available),
+        picked: num(row.picked),
+        pickedUnlabeled: num(row.picked_unlabeled),
+      })),
+  };
+}
+
+function toReplyLengths(raw: Obj): ReplyLengths {
+  return {
+    replies: num(raw.replies),
+    medianWords: numOrNull(raw.median_words),
+    limit: num(raw.limit, 250),
+    overLimit: num(raw.over_limit),
+    over300: num(raw.over_300),
   };
 }
 
@@ -1238,7 +1301,7 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
       group(
         "single",
         "One domain is enough",
-        "Before holds every labeled skill and more; After loads a subset",
+        "a correctly routed Before agent holds every labeled skill and more; After loads a subset",
         cases.filter((c) => !cross.has(c.id)).map((c) => c.id),
       ),
     ],
@@ -1280,6 +1343,7 @@ export interface CapCase {
 export interface CapData {
   baselineCap: number | null;
   cap: number | null;
+  shipped: string | null; // date of the committed After run once it uses the higher cap
   runCases: number | null; // cases in the cap run
   comparison: Comparison | null;
   overCap: CapCase[]; // cases labeled with more topic skills than the baseline's cap
@@ -1292,7 +1356,8 @@ function capSide(run: Run | null, evalCase: EvalCase): CapCaseSide | null {
   return { passed: result.passed, loaded: routed.length, missing: evalCase.skills.filter((s) => !routed.includes(s)) };
 }
 
-/** Everything the skill-cap section shows. The baseline cap comes from after.json, or from config.py for older files. */
+/** Everything the skill-cap section shows. The baseline is the run the cap report compared against (found in
+ * results/archive/ once after.json is replaced), else after.json, else config.py. */
 export async function getCapData(): Promise<CapData> {
   "use cache";
   cacheLife("max");
@@ -1304,19 +1369,163 @@ export async function getCapData(): Promise<CapData> {
     getReport(CAP_RUN.report),
     getSkillCap(),
   ]);
-  const baselineCap = after ? (after.skillCap ?? LEGACY_SKILL_CAP) : configured;
+  const baseline = report ? ((await matchingRun(report.baseline, "baseline", [])) ?? after) : after;
+  const baselineCap = baseline ? (baseline.skillCap ?? LEGACY_SKILL_CAP) : configured;
   const overCap = baselineCap === null ? [] : cases.filter((c) => c.skills.length > baselineCap);
+  const cap = capRun?.skillCap ?? null;
   return {
     baselineCap,
-    cap: capRun?.skillCap ?? null,
+    cap,
+    shipped: after && cap !== null && after.skillCap === cap && baseline !== after ? after.createdAt.slice(0, 10) : null,
     runCases: capRun?.cases.length ?? null,
     comparison: report ? await buildComparison(report, cases) : null,
     overCap: overCap.map((c) => ({
       id: c.id,
       message: c.message,
       skills: c.skills,
-      baseline: capSide(after, c),
+      baseline: capSide(baseline, c),
       candidate: capSide(capRun, c),
     })),
+  };
+}
+
+/* ----------------------------------------------------------------------------------------------
+ * Answer model and judge: results/reports/models (evals/models_report.py) and results/validation
+ * -------------------------------------------------------------------------------------------- */
+
+export interface ModelRow {
+  source: string;
+  model: string;
+  served: string[];
+  createdAt: string;
+  cases: number;
+  passed: number;
+  errors: number;
+  byGroup: { cross: { cases: number; passed: number }; single: { cases: number; passed: number } };
+  facts: { present: number; graded: number };
+  lengths: ReplyLengths;
+  passedIfOver300Fails: number;
+  costPer1000: { answer: number; router: number; total: number; estimatedSplit: boolean };
+}
+
+export interface PairedFlip {
+  a: string;
+  b: string;
+  cases: number;
+  up: number;
+  down: number;
+  p: number | null;
+}
+
+export interface JudgeRow {
+  label: string;
+  model: string;
+  replies: number;
+  facts: number;
+  factAgreement: number | null;
+  verdictFlips: number;
+  costPerRun: number;
+}
+
+export interface HumanJudgeRow {
+  name: string;
+  replies: number;
+  facts: number;
+  rate: number | null;
+  interval: [number, number] | null;
+  stricter: number;
+  lenient: number;
+}
+
+export interface ModelsData {
+  createdAt: string | null;
+  routerUsageFrom: { name: string; createdAt: string } | null;
+  models: ModelRow[];
+  paired: PairedFlip[];
+  pairedIfOver300Fails: PairedFlip[];
+  judges: JudgeRow[];
+  human: { labeledItems: number; items: number; judges: HumanJudgeRow[] } | null; // null until labels exist
+}
+
+function toPaired(raw: Obj): PairedFlip {
+  return { a: str(raw.a), b: str(raw.b), cases: num(raw.cases), up: num(raw.up), down: num(raw.down), p: numOrNull(raw.p) };
+}
+
+/** The answer-model comparison and the judge regrades, plus human agreement once labels exist. */
+export async function getModelsData(): Promise<ModelsData> {
+  "use cache";
+  cacheLife("max");
+
+  const [raw, agreement] = await Promise.all([
+    readJson(path.join(resultsDir(), "reports", "models", "report.json")),
+    readJson(path.join(resultsDir(), "validation", "agreement", "agreement.json")),
+  ]);
+  const report = isObj(raw) ? raw : {};
+  const router = isObj(report.router_usage_from) ? report.router_usage_from : null;
+  const human = isObj(agreement) && isObj(agreement.human) ? agreement.human : null;
+  const humanJudges = human && isObj(human.judges) ? human.judges : {};
+  return {
+    createdAt: strOrNull(report.created_at),
+    routerUsageFrom: router ? { name: str(router.name), createdAt: str(router.created_at) } : null,
+    models: objList(report.models).map((m) => {
+      const groups = isObj(m.by_group) ? m.by_group : {};
+      const group = (value: unknown) => ({
+        cases: isObj(value) ? num(value.cases) : 0,
+        passed: isObj(value) ? num(value.passed) : 0,
+      });
+      const facts = isObj(m.facts) ? m.facts : {};
+      const cost = isObj(m.cost_per_1000) ? m.cost_per_1000 : {};
+      return {
+        source: str(m.source),
+        model: str(m.model),
+        served: strList(m.served),
+        createdAt: str(m.created_at),
+        cases: num(m.cases),
+        passed: num(m.passed),
+        errors: num(m.errors),
+        byGroup: { cross: group(groups.cross), single: group(groups.single) },
+        facts: { present: num(facts.present), graded: num(facts.graded) },
+        lengths: toReplyLengths(isObj(m.lengths) ? m.lengths : {}),
+        passedIfOver300Fails: num(m.passed_if_over_300_fails),
+        costPer1000: {
+          answer: num(cost.answer),
+          router: num(cost.router),
+          total: num(cost.total),
+          estimatedSplit: cost.estimated_split === true,
+        },
+      };
+    }),
+    paired: objList(report.paired).map(toPaired),
+    pairedIfOver300Fails: objList(report.paired_if_over_300_fails).map(toPaired),
+    judges: objList(report.judges).map((j) => ({
+      label: str(j.label),
+      model: str(j.model),
+      replies: num(j.replies),
+      facts: num(j.facts),
+      factAgreement: numOrNull(j.fact_agreement),
+      verdictFlips: num(j.verdict_flips),
+      costPerRun: num(j.cost_per_run),
+    })),
+    human:
+      human && num(human.labeled_items) > 0
+        ? {
+            labeledItems: num(human.labeled_items),
+            items: num(human.items),
+            judges: Object.entries(humanJudges)
+              .filter((entry): entry is [string, Obj] => isObj(entry[1]))
+              .map(([name, j]) => {
+                const ci = Array.isArray(j.ci_binary) ? j.ci_binary : null;
+                return {
+                  name,
+                  replies: num(j.replies),
+                  facts: num(j.facts),
+                  rate: numOrNull(j.rate_binary),
+                  interval: ci && ci.length === 2 ? [num(ci[0]), num(ci[1])] : null,
+                  stricter: num(j.stricter),
+                  lenient: num(j.lenient),
+                };
+              }),
+          }
+        : null,
   };
 }

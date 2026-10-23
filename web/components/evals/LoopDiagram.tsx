@@ -33,7 +33,7 @@ function StepArrow() {
   );
 }
 
-function StepNumber({ n, dark = false }: { n: number; dark?: boolean }) {
+export function StepNumber({ n, dark = false }: { n: number; dark?: boolean }) {
   return (
     <span
       aria-hidden="true"
