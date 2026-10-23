@@ -1,10 +1,14 @@
 # Regression report: s5 (Route free-report and recovery questions to payment history)
 
-**Verdict: Not passed.** 3 regressed, 7 improved.
-The verdict is Not passed, but the net change is not significant (p = 0.344): the flagged regressions could be run-to-run noise, or be offset by improvements.
+**Decision: Ship.** The change fixed 3 cases and broke none; 7 other cases flipped where it could not reach them, so by chance.
 Paired test of the net change (exact McNemar on the 10 cases that flipped): p = 0.344, not significant at 0.05.
-A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
-Hypothesis: expected improve, observed tradeoff (does not match; from the flagged counts, not a significance test).
+
+## What changed
+
+- Fixed by the change (3): mi-022, mi-024, sb-001
+- Broken by the change (0): none
+- Flipped by chance (4 up, 3 down): mi-008, mi-010, mi-012, mi-015, st-011, mi-003, mi-030
+- How: a description edit or a different skill cap can reach a case only by changing its routing. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
 
 ## Scenario
 
@@ -12,15 +16,6 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 - Change: Widens the payment-history description so the router also picks it when the user asks how to get free credit reports, or whether or when a score will recover or reach a target.
 - Motivation: In the 2026-10-22 run, the free-reports line sits in the payment-history body but its description never mentions credit reports, so the After router judged that no skill covered "is there a free way to look at my credit reports" (mi-024). In sb-001, a "back above 600 by December" question, the router left payment-history out, so the reply could not say how the recent late fades.
 - Hypothesis (improve): A description edit can change routing for any message, so every case reruns. mi-024 and sb-001 should improve once payment-history loads. Recovery questions inside three-part messages could now take a slot from another skill, but the new triggers are narrow, so few cases should lose a skill. Expected: improvements and no regressions, or at most one.
-
-## Runs
-
-- Baseline: after (after, 2026-10-22T17:15:15+00:00)
-- Candidate: s5 (after, 2026-10-22T22:32:15+00:00)
-- Selection: all cases: description of topic skill payment-history changed (the router reads it, so routing can change anywhere)
-- Cases compared: 62
-
-- Warning: expected facts differ between the runs, so not compared: mi-021, mi-033; rerun the baseline to compare them
 
 ## Pass rates
 
@@ -32,33 +27,9 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 | safety_basic | 8 | 7 (88%) | 8 (100%) | +12 pts |
 | **overall** | 62 | 42 (68%) | 46 (74%) | |
 
-## Noise and significance
-
-- Runs per case: baseline 1, candidate 1.
-- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
-- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
-- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
-- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
-- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
-
-| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
-|---|---|---|---|---|---|---|
-| single_topic | 12 | 0 | 1 | 1.000 | 1.000 | n/a |
-| multi_intent | 34 | 6 | 2 | 0.289 | 1.000 | n/a |
-| context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
-| safety_basic | 8 | 1 | 0 | 1.000 | 1.000 | n/a |
-| **overall** | 62 | 7 | 3 | 0.344 | primary | n/a |
-
-## Transitions
-
-- Improved (7): mi-008, mi-010, mi-012, mi-015, mi-022, mi-024, sb-001
-- Regressed (3): st-011, mi-003, mi-030
-- Unchanged (pass) (39): st-003, st-004, st-005, st-006, st-007, st-008, st-009, st-012, mi-001, mi-002, mi-004, mi-005, mi-007, mi-011, mi-013, mi-014, mi-017, mi-023, mi-026, mi-027, mi-029, mi-031, mi-032, mi-035, cu-001, cu-002, cu-003, cu-004, cu-005, cu-006, cu-007, cu-008, sb-002, sb-003, sb-004, sb-005, sb-006, sb-007, sb-008
-- Unchanged (fail) (13): st-001, st-002, st-010, mi-006, mi-009, mi-016, mi-018, mi-019, mi-020, mi-025, mi-028, mi-034, mi-036
-
 ## Failures overview
 
-### st-011 (single_topic, multi-product)
+### st-011 (single_topic, multi-product) (chance: the change could not reach it)
 
 **Message.** My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?
 
@@ -106,7 +77,7 @@ Expected skills: bill-reporting. Routed: baseline ['bill-reporting'], candidate 
 
 **Judge reason.** F1 and F2 are present. F3 is absent because the reply mentions lender bureau pulls but not that the score effect depends on the scoring model.
 
-### mi-003 (multi_intent, high-util)
+### mi-003 (multi_intent, high-util) (chance: the change could not reach it)
 
 **Message.** Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?
 
@@ -161,7 +132,7 @@ Expected skills: score-changes, marketplace-offers, utilization. Routed: baselin
 
 **Judge reason.** F2 is absent because the reply gives only the Rewards card's utilization and omits the Bank card's. F1, F3 and F4 are present.
 
-### mi-030 (multi_intent, collections)
+### mi-030 (multi_intent, collections) (chance: the change could not reach it)
 
 **Message.** The collection agency's letter from September says I owe $1,200 on the old phone account, but I think part of that is fees I never agreed to. How do I push back on the amount? Also, I've kept my store card paid on time and I really don't want to slip on it now. What's the best way to make sure that never happens?
 
@@ -227,3 +198,43 @@ Expected skills: collections, payment-history. Routed: baseline ['collections', 
 | Suggests autopay or reminders for at least the minimum payment on the Store card | PRESENT | Reply says "Set up autopay for at least the minimum payment" and add a calendar reminder. |
 
 **Judge reason.** F3 is absent because the reply never mentions the bureau's roughly 30-day investigation window; all other facts are present.
+
+## Details
+
+**Verdict: Not passed.** 3 regressed, 7 improved.
+The verdict is Not passed, but the net change is not significant (p = 0.344): the flagged regressions could be run-to-run noise, or be offset by improvements.
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+Hypothesis: expected improve, observed tradeoff (does not match; from the flagged counts, not a significance test).
+
+## Runs
+
+- Baseline: after (after, 2026-10-22T17:15:15+00:00)
+- Candidate: s5 (after, 2026-10-22T22:32:15+00:00)
+- Selection: all cases: description of topic skill payment-history changed (the router reads it, so routing can change anywhere)
+- Cases compared: 62
+
+- Warning: expected facts differ between the runs, so not compared: mi-021, mi-033; rerun the baseline to compare them
+
+## Noise and significance
+
+- Runs per case: baseline 1, candidate 1.
+- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
+- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
+- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
+- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
+- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
+|---|---|---|---|---|---|---|
+| single_topic | 12 | 0 | 1 | 1.000 | 1.000 | n/a |
+| multi_intent | 34 | 6 | 2 | 0.289 | 1.000 | n/a |
+| context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
+| safety_basic | 8 | 1 | 0 | 1.000 | 1.000 | n/a |
+| **overall** | 62 | 7 | 3 | 0.344 | primary | n/a |
+
+## Transitions
+
+- Improved (7): mi-008, mi-010, mi-012, mi-015, mi-022, mi-024, sb-001
+- Regressed (3): st-011, mi-003, mi-030
+- Unchanged (pass) (39): st-003, st-004, st-005, st-006, st-007, st-008, st-009, st-012, mi-001, mi-002, mi-004, mi-005, mi-007, mi-011, mi-013, mi-014, mi-017, mi-023, mi-026, mi-027, mi-029, mi-031, mi-032, mi-035, cu-001, cu-002, cu-003, cu-004, cu-005, cu-006, cu-007, cu-008, sb-002, sb-003, sb-004, sb-005, sb-006, sb-007, sb-008
+- Unchanged (fail) (13): st-001, st-002, st-010, mi-006, mi-009, mi-016, mi-018, mi-019, mi-020, mi-025, mi-028, mi-034, mi-036

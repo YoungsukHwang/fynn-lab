@@ -558,6 +558,94 @@ def test_a_different_skill_cap_is_a_change_and_old_files_read_as_cap_3(monkeypat
     assert compare({**base, "bot": "before"}, {**wider, "bot": "before"})["candidate"]["skill_cap"] is None
 
 
+def _routed(case: dict, *skills: str) -> dict:
+    return {**case, "routing": {**case["routing"], "selected": list(skills)}}
+
+
+def test_flips_the_edit_cannot_reach_are_chance() -> None:
+    body = Scenario(
+        id="s9", title="t", kind="body", skill="utilization", change="c", motivation="m",
+        hypothesis={"expected": "improve", "detail": "d"},
+    )
+    base = _results([
+        _case("st-001", False), _case("st-002", False), _case("mi-001", True, "multi_intent"),
+    ])
+    cand = _results([
+        _routed(_case("st-001", True), "utilization"),  # loads the edited skill: the edit can explain it
+        _case("st-002", True),  # same prompt as before: chance
+        _case("mi-001", False, "multi_intent"),  # same prompt: chance
+    ])
+    report = compare(base, cand, body)
+    assert report["attribution"] == {
+        "rule": "a body edit can reach a case only when the edited skill is loaded for it",
+        "fixed": ["st-001"], "broken": [], "chance_up": ["st-002"], "chance_down": ["mi-001"], "errored": [],
+        "decision": "ship",
+    }
+    text = render_markdown(report)
+    assert text.splitlines()[2].startswith("**Decision: Ship.** The change fixed 1 case and broke none")
+    assert "- Flipped by chance (1 up, 1 down): st-002, mi-001" in text
+
+    # A description edit or a cap change reaches a case only through its routing.
+    routed = compare(base, _results([_routed(_case("st-001", True), "utilization"), _case("st-002", True),
+                                     _routed(_case("mi-001", False, "multi_intent"), "rent-reporting")]))
+    assert (routed["attribution"]["fixed"], routed["attribution"]["broken"]) == (["st-001"], ["mi-001"])
+    assert routed["attribution"]["decision"] == "tradeoff"
+
+    always = compare(base, cand, body.model_copy(update={"kind": "always_on", "skill": "tone"}))
+    assert always["attribution"]["chance_up"] == [] and always["attribution"]["broken"] == ["mi-001"]
+
+
+def test_before_vs_after_has_no_attribution_and_leads_with_both_rates() -> None:
+    report = compare({**BASELINE, "bot": "before"}, CANDIDATE)
+    assert report["attribution"] is None
+    text = render_markdown(report)
+    assert text.splitlines()[2] == "**After passes 2 of 4; before passes 2 of 4.**"
+    assert "## Details\n\n**Verdict:" in text
+
+
+def test_an_aa_comparison_has_no_decision() -> None:
+    fingerprint = {"score-changes": {"description": "d", "body": "b", "meta": "m"}}
+    base = {**BASELINE, "skill_fingerprint": fingerprint}
+    rerun = {**_results([_routed(_case("st-001", False), "utilization"), _case("st-002", True)]), "skill_fingerprint": fingerprint}
+    report = compare(base, rerun)
+    assert report["kind"] == "aa" and report["attribution"] is None
+
+
+def test_without_a_scenario_the_change_is_read_from_the_fingerprints(monkeypatch: pytest.MonkeyPatch) -> None:
+    import evals.report as report_module
+
+    monkeypatch.setattr(report_module, "_topic_skill", lambda name: True)
+    old = {"utilization": {"description": "d", "body": "b", "meta": "m"}}
+    base = {**_results([_case("st-001", False), _case("st-002", False)]), "skill_fingerprint": old}
+    cand = _results([_routed(_case("st-001", True), "utilization"), _case("st-002", True)])
+    body = compare(base, {**cand, "skill_fingerprint": {"utilization": {**old["utilization"], "body": "b2"}}})
+    assert body["attribution"]["rule"].startswith("a body edit") and body["attribution"]["fixed"] == ["st-001"]
+    desc = compare(base, {**cand, "skill_fingerprint": {"utilization": {**old["utilization"], "description": "d2"}}})
+    assert desc["attribution"]["rule"].startswith("a description edit")
+    models = compare(base, {**cand, "skill_fingerprint": old, "models": {"router": "r", "agent": "other", "judge": "j"}})
+    assert models["attribution"]["rule"].startswith("the runs differ") and models["attribution"]["chance_up"] == []
+
+
+def test_errored_runs_do_not_decide_the_attribution() -> None:
+    base = _results([_case("st-001", True), _case("st-002", True)])
+    errored = {**_case("st-001", False), "routing": None, "status": "error", "error": "bot: LLMError: down"}
+    cand = _results([errored, _routed(_case("st-002", False), "rent-reporting")])
+    a = compare(base, cand)["attribution"]
+    assert a["errored"] == ["st-001"] and a["broken"] == ["st-002"]
+    assert "errored on one side and is left out" in render_markdown(compare(base, cand))
+
+
+def test_a_reordered_routing_counts_as_a_routing_change() -> None:
+    base = _results([_routed(_case("st-001", False), "score-changes", "utilization")])
+    cand = _results([_routed(_case("st-001", True), "utilization", "score-changes")])
+    assert compare(base, cand)["attribution"]["fixed"] == ["st-001"]
+
+
+def test_failures_are_labeled_with_their_attribution() -> None:
+    text = render_markdown(compare(BASELINE, CANDIDATE, SCENARIO))
+    assert "### mi-001 (multi_intent, rebuilder) (chance: the change could not reach it)" in text
+
+
 def test_a_partial_run_is_flagged() -> None:
     report = compare(BASELINE, {**CANDIDATE, "complete": False})
     assert any(w.startswith("the candidate is a partial run") for w in report["warnings"])

@@ -2,7 +2,6 @@
 
 import re
 from collections import Counter
-from datetime import date
 from pathlib import Path
 
 import pytest
@@ -191,15 +190,12 @@ def test_real_multi_intent_shape(real_cases: list[EvalCase]) -> None:
     spanning = [c for c in multi if len({library.get(s).domain for s in c.skills}) >= 3]
     assert len(spanning) >= 3
 
-    # mi-013 onward: every added case needs a second domain, and four need more skills than the cap of 3.
-    added = [c for c in multi if int(c.id[3:]) >= 13]
-    assert len(added) == 24
-    # Exactly these cases record when they were added; every other case was in the first run.
-    assert [c.id for c in real_cases if c.added] == [c.id for c in added]
-    assert {c.added for c in added} == {date(2026, 10, 22)}
-    assert all(len({library.get(s).domain for s in c.skills}) >= 2 for c in added)
-    assert sorted(c.id for c in added if len(c.skills) >= 4) == ["mi-016", "mi-020", "mi-028", "mi-036"]
-    assert Counter(c.persona for c in added) == {p: 4 for p in {c.persona for c in added}}
+    # mi-013 onward: every case needs a second domain, and four need more skills than the cap of 3.
+    cross = [c for c in multi if int(c.id[3:]) >= 13]
+    assert len(cross) == 24
+    assert all(len({library.get(s).domain for s in c.skills}) >= 2 for c in cross)
+    assert sorted(c.id for c in cross if len(c.skills) >= 4) == ["mi-016", "mi-020", "mi-028", "mi-036"]
+    assert Counter(c.persona for c in cross) == {p: 4 for p in {c.persona for c in cross}}
 
 
 @real_cases_present

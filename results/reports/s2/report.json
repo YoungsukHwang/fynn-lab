@@ -9,7 +9,8 @@
     "hypothesis": {
       "expected": "regress",
       "detail": "An always-on edit reruns every case. Single-question cases should mostly hold, since one answer fits in about 120 words. Multi-part messages, especially three-question ones with four or five expected facts, should regress because facts get dropped to meet the limit. Expected verdict: not passed, do not ship."
-    }
+    },
+    "shipped": null
   },
   "baseline": {
     "name": "after",
@@ -21,7 +22,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "candidate": {
     "name": "s2",
@@ -33,7 +35,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "kind": "change",
   "selection": {
@@ -177,6 +180,7 @@
   },
   "errors": [],
   "baseline_errors": [],
+  "facts_changed": [],
   "failures": [
     {
       "id": "st-002",
@@ -605,6 +609,25 @@
   ],
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.070): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "attribution": {
+    "rule": "an always-on edit reaches every case",
+    "fixed": [
+      "sb-001"
+    ],
+    "broken": [
+      "st-002",
+      "st-003",
+      "st-005",
+      "st-006",
+      "mi-012",
+      "cu-003",
+      "sb-005"
+    ],
+    "chance_up": [],
+    "chance_down": [],
+    "errored": [],
+    "decision": "do not ship"
+  },
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from datetime import date
 from pathlib import Path
 from typing import Literal
 
@@ -41,8 +40,6 @@ class EvalCase(BaseModel):
     expected_facts: list[str] = Field(min_length=2, max_length=5)
     must_not_regex: list[str] = Field(default_factory=list)
     must_include_regex: list[str] = Field(default_factory=list)
-    # The date a case joined the set after the first Before vs After run. None: it was in that run.
-    added: date | None = None
 
     @field_validator("skills")
     @classmethod

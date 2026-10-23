@@ -9,7 +9,8 @@
     "hypothesis": {
       "expected": "tradeoff",
       "detail": "A description edit can change routing for any message, so every case reruns. Single score-drop questions should improve, because utilization now loads with score-changes. In three-part messages that include a score question, the router now wants four skills but can pick at most three, so another skill (for example secured-card or marketplace-offers) can be pushed out and that part of the answer loses its facts. Expected: some improvements and some regressions, a tradeoff rather than a clean ship."
-    }
+    },
+    "shipped": null
   },
   "baseline": {
     "name": "after",
@@ -21,7 +22,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "candidate": {
     "name": "s3",
@@ -33,7 +35,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "kind": "change",
   "selection": {
@@ -177,6 +180,7 @@
   },
   "errors": [],
   "baseline_errors": [],
+  "facts_changed": [],
   "failures": [
     {
       "id": "st-009",
@@ -456,6 +460,23 @@
   ],
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "attribution": {
+    "rule": "a description edit or a different skill cap can reach a case only by changing its routing",
+    "fixed": [
+      "st-001",
+      "mi-003"
+    ],
+    "broken": [],
+    "chance_up": [
+      "st-011",
+      "mi-004"
+    ],
+    "chance_down": [
+      "st-009"
+    ],
+    "errored": [],
+    "decision": "ship"
+  },
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,

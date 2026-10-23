@@ -83,8 +83,6 @@ export default async function BeforeAfterFrameworkPage() {
   ]);
   const capText = cap ?? "a fixed number of";
   const overCap = cap === null ? [] : cases.filter((c) => c.skills.length > cap);
-  const added = cases.filter((c) => c.added); // cases written after the first Before vs After run
-  const addedDates = [...new Set(added.flatMap((c) => (c.added ? [c.added] : [])))].sort();
 
   const countBy = (key: (c: (typeof cases)[number]) => string) =>
     cases.reduce<Record<string, number>>((acc, c) => ({ ...acc, [key(c)]: (acc[key(c)] ?? 0) + 1 }), {});
@@ -103,16 +101,6 @@ export default async function BeforeAfterFrameworkPage() {
   const skillDomain = new Map(topicSkills.flatMap((s) => (s.domain ? [[s.name, s.domain] as const] : [])));
   const spans = cases.map((c) => ({ evalCase: c, domains: caseDomains(c, skillDomain) }));
   const cross = spans.filter((s) => s.domains.length > 1);
-  const crossIds = new Set(cross.map((s) => s.evalCase.id));
-  const addedNeedSecond = added.filter((c) => crossIds.has(c.id)).length;
-  // "mi-013 to mi-036" when the added ids run on without a gap in one dataset; otherwise list them.
-  const addedNumbers = added.map((c) => Number(c.id.slice(3)));
-  const addedRange =
-    added.length > 1 &&
-    new Set(added.map((c) => c.dataset)).size === 1 &&
-    addedNumbers.every((n, i) => i === 0 || n === (addedNumbers[i - 1] ?? 0) + 1)
-      ? `${added[0]?.id} to ${added[added.length - 1]?.id}`
-      : added.map((c) => c.id).join(", ");
   const crossPerDataset = cross.reduce<Record<string, number>>(
     (acc, s) => ({ ...acc, [s.evalCase.dataset]: (acc[s.evalCase.dataset] ?? 0) + 1 }),
     {},
@@ -273,7 +261,7 @@ export default async function BeforeAfterFrameworkPage() {
             <p className="mt-1 text-sm leading-6 text-slate">
               The After router can pick at most {cap} new skills per message, so on these cases it must leave one out.
               They show what raising the cap would change (
-              <Link href="/before-after/results#cap" className="font-medium text-ink underline underline-offset-2">
+              <Link href="/skill-edits/results#cap4" className="font-medium text-ink underline underline-offset-2">
                 the cap result
               </Link>
               ).
@@ -307,18 +295,6 @@ export default async function BeforeAfterFrameworkPage() {
             The members, their credit data and the products are fictional. The cases live in{" "}
             <code className="font-mono text-xs text-ink">backend/evals/cases/</code>.
           </p>
-          {added.length > 0 && (
-            <p>
-              {plural(added.length, "case")} ({addedRange}) {added.length === 1 ? "was" : "were"} added on{" "}
-              {addedDates.join(" and ")}, after the first Before vs After run showed little difference, to test where the
-              two designs differ.{" "}
-              {addedNeedSecond === added.length
-                ? "Each needs a second domain"
-                : `${addedNeedSecond} of them need a second domain`}
-              , so they weigh the overall pass rate toward the cases where After can gain. The results tab shows them
-              apart from the cases of the first run.
-            </p>
-          )}
         </SectionHeader>
 
         <div>
@@ -391,12 +367,8 @@ export default async function BeforeAfterFrameworkPage() {
       <section aria-labelledby="scoring" className="flex flex-col gap-5">
         <SectionHeader id="scoring" eyebrow="4 · Scoring" title="Code checks, then an LLM judge">
           <p>
-            Every reply is scored in two steps, and a case passes only if both pass. How to tell a real difference from
-            run-to-run variation is on the{" "}
-            <Link href="/noise/framework" className="font-medium text-ink underline underline-offset-2">
-              Noise &amp; A/A
-            </Link>{" "}
-            tab.
+            Every reply is scored in two steps, and a case passes only if both pass. LLM answers vary from run to run,
+            so the results compare the two bots with a test of whether the gap is bigger than that variation.
           </p>
         </SectionHeader>
 

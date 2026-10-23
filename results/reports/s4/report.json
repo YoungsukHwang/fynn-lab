@@ -9,7 +9,8 @@
     "hypothesis": {
       "expected": "improve",
       "detail": "Only the body changed, so only cases labeled credit-builder-account or routed to it in the baseline rerun. The cases that ask whether a closed or finished Credit Builder account stays on the report (mi-016, mi-019, mi-034) should now state the 10-year rule, so some of them improve. The new line adds no instruction, so other Credit Builder cases should hold. Expected verdict: no regressions, safe to ship."
-    }
+    },
+    "shipped": "2026-10-22"
   },
   "baseline": {
     "name": "after",
@@ -521,6 +522,22 @@
   ],
   "verdict": "Passed",
   "verdict_note": null,
+  "attribution": {
+    "rule": "a body edit can reach a case only when the edited skill is loaded for it",
+    "fixed": [
+      "mi-008",
+      "mi-012",
+      "mi-016",
+      "mi-019",
+      "mi-022",
+      "mi-034"
+    ],
+    "broken": [],
+    "chance_up": [],
+    "chance_down": [],
+    "errored": [],
+    "decision": "ship"
+  },
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,

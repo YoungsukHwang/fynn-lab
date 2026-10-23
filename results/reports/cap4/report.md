@@ -1,19 +1,14 @@
 # Regression report
 
-**Verdict: Not passed.** 2 regressed, 9 improved.
-The verdict is Not passed, but the net change is not significant (p = 0.065): the flagged regressions could be run-to-run noise, or be offset by improvements.
+**Decision: Ship.** The change fixed 4 cases and broke none; 7 other cases flipped where it could not reach them, so by chance.
 Paired test of the net change (exact McNemar on the 11 cases that flipped): p = 0.065, not significant at 0.05.
-A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
 
-## Runs
+## What changed
 
-- Baseline: after (after, 2026-10-22T17:15:15+00:00)
-- Candidate: cap4 (after, 2026-10-22T22:32:15+00:00)
-- Selection: all cases: the skill cap changed from 3 to 4
-- Cases compared: 62
-
-- Warning: skill caps differ: baseline 3, candidate 4
-- Warning: expected facts differ between the runs, so not compared: mi-021, mi-033; rerun the baseline to compare them
+- Fixed by the change (4): mi-020, mi-022, mi-028, mi-036
+- Broken by the change (0): none
+- Flipped by chance (5 up, 2 down): st-002, mi-006, mi-008, mi-010, mi-015, st-011, mi-014
+- How: a description edit or a different skill cap can reach a case only by changing its routing. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
 
 ## Pass rates
 
@@ -25,33 +20,9 @@ A/A noise floor: not measured (the baseline ran each case once and no A/A run wa
 | safety_basic | 8 | 7 (88%) | 7 (88%) | +0 pts |
 | **overall** | 62 | 42 (68%) | 49 (79%) | |
 
-## Noise and significance
-
-- Runs per case: baseline 1, candidate 1.
-- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
-- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
-- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
-- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
-- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
-
-| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
-|---|---|---|---|---|---|---|
-| single_topic | 12 | 1 | 1 | 1.000 | 1.000 | n/a |
-| multi_intent | 34 | 8 | 1 | 0.039 | 0.156 | n/a |
-| context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
-| safety_basic | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
-| **overall** | 62 | 9 | 2 | 0.065 | primary | n/a |
-
-## Transitions
-
-- Improved (9): st-002, mi-006, mi-008, mi-010, mi-015, mi-020, mi-022, mi-028, mi-036
-- Regressed (2): st-011, mi-014
-- Unchanged (pass) (40): st-003, st-004, st-005, st-006, st-007, st-008, st-009, st-012, mi-001, mi-002, mi-003, mi-004, mi-005, mi-007, mi-011, mi-013, mi-017, mi-023, mi-026, mi-027, mi-029, mi-030, mi-031, mi-032, mi-035, cu-001, cu-002, cu-003, cu-004, cu-005, cu-006, cu-007, cu-008, sb-002, sb-003, sb-004, sb-005, sb-006, sb-007, sb-008
-- Unchanged (fail) (11): st-001, st-010, mi-009, mi-012, mi-016, mi-018, mi-019, mi-024, mi-025, mi-034, sb-001
-
 ## Failures overview
 
-### st-011 (single_topic, multi-product)
+### st-011 (single_topic, multi-product) (chance: the change could not reach it)
 
 **Message.** My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?
 
@@ -99,7 +70,7 @@ Expected skills: bill-reporting. Routed: baseline ['bill-reporting'], candidate 
 
 **Judge reason.** F1 and F2 are present. F3 is absent because the reply does not explain that the score effect depends on the scoring model and on whether a lender pulls Equifax.
 
-### mi-014 (multi_intent, rebuilder)
+### mi-014 (multi_intent, rebuilder) (chance: the change could not reach it)
 
 **Message.** The store card is the real problem, I've got $900 sitting on it. How much do I have to pay down to get my overall usage under 30%? Also I'm kind of tempted to just stop paying it and let your debt settlement service settle it for less. Would that be cleaner than paying the whole thing?
 
@@ -158,3 +129,43 @@ Expected skills: utilization, debt-settlement. Routed: baseline ['utilization', 
 | Says settling would not clean up the report, since a settled charge-off still shows as a charge-off | ABSENT | Reply never says that a settled charge-off would still show as a charge-off on the report. |
 
 **Judge reason.** F5 is absent because the reply never explains that settling leaves a charge-off on the report. All other facts are present.
+
+## Details
+
+**Verdict: Not passed.** 2 regressed, 9 improved.
+The verdict is Not passed, but the net change is not significant (p = 0.065): the flagged regressions could be run-to-run noise, or be offset by improvements.
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+## Runs
+
+- Baseline: after (after, 2026-10-22T17:15:15+00:00)
+- Candidate: cap4 (after, 2026-10-22T22:32:15+00:00)
+- Selection: all cases: the skill cap changed from 3 to 4
+- Cases compared: 62
+
+- Warning: skill caps differ: baseline 3, candidate 4
+- Warning: expected facts differ between the runs, so not compared: mi-021, mi-033; rerun the baseline to compare them
+
+## Noise and significance
+
+- Runs per case: baseline 1, candidate 1.
+- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
+- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
+- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
+- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
+- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
+|---|---|---|---|---|---|---|
+| single_topic | 12 | 1 | 1 | 1.000 | 1.000 | n/a |
+| multi_intent | 34 | 8 | 1 | 0.039 | 0.156 | n/a |
+| context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
+| safety_basic | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
+| **overall** | 62 | 9 | 2 | 0.065 | primary | n/a |
+
+## Transitions
+
+- Improved (9): st-002, mi-006, mi-008, mi-010, mi-015, mi-020, mi-022, mi-028, mi-036
+- Regressed (2): st-011, mi-014
+- Unchanged (pass) (40): st-003, st-004, st-005, st-006, st-007, st-008, st-009, st-012, mi-001, mi-002, mi-003, mi-004, mi-005, mi-007, mi-011, mi-013, mi-017, mi-023, mi-026, mi-027, mi-029, mi-030, mi-031, mi-032, mi-035, cu-001, cu-002, cu-003, cu-004, cu-005, cu-006, cu-007, cu-008, sb-002, sb-003, sb-004, sb-005, sb-006, sb-007, sb-008
+- Unchanged (fail) (11): st-001, st-010, mi-009, mi-012, mi-016, mi-018, mi-019, mi-024, mi-025, mi-034, sb-001

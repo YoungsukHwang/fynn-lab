@@ -63,7 +63,6 @@ export interface EvalCase {
   expectedFacts: string[];
   mustNotRegex: string[];
   mustIncludeRegex: string[];
-  added: string | null; // YYYY-MM-DD the case joined the set after the first Before vs After run; null if it was in it
 }
 
 export interface PersonaInfo {
@@ -281,6 +280,7 @@ export interface Report {
   noiseFloor: NoiseFloor | null;
   noiseFloorNote: string | null; // why there is no noise floor
   hypothesisResult: { expected: string; observed: string; matches: boolean } | null;
+  attribution: Attribution | null; // which flips the change could have caused; null for Before vs After
   warnings: string[];
 }
 
@@ -531,8 +531,6 @@ export async function getCases(): Promise<EvalCase[]> {
         expectedFacts: strList(item.expected_facts),
         mustNotRegex: strList(item.must_not_regex),
         mustIncludeRegex: strList(item.must_include_regex),
-        added:
-          typeof item.added === "string" ? item.added : item.added instanceof Date ? item.added.toISOString().slice(0, 10) : null,
       });
     }
   }
@@ -746,6 +744,7 @@ export async function getReport(name: string): Promise<Report | null> {
     pairedTest: toPairedTest(raw.paired_test),
     noiseFloor: toNoiseFloor(raw.noise_floor),
     noiseFloorNote: strOrNull(raw.noise_floor_note),
+    attribution: toAttribution(raw.attribution),
     hypothesisResult: hypothesis
       ? { expected: str(hypothesis.expected), observed: str(hypothesis.observed), matches: hypothesis.matches === true }
       : null,
@@ -837,6 +836,33 @@ export interface Comparison {
   baselineCases: number | null; // cases in the baseline run the report compared against, when that file is found
   // Why some case details may be partial (e.g. a results file newer than the report).
   notes: string[];
+}
+
+export type Decision = "ship" | "tradeoff" | "do not ship" | "no effect";
+
+/** report.py's split of a change's flips: cases the change could reach (fixed, broken) and the rest (chance). */
+export interface Attribution {
+  rule: string;
+  fixed: string[];
+  broken: string[];
+  chanceUp: string[];
+  chanceDown: string[];
+  errored: string[]; // left out: one side had only errored runs
+  decision: Decision;
+}
+
+function toAttribution(value: unknown): Attribution | null {
+  if (!isObj(value)) return null;
+  const decision = str(value.decision);
+  return {
+    rule: str(value.rule),
+    fixed: strList(value.fixed),
+    broken: strList(value.broken),
+    chanceUp: strList(value.chance_up),
+    chanceDown: strList(value.chance_down),
+    errored: strList(value.errored),
+    decision: (["ship", "tradeoff", "do not ship", "no effect"].includes(decision) ? decision : "no effect") as Decision,
+  };
 }
 
 export interface ScenarioResult {
@@ -1137,7 +1163,6 @@ export interface BeforeAfterData {
   crossByQuestions: CaseGroup[]; // the cases that need a second domain, split by number of questions
   byQuestions: CaseGroup[];
   byDataset: CaseGroup[];
-  byOrigin: CaseGroup[]; // the cases of the first Before vs After run, then each later batch by date added
   crossDomain: { ids: string[]; domains: Record<string, string[]> }; // case id -> Before domains it spans
   pending: string[]; // cases in the eval set that the committed results do not cover yet
   caseCount: number;
@@ -1197,18 +1222,6 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
   const byDataset = DATASETS.map((d) => group(d, d, "", cases.filter((c) => c.dataset === d).map((c) => c.id))).filter(
     (g) => (g.after?.cases ?? g.before?.cases ?? 0) > 0,
   );
-  const addedDates = [...new Set(cases.flatMap((c) => (c.added ? [c.added] : [])))].sort();
-  const byOrigin = addedDates.length
-    ? [
-        group("original", "In the first run", "", cases.filter((c) => !c.added).map((c) => c.id)),
-        ...addedDates.map((d) => {
-          const ids = cases.filter((c) => c.added === d).map((c) => c.id);
-          const needSecond = ids.filter((id) => cross.has(id)).length;
-          const note = needSecond === ids.length ? "each needs a second domain" : `${needSecond} of ${ids.length} need a second domain`;
-          return group(`added-${d}`, `Added ${d}`, note, ids);
-        }),
-      ].filter(hasCases)
-    : [];
 
   return {
     before: before ? { meta: runMeta("before.json", before), run: before } : null,
@@ -1232,7 +1245,6 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
     crossByQuestions,
     byQuestions,
     byDataset,
-    byOrigin,
     crossDomain: { ids: crossIds, domains },
     pending: cases
       .map((c) => c.id)
@@ -1268,6 +1280,7 @@ export interface CapCase {
 export interface CapData {
   baselineCap: number | null;
   cap: number | null;
+  runCases: number | null; // cases in the cap run
   comparison: Comparison | null;
   overCap: CapCase[]; // cases labeled with more topic skills than the baseline's cap
 }
@@ -1296,6 +1309,7 @@ export async function getCapData(): Promise<CapData> {
   return {
     baselineCap,
     cap: capRun?.skillCap ?? null,
+    runCases: capRun?.cases.length ?? null,
     comparison: report ? await buildComparison(report, cases) : null,
     overCap: overCap.map((c) => ({
       id: c.id,

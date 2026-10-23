@@ -1,9 +1,14 @@
 # Regression report: s4 (Closed-account reporting time in the Credit Builder skill)
 
-**Verdict: Passed.** 0 regressed, 6 improved.
+**Decision: Ship.** The change fixed 6 cases and broke none.
 Paired test of the net change (exact McNemar on the 6 cases that flipped): p = 0.031, significant (improvement) at 0.05.
-A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
-Hypothesis: expected improve, observed improve (matches; from the flagged counts, not a significance test).
+
+## What changed
+
+- Fixed by the change (6): mi-008, mi-012, mi-016, mi-019, mi-022, mi-034
+- Broken by the change (0): none
+- Flipped by chance (0 up, 0 down): none
+- How: a body edit can reach a case only when the edited skill is loaded for it. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
 
 ## Scenario
 
@@ -11,15 +16,6 @@ Hypothesis: expected improve, observed improve (matches; from the flagged counts
 - Change: Replaces the pointer "(how long: see score-changes)" in credit-builder-account with the line itself: a closed account in good standing can stay on the report for up to 10 years.
 - Motivation: In the 2026-10-22 run of 64 cases, three After failures (mi-016, mi-019, mi-034) asked whether a closed or finished Credit Builder account stays on the report. The answer lives only in the score-changes body. The router reasonably picked credit-builder-account, which only pointed to score-changes, so the agent could not state the 10 years. This fixes the gap in the skill the router already picks.
 - Hypothesis (improve): Only the body changed, so only cases labeled credit-builder-account or routed to it in the baseline rerun. The cases that ask whether a closed or finished Credit Builder account stays on the report (mi-016, mi-019, mi-034) should now state the 10-year rule, so some of them improve. The new line adds no instruction, so other Credit Builder cases should hold. Expected verdict: no regressions, safe to ship.
-
-## Runs
-
-- Baseline: after (after, 2026-10-22T17:15:15+00:00)
-- Candidate: s4 (after, 2026-10-22T18:10:11+00:00)
-- Selection: body of topic skill credit-builder-account changed: cases labeled with it or routed to it in the baseline (18 of 64)
-- Cases compared: 17
-
-- Warning: expected facts differ between the runs, so not compared: mi-021; rerun the baseline to compare them
 
 ## Pass rates
 
@@ -29,6 +25,25 @@ Hypothesis: expected improve, observed improve (matches; from the flagged counts
 | multi_intent | 13 | 5 (38%) | 11 (85%) | +46 pts |
 | context_use | 2 | 2 (100%) | 2 (100%) | +0 pts |
 | **overall** | 17 | 9 (53%) | 15 (88%) | |
+
+## Failures overview
+
+No case regressed.
+
+## Details
+
+**Verdict: Passed.** 0 regressed, 6 improved.
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+Hypothesis: expected improve, observed improve (matches; from the flagged counts, not a significance test).
+
+## Runs
+
+- Baseline: after (after, 2026-10-22T17:15:15+00:00)
+- Candidate: s4 (after, 2026-10-22T18:10:11+00:00)
+- Selection: body of topic skill credit-builder-account changed: cases labeled with it or routed to it in the baseline (18 of 64)
+- Cases compared: 17
+
+- Warning: expected facts differ between the runs, so not compared: mi-021; rerun the baseline to compare them
 
 ## Noise and significance
 
@@ -52,7 +67,3 @@ Hypothesis: expected improve, observed improve (matches; from the flagged counts
 - Regressed (0): none
 - Unchanged (pass) (9): st-003, st-008, mi-004, mi-007, mi-017, mi-026, mi-032, cu-002, cu-007
 - Unchanged (fail) (2): mi-018, mi-024
-
-## Failures overview
-
-No case regressed.

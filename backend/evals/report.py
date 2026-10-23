@@ -23,6 +23,7 @@ from typing import Any
 from evals.cases import DATASETS
 from evals.scenarios import Scenario, load_scenario
 from evals.setup import PART_LABELS
+from fynn.skills import SkillLibrary
 from evals.stats import (
     ALPHA,
     case_runs,
@@ -240,6 +241,133 @@ def verdict_note(
     return None
 
 
+def _route(run: Mapping[str, Any]) -> tuple[str, ...]:
+    """What a run's prompt was built from, in prompt order: topic skills (After) or the domain (Before)."""
+    routing = run.get("routing") or {}
+    return (*(routing.get("selected") or []), *(routing.get("carried") or []))
+
+
+ATTRIBUTION_RULES = {
+    "body": "a body edit can reach a case only when the edited skill is loaded for it",
+    "always_on": "an always-on edit reaches every case",
+    "routing": "a description edit or a different skill cap can reach a case only by changing its routing",
+    "everything": "the runs differ in more than one skill text, or in code, settings or models, so every case counts as reached",
+}
+
+
+def _changed_parts(a: Mapping[str, Any], b: Mapping[str, Any]) -> dict[str, list[str]]:
+    """Skill -> the fingerprint parts (description, body, meta) that differ between two results files."""
+    fa, fb = a.get("skill_fingerprint") or {}, b.get("skill_fingerprint") or {}
+    return {
+        name: [part for part in ("description", "body", "meta") if (fa.get(name) or {}).get(part) != (fb.get(name) or {}).get(part)]
+        for name in sorted(set(fa) | set(fb))
+        if fa.get(name) != fb.get(name)
+    }
+
+
+def _change(baseline: Mapping[str, Any], candidate: Mapping[str, Any], scenario: Scenario | None) -> tuple[str, str | None]:
+    """How the change could reach a case (a key of ATTRIBUTION_RULES) and the edited skill, if one.
+    A scenario says it outright; without one it is read from what differs between the two runs."""
+    if scenario is not None:
+        return ("routing" if scenario.kind == "description" else scenario.kind), scenario.skill
+    setup_a, setup_b = baseline.get("setup_fingerprint"), candidate.get("setup_fingerprint")
+    if baseline.get("models") != candidate.get("models") or (setup_a and setup_b and setup_a != setup_b):
+        return "everything", None
+    parts = _changed_parts(baseline, candidate)
+    if not parts:
+        return "routing", None  # only the skill cap can differ here
+    if len(parts) == 1:
+        (skill, changed), = parts.items()
+        if changed == ["body"]:
+            topic = _topic_skill(skill)
+            return ("body", skill) if topic else ("always_on", skill)
+    if all(changed == ["description"] for changed in parts.values()):
+        return "routing", None
+    return "everything", None
+
+
+def _topic_skill(name: str) -> bool:
+    try:
+        return SkillLibrary.load().get(name).type == "topic"
+    except (KeyError, ValueError, OSError):
+        return False
+
+
+def _skill_domain(name: str | None) -> str | None:
+    if name is None:
+        return None
+    try:
+        return SkillLibrary.load().get(name).domain
+    except (KeyError, ValueError, OSError):
+        return None
+
+
+def _reaches(
+    base: Mapping[str, Any], cand: Mapping[str, Any], how: str, target: str | None, also_routing: bool
+) -> bool | None:
+    """Whether the change could have reached this case's prompt, from the runs that did not error.
+    None when one side has only errored runs. The answering agent sees only the bodies of the skills
+    it loads, so a case the change cannot reach did not get the edit in its prompt, and any flip there
+    is chance. A flip it can reach may still be chance."""
+    base_runs = [run for run in case_runs(base) if run.get("status") != "error"]
+    cand_runs = [run for run in case_runs(cand) if run.get("status") != "error"]
+    if not base_runs or not cand_runs:
+        return None
+    if how in ("always_on", "everything") or (how == "body" and target is None):
+        return True
+    routed = len({_route(run) for run in base_runs + cand_runs}) > 1
+    if how == "routing":
+        return routed
+    return any(target in _route(run) for run in cand_runs) or (also_routing and routed)
+
+
+def attribute(
+    baseline: Mapping[str, Any],
+    candidate: Mapping[str, Any],
+    compared: Sequence[tuple[Mapping[str, Any], Mapping[str, Any]]],
+    transitions: Mapping[str, Sequence[str]],
+    scenario: Scenario | None,
+) -> dict[str, Any]:
+    """Splits the improved and regressed cases into those the change could reach (fixed, broken), those
+    it could not (chance) and those with only errored runs on a side (errored, left out), and turns the
+    fixed and broken counts into a decision."""
+    how, skill = _change(baseline, candidate, scenario)
+    # A Before run loads a whole domain, so a body edit reaches it through the edited skill's domain.
+    target = _skill_domain(skill) if how == "body" and candidate.get("bot") == "before" else skill
+    also_routing = run_skill_cap(baseline) != run_skill_cap(candidate)
+    reach = {cand["id"]: _reaches(base, cand, how, target, also_routing) for base, cand in compared}
+    pick = lambda name, value: [i for i in transitions[name] if reach.get(i) is value]  # noqa: E731
+    fixed, broken = pick("improved", True), pick("regressed", True)
+    decision = (
+        "do not ship" if len(broken) > len(fixed)
+        else "tradeoff" if broken
+        else "ship" if fixed
+        else "no effect"
+    )
+    return {
+        "rule": ATTRIBUTION_RULES[how],
+        "fixed": fixed,
+        "broken": broken,
+        "chance_up": pick("improved", False),
+        "chance_down": pick("regressed", False),
+        "errored": pick("improved", None) + pick("regressed", None),
+        "decision": decision,
+    }
+
+
+def decision_line(attribution: Mapping[str, Any]) -> str:
+    """'**Decision: Ship.** The change fixed 3 cases and broke none; 7 other cases flipped by chance.'"""
+    chance = len(attribution["chance_up"]) + len(attribution["chance_down"])
+    errored = len(attribution.get("errored") or [])
+    return (
+        f"**Decision: {attribution['decision'].capitalize()}.** The change fixed {_n(len(attribution['fixed']), 'case')} "
+        f"and broke {len(attribution['broken']) or 'none'}"
+        + (f"; {_n(chance, 'other case')} flipped where it could not reach them, so by chance" if chance else "")
+        + (f"; {_n(errored, 'case')} errored on one side and {'is' if errored == 1 else 'are'} left out" if errored else "")
+        + "."
+    )
+
+
 def _rate_cell(cases: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """Passing runs over runs (with one run per case, passing cases over cases), leaving out
     errored runs the way the flag rule and the test do."""
@@ -393,6 +521,12 @@ def compare(
         "improvements": improvements,
         "verdict": verdict,
         "verdict_note": verdict_note(verdict, test, kind, regressed),
+        # For two runs of one bot with something changed: which flips the change could have caused.
+        "attribution": (
+            attribute(baseline, candidate, compared, transitions, scenario)
+            if baseline.get("bot") == candidate.get("bot") and kind != "aa"
+            else None
+        ),
         "flag_rule": {
             "min_fails": min_fails,
             "baseline_repeats": base_repeats,
@@ -628,26 +762,58 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     if scenario:
         title += f": {scenario['id']}" + (f" ({scenario['title']})" if scenario.get("title") else "")
     lines = [f"# {title}", ""]
+    attribution = report.get("attribution")
+    base_info, cand_info = report["baseline"], report["candidate"]
+    overall = report["pass_rates"]["overall"]
+    if attribution:
+        lines.append(decision_line(attribution))
+    elif base_info.get("bot") != cand_info.get("bot"):
+        lines.append(
+            f"**{str(cand_info.get('bot')).capitalize()} passes {overall['candidate']['passed']} of "
+            f"{overall['candidate']['runs']}; {base_info.get('bot')} passes {overall['baseline']['passed']} of "
+            f"{overall['baseline']['runs']}.**"
+        )
+    if "flag_rule" in report:
+        lines.append(test_summary(report.get("paired_test")))
+    lines.append("")
 
+    # The flag-rule verdict, the noise floor and the hypothesis go under Details.
+    summary: list[str] = []
     counts = report["transition_counts"]
     unstable = f", {counts['unstable']} unstable" if counts.get("unstable") else ""
-    lines.append(
+    summary.append(
         f"**Verdict: {report['verdict']}.** {counts['regressed']} regressed, {counts['improved']} improved{unstable}."
     )
     if report.get("verdict_note"):
-        lines.append(report["verdict_note"])
+        summary.append(report["verdict_note"])
     if "flag_rule" in report:
-        lines.append(test_summary(report.get("paired_test")))
-        lines.append(noise_summary(report.get("noise_floor"), report.get("noise_floor_note"), report["flag_rule"]))
+        summary.append(noise_summary(report.get("noise_floor"), report.get("noise_floor_note"), report["flag_rule"]))
     hyp = report.get("hypothesis_result")
     if hyp:
         verdict = "matches" if hyp["matches"] else "does not match"
-        lines.append(
+        summary.append(
             f"Hypothesis: expected {hyp['expected']}, observed {hyp['observed']} ({verdict}; from the flagged counts, "
             "not a significance test)."
         )
-    lines.append("")
+    summary.append("")
 
+    if attribution:
+        lines += [
+            "## What changed",
+            "",
+            f"- Fixed by the change ({len(attribution['fixed'])}): {', '.join(attribution['fixed']) or 'none'}",
+            f"- Broken by the change ({len(attribution['broken'])}): {', '.join(attribution['broken']) or 'none'}",
+            f"- Flipped by chance ({len(attribution['chance_up'])} up, {len(attribution['chance_down'])} down): "
+            f"{', '.join(attribution['chance_up'] + attribution['chance_down']) or 'none'}",
+            *(
+                [f"- Errored on one side, left out ({len(attribution['errored'])}): {', '.join(attribution['errored'])}"]
+                if attribution.get("errored")
+                else []
+            ),
+            f"- How: {attribution['rule']}. A case the change cannot reach did not get the edit in its prompt, so its "
+            "flip is chance; a case it can reach may still have flipped by chance.",
+            "",
+        ]
     if scenario and scenario.get("title"):
         lines += [
             "## Scenario",
@@ -658,21 +824,6 @@ def render_markdown(report: Mapping[str, Any]) -> str:
             f"- Hypothesis ({scenario['hypothesis']['expected']}): {scenario['hypothesis']['detail']}",
             "",
         ]
-
-    base, cand = report["baseline"], report["candidate"]
-    lines += [
-        "## Runs",
-        "",
-        f"- Baseline: {base.get('name')} ({base.get('bot')}, {base.get('created_at')})",
-        f"- Candidate: {cand.get('name')} ({cand.get('bot')}, {cand.get('created_at')})",
-        f"- Selection: {report['selection']['rule']}",
-        f"- Cases compared: {report['selection']['case_count']}",
-        "",
-    ]
-    for warning in report.get("warnings", []):
-        lines.append(f"- Warning: {warning}")
-    if report.get("warnings"):
-        lines.append("")
 
     rates = report["pass_rates"]
     lines += ["## Pass rates", "", "| Dataset | Cases | Baseline | Candidate | Change |", "|---|---|---|---|---|"]
@@ -698,6 +849,74 @@ def render_markdown(report: Mapping[str, Any]) -> str:
             "little from the paired test's mean per-case change.",
             "",
         ]
+    lines += ["## Failures overview", ""]
+    if not report["failures"]:
+        lines += ["No case regressed.", ""]
+    for failure in report["failures"]:
+        runs = ""
+        base_err, cand_err = failure.get("baseline_errored", 0), failure.get("candidate_errored", 0)
+        if max(failure.get("baseline_runs", 1), failure.get("candidate_runs", 1)) > 1 or base_err or cand_err:
+            notes = []
+            for side, errored, all_errored in (
+                ("baseline", base_err, failure.get("baseline_all_errored")),
+                ("candidate", cand_err, failure.get("candidate_all_errored")),
+            ):
+                if all_errored:
+                    notes.append(f"every {side} run errored and counts as failing")
+                elif errored:
+                    notes.append(f"{_n(errored, 'errored ' + side + ' run')} left out")
+            runs = (
+                f"Passed {failure['baseline_passed']} of {_n(failure['baseline_runs'], 'baseline run')} and "
+                f"{failure['candidate_passed']} of {_n(failure['candidate_runs'], 'candidate run')}"
+                + (f" ({'; '.join(notes)})" if notes else "")
+                + "; one failing run is shown."
+            )
+        label = ""
+        if attribution:
+            label = (
+                " (broken by the change)" if failure["id"] in attribution["broken"]
+                else " (errored on one side)" if failure["id"] in (attribution.get("errored") or [])
+                else " (chance: the change could not reach it)"
+            )
+        lines += [
+            f"### {failure['id']} ({failure['dataset']}, {failure['persona']}){label}",
+            "",
+            f"**Message.** {failure['message'].strip()}",
+            "",
+            *([runs, ""] if runs else []),
+            f"Expected skills: {', '.join(failure['skills']) or 'none'}. "
+            f"Routed: baseline {failure['baseline_routing']}, candidate {failure['candidate_routing']}.",
+            "",
+        ]
+        if failure.get("error"):
+            lines += [f"**Candidate error.** {failure['error']}", ""]
+        lines += ["**Baseline reply.**", "", _quote(failure["baseline_reply"]), ""]
+        lines += ["**Candidate reply.**", "", _quote(failure["candidate_reply"]), ""]
+        if failure["judge_facts"]:
+            lines += ["| Expected fact | Status | Note |", "|---|---|---|"]
+            for fact in failure["judge_facts"]:
+                lines.append(f"| {_cell(fact['fact'])} | {fact['status']} | {_cell(fact['note'])} |")
+            lines.append("")
+        if failure["judge_reason"]:
+            lines += [f"**Judge reason.** {failure['judge_reason']}", ""]
+        if failure["check_failures"]:
+            lines += ["**Check failures.**", ""] + [f"- {item}" for item in failure["check_failures"]] + [""]
+    lines += ["## Details", ""] + summary
+    base, cand = report["baseline"], report["candidate"]
+    lines += [
+        "## Runs",
+        "",
+        f"- Baseline: {base.get('name')} ({base.get('bot')}, {base.get('created_at')})",
+        f"- Candidate: {cand.get('name')} ({cand.get('bot')}, {cand.get('created_at')})",
+        f"- Selection: {report['selection']['rule']}",
+        f"- Cases compared: {report['selection']['case_count']}",
+        "",
+    ]
+    for warning in report.get("warnings", []):
+        lines.append(f"- Warning: {warning}")
+    if report.get("warnings"):
+        lines.append("")
+
     if "flag_rule" in report:
         lines += _stats_section(report)
     lines += ["## Transitions", ""]
@@ -724,51 +943,6 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         lines.append(f"- Baseline errors: {', '.join(report['baseline_errors'])}")
     lines.append("")
 
-    lines += ["## Failures overview", ""]
-    if not report["failures"]:
-        lines += ["No case regressed.", ""]
-    for failure in report["failures"]:
-        runs = ""
-        base_err, cand_err = failure.get("baseline_errored", 0), failure.get("candidate_errored", 0)
-        if max(failure.get("baseline_runs", 1), failure.get("candidate_runs", 1)) > 1 or base_err or cand_err:
-            notes = []
-            for side, errored, all_errored in (
-                ("baseline", base_err, failure.get("baseline_all_errored")),
-                ("candidate", cand_err, failure.get("candidate_all_errored")),
-            ):
-                if all_errored:
-                    notes.append(f"every {side} run errored and counts as failing")
-                elif errored:
-                    notes.append(f"{_n(errored, 'errored ' + side + ' run')} left out")
-            runs = (
-                f"Passed {failure['baseline_passed']} of {_n(failure['baseline_runs'], 'baseline run')} and "
-                f"{failure['candidate_passed']} of {_n(failure['candidate_runs'], 'candidate run')}"
-                + (f" ({'; '.join(notes)})" if notes else "")
-                + "; one failing run is shown."
-            )
-        lines += [
-            f"### {failure['id']} ({failure['dataset']}, {failure['persona']})",
-            "",
-            f"**Message.** {failure['message'].strip()}",
-            "",
-            *([runs, ""] if runs else []),
-            f"Expected skills: {', '.join(failure['skills']) or 'none'}. "
-            f"Routed: baseline {failure['baseline_routing']}, candidate {failure['candidate_routing']}.",
-            "",
-        ]
-        if failure.get("error"):
-            lines += [f"**Candidate error.** {failure['error']}", ""]
-        lines += ["**Baseline reply.**", "", _quote(failure["baseline_reply"]), ""]
-        lines += ["**Candidate reply.**", "", _quote(failure["candidate_reply"]), ""]
-        if failure["judge_facts"]:
-            lines += ["| Expected fact | Status | Note |", "|---|---|---|"]
-            for fact in failure["judge_facts"]:
-                lines.append(f"| {_cell(fact['fact'])} | {fact['status']} | {_cell(fact['note'])} |")
-            lines.append("")
-        if failure["judge_reason"]:
-            lines += [f"**Judge reason.** {failure['judge_reason']}", ""]
-        if failure["check_failures"]:
-            lines += ["**Check failures.**", ""] + [f"- {item}" for item in failure["check_failures"]] + [""]
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -811,7 +985,9 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     json_path, md_path = write_report(args.out, report)
     counts = report["transition_counts"]
     unstable = f", {counts['unstable']} unstable" if counts["unstable"] else ""
-    print(f"{report['verdict']}: {counts['improved']} improved, {counts['regressed']} regressed{unstable}")
+    if report["attribution"]:
+        print(decision_line(report["attribution"]).replace("**", ""))
+    print(f"Flag rule: {report['verdict']}, {counts['improved']} improved, {counts['regressed']} regressed{unstable}")
     if report["verdict_note"]:
         print(report["verdict_note"])
     print(test_summary(report["paired_test"]))

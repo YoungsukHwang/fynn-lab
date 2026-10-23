@@ -9,7 +9,8 @@
     "hypothesis": {
       "expected": "improve",
       "detail": "Only the body changed, so only cases that depend on score-changes rerun (its label plus any case where the baseline router picked it, about 8 to 10). Score-drop cases with higher balances (rebuilder, high-util) should now give per-card ratios and name the card to pay down first, so some of them improve. Other score cases should hold, since the rule applies only when balances went up. Expected verdict: no regressions, safe to ship."
-    }
+    },
+    "shipped": null
   },
   "baseline": {
     "name": "after",
@@ -21,7 +22,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "candidate": {
     "name": "s1",
@@ -33,7 +35,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "kind": "change",
   "selection": {
@@ -148,6 +151,7 @@
   },
   "errors": [],
   "baseline_errors": [],
+  "facts_changed": [],
   "failures": [
     {
       "id": "mi-001",
@@ -451,6 +455,22 @@
   ],
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "attribution": {
+    "rule": "a body edit can reach a case only when the edited skill is loaded for it",
+    "fixed": [
+      "st-001",
+      "mi-003",
+      "mi-008",
+      "mi-009"
+    ],
+    "broken": [
+      "mi-001"
+    ],
+    "chance_up": [],
+    "chance_down": [],
+    "errored": [],
+    "decision": "tradeoff"
+  },
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,

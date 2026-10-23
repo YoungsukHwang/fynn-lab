@@ -9,7 +9,8 @@
     "hypothesis": {
       "expected": "improve",
       "detail": "A description edit can change routing for any message, so every case reruns. mi-024 and sb-001 should improve once payment-history loads. Recovery questions inside three-part messages could now take a slot from another skill, but the new triggers are narrow, so few cases should lose a skill. Expected: improvements and no regressions, or at most one."
-    }
+    },
+    "shipped": null
   },
   "baseline": {
     "name": "after",
@@ -808,6 +809,28 @@
   ],
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.344): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "attribution": {
+    "rule": "a description edit or a different skill cap can reach a case only by changing its routing",
+    "fixed": [
+      "mi-022",
+      "mi-024",
+      "sb-001"
+    ],
+    "broken": [],
+    "chance_up": [
+      "mi-008",
+      "mi-010",
+      "mi-012",
+      "mi-015"
+    ],
+    "chance_down": [
+      "st-011",
+      "mi-003",
+      "mi-030"
+    ],
+    "errored": [],
+    "decision": "ship"
+  },
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,

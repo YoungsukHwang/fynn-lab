@@ -879,6 +879,29 @@
   ],
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.065): the flagged regressions could be run-to-run noise, or be offset by improvements.",
+  "attribution": {
+    "rule": "a description edit or a different skill cap can reach a case only by changing its routing",
+    "fixed": [
+      "mi-020",
+      "mi-022",
+      "mi-028",
+      "mi-036"
+    ],
+    "broken": [],
+    "chance_up": [
+      "st-002",
+      "mi-006",
+      "mi-008",
+      "mi-010",
+      "mi-015"
+    ],
+    "chance_down": [
+      "st-011",
+      "mi-014"
+    ],
+    "errored": [],
+    "decision": "ship"
+  },
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,

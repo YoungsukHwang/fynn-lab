@@ -10,7 +10,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": null
   },
   "candidate": {
     "name": "after",
@@ -22,7 +23,8 @@
       "agent": "claude-sonnet-5-5",
       "judge": "claude-opus-5-5"
     },
-    "repeats": 1
+    "repeats": 1,
+    "skill_cap": 3
   },
   "kind": "change",
   "selection": {
@@ -190,6 +192,7 @@
   },
   "errors": [],
   "baseline_errors": [],
+  "facts_changed": [],
   "failures": [
     {
       "id": "st-002",
@@ -1309,6 +1312,7 @@
   ],
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed because 4 cases regressed, although the net change is a significant improvement (p = 0.019).",
+  "attribution": null,
   "flag_rule": {
     "min_fails": 1,
     "baseline_repeats": 1,
@@ -1377,6 +1381,7 @@
   "noise_floor_note": "the baseline ran each case once and no A/A run was given",
   "hypothesis_result": null,
   "warnings": [
-    "bots differ: baseline before, candidate after"
+    "bots differ: baseline before, candidate after",
+    "skill caps differ: baseline None, candidate 3"
   ]
 }

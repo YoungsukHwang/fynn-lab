@@ -172,16 +172,14 @@
   must_not_regex:
     - '\bI guarantee\b'
 
-# mi-013 to mi-036 were added on 2026-10-22. Each needs a second domain: its labeled skills span two or
-# more Before domains, and every question beyond the Before router's likely pick hinges on a fact found only
-# in that topic skill. Facts are single claims; the comment above each one names where it comes from.
+# mi-013 to mi-036 each need a second domain: their labeled skills span two or more Before domains, and
+# every question beyond the Before router's likely pick hinges on a fact found only in that topic skill.
+# Facts are single claims; the comment above each one names where it comes from.
 # mi-016, mi-020, mi-028 and mi-036 need four topic skills, one more than the After bot's cap of 3.
-# Each carries `added`, so the site can show them apart from the original 40 cases.
 
 - id: mi-013
   dataset: multi_intent
   persona: rebuilder
-  added: "2026-10-22"
   message: "how long is that 30 day late on my store card gonna keep dragging my score down?? also I pay my phone, electric and netflix on time every month, can any of that get reported to help me out"
   intents: 2
   skills: [payment-history, bill-reporting]
@@ -203,7 +201,6 @@
 - id: mi-014
   dataset: multi_intent
   persona: rebuilder
-  added: "2026-10-22"
   message: "The store card is the real problem, I've got $900 sitting on it. How much do I have to pay down to get my overall usage under 30%? Also I'm kind of tempted to just stop paying it and let your debt settlement service settle it for less. Would that be cleaner than paying the whole thing?"
   intents: 2
   skills: [utilization, debt-settlement]
@@ -227,7 +224,6 @@
 - id: mi-015
   dataset: multi_intent
   persona: rebuilder
-  added: "2026-10-22"
   message: "Few questions:\n1. Would rent reporting actually do anything for my score?\n2. If I'm ever short on rent and it ends up with a collection agency, would paying it off later make it go away?\n3. Once my secured card shows up, how long until I get my $300 deposit back?"
   intents: 3
   skills: [rent-reporting, collections, secured-card]
@@ -250,7 +246,6 @@
 - id: mi-016
   dataset: multi_intent
   persona: rebuilder
-  added: "2026-10-22"
   message: "thinking about cancelling my credit builder. if I do, do I get the $60 I've saved back right away so I can throw it at the store card? would closing it hurt my score or mess up my utilization? and since I got the store card current again on Oct 2, can I write them a letter asking them to take the 30 day late off"
   intents: 3
   skills: [credit-builder-account, score-changes, utilization, payment-history]
@@ -274,7 +269,6 @@
 - id: mi-017
   dataset: multi_intent
   persona: high-util
-  added: "2026-10-22"
   message: "quick q, my next Credit Builder payment is due Nov 1, when will that actually show up on my credit report? also I've never missed a phone or electric bill in my life, why don't those help my credit at all"
   intents: 2
   skills: [credit-builder-account, bill-reporting]
@@ -295,7 +289,6 @@
 - id: mi-018
   dataset: multi_intent
   persona: high-util
-  added: "2026-10-22"
   message: "ok honestly I'm tempted to just stop paying my rewards card for a few months so it goes to collections, then settle it through your debt settlement service for way less. would that even work? and side question, if my Credit Builder payment ends up a couple weeks late one month, does that show up as a late on my report"
   intents: 2
   skills: [debt-settlement, credit-builder-account]
@@ -317,7 +310,6 @@
 - id: mi-019
   dataset: multi_intent
   persona: high-util
-  added: "2026-10-22"
   message: "Hey, three things. Would signing up for rent reporting actually move my score at all? I'm also thinking of cancelling my Credit Builder plan and putting that $6 a month toward my cards instead, so what happens to the money I've already paid in? And if I cancel, does the account just vanish from my report?"
   intents: 3
   skills: [rent-reporting, credit-builder-account]
@@ -342,7 +334,6 @@
 - id: mi-020
   dataset: multi_intent
   persona: high-util
-  added: "2026-10-22"
   message: "few questions for you:\n1. if I turned on both rent reporting and bill reporting, which credit bureaus would see my rent and which would see my phone and electric bills?\n2. what matters more for my score, never missing a payment or my high card balances?\n3. how low do I need to get my rewards card balance before it stops dragging me down?"
   intents: 3
   skills: [rent-reporting, bill-reporting, payment-history, utilization]
@@ -364,7 +355,6 @@
 - id: mi-021
   dataset: multi_intent
   persona: new-to-credit
-  added: "2026-10-22"
   message: "ok so I pay my own phone and wifi bills every month and never miss, does any of that help my credit or nah? also my payday got moved so my Nov 1 Credit Builder payment might end up like a week late, is that gonna show up as a late payment"
   intents: 2
   skills: [bill-reporting, credit-builder-account]
@@ -385,7 +375,6 @@
 - id: mi-022
   dataset: multi_intent
   persona: new-to-credit
-  added: "2026-10-22"
   message: "Can I use your Debt Settlement service on my Credit Builder plan so I end up paying less? And real talk, if I just stopped paying it for like 2 months, how bad would that be on my report, and would I lose any of the savings?"
   intents: 3
   skills: [debt-settlement, credit-builder-account, payment-history]
@@ -406,7 +395,6 @@
 - id: mi-023
   dataset: multi_intent
   persona: new-to-credit
-  added: "2026-10-22"
   message: "Hi Coach, a few questions: 1) My score went from 603 to 612, what caused that? 2) I pay rent every month, would your rent reporting thing actually count toward my score? 3) I keep looking at cards in the Marketplace. How much does one hard inquiry really hurt?"
   intents: 3
   skills: [score-changes, rent-reporting, marketplace-offers]
@@ -431,7 +419,6 @@
 - id: mi-024
   dataset: multi_intent
   persona: new-to-credit
-  added: "2026-10-22"
   message: "so im still figuring out the basics lol. does my credit builder count toward my utilization since i dont have a card, and also is there a free way to actually look at my credit reports, and also if i turn on bill reporting would my netflix and spotify count too"
   intents: 3
   skills: [utilization, payment-history, bill-reporting]
@@ -452,7 +439,6 @@
 - id: mi-025
   dataset: multi_intent
   persona: renter
-  added: "2026-10-22"
   message: "do my phone and electric bills count toward my credit at all? i pay them on time every month. also could your debt settlement people knock down what i owe on my auto loan before i apply for a mortgage"
   intents: 2
   skills: [bill-reporting, debt-settlement]
@@ -474,7 +460,6 @@
 - id: mi-026
   dataset: multi_intent
   persona: renter
-  added: "2026-10-22"
   message: "ok two things. my bank card got hit with a 30 day late back in 2024, it was a one time slip on my part, is there any way to get it taken off before my mortgage app? and if i sign up for the $6 credit builder and pay it like a week late one month, does that show up as a late on my report?"
   intents: 2
   skills: [payment-history, credit-builder-account]
@@ -496,7 +481,6 @@
 - id: mi-027
   dataset: multi_intent
   persona: renter
-  added: "2026-10-22"
   message: "Few questions. I pulled my Equifax report to get ready for the mortgage and none of my rent is on there, is something broken? Also a coworker settled his credit card for way less than he owed. Could your settlement service do that with my card so I pay less than the $550? And last one, can I check if I'd get approved for a Marketplace card without a hard pull?"
   intents: 3
   skills: [rent-reporting, debt-settlement, marketplace-offers]
@@ -519,7 +503,6 @@
 - id: mi-028
   dataset: multi_intent
   persona: renter
-  added: "2026-10-22"
   message: "Getting my credit ready for a mortgage in 2027, so a few things:\n1) If a landlord ever sent unpaid rent to collections, would paying it off get it off my report?\n2) Do my phone and electric bills help my credit the way my rent reporting does?\n3) Should I pay my card down to $0 before the lender pulls my credit?"
   intents: 3
   skills: [collections, bill-reporting, rent-reporting, utilization]
@@ -541,7 +524,6 @@
 - id: mi-029
   dataset: multi_intent
   persona: collections
-  added: "2026-10-22"
   message: "got a letter last month from the collection agency about my old phone bill and it got me thinking, i pay my current phone bill on time every month so does that do anything for my credit or is it basically invisible? also once you guys finish settling my bank card will the charge off disappear from my report"
   intents: 2
   skills: [bill-reporting, debt-settlement]
@@ -563,7 +545,6 @@
 - id: mi-030
   dataset: multi_intent
   persona: collections
-  added: "2026-10-22"
   message: "The collection agency's letter from September says I owe $1,200 on the old phone account, but I think part of that is fees I never agreed to. How do I push back on the amount? Also, I've kept my store card paid on time and I really don't want to slip on it now. What's the best way to make sure that never happens?"
   intents: 2
   skills: [collections, payment-history]
@@ -585,7 +566,6 @@
 - id: mi-031
   dataset: multi_intent
   persona: collections
-  added: "2026-10-22"
   message: "Three things:\n1. While you're still negotiating my bank card, can the bank keep coming after me or even sue me?\n2. If I signed up for Rent Reporting and came up short on rent one month, would that get reported as late?\n3. Should I pay my store card all the way down to $0 before the statement, or is leaving a little on it fine?"
   intents: 3
   skills: [debt-settlement, rent-reporting, utilization]
@@ -609,7 +589,6 @@
 - id: mi-032
   dataset: multi_intent
   persona: collections
-  added: "2026-10-22"
   message: "ok so a few things lol. the collection agency keeps bugging me about that $1,200 phone bill and i was thinking of just sending them like $50 to get them off my back, does that mess anything up? and would the credit builder plan help me rebuild, i keep seeing it in the app. oh and if my electric bill goes out a couple days late is that gonna show up on my credit"
   intents: 3
   skills: [collections, credit-builder-account, bill-reporting]
@@ -629,7 +608,6 @@
 - id: mi-033
   dataset: multi_intent
   persona: multi-product
-  added: "2026-10-22"
   message: "is there a way to add my car insurance and my netflix to bill reporting too? and also random but if my bank card autopay ever bounced and I didn't notice for like a week would that show up as late on my report"
   intents: 2
   skills: [bill-reporting, payment-history]
@@ -650,7 +628,6 @@
 - id: mi-034
   dataset: multi_intent
   persona: multi-product
-  added: "2026-10-22"
   message: "Could I just stop paying my Bank credit card for a while so your Debt Settlement service can get the $240 knocked down? lol. Also, once my Credit Builder plan is done, does that account disappear from my credit report or stay on there?"
   intents: 2
   skills: [debt-settlement, credit-builder-account]
@@ -669,7 +646,6 @@
 - id: mi-035
   dataset: multi_intent
   persona: multi-product
-  added: "2026-10-22"
   message: "Getting ready to apply for a mortgage sometime next year, so a few things: 1) Will the lender actually count my rent history? 2) Is there a way to see if I'd be approved for a Marketplace card without a hard inquiry? 3) If I pay my cards down to zero right before I apply, will the lender only see that, or do they look back at older balances too?"
   intents: 3
   skills: [rent-reporting, marketplace-offers, utilization]
@@ -694,7 +670,6 @@
 - id: mi-036
   dataset: multi_intent
   persona: multi-product
-  added: "2026-10-22"
   message: "ok a few things. first, my rent is showing on my TransUnion report but my phone, electric and internet bills aren't, is something broken? second, my score went from 695 to 702 this month, any idea why? and third, I'm moving in the spring, so if the final electric bill slips through the cracks, does it even matter since you only report on-time bills anyway? like if it ended up in collections and I paid it later, would it come off?"
   intents: 3
   skills: [bill-reporting, rent-reporting, score-changes, collections]

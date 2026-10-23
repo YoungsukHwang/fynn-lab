@@ -1,10 +1,14 @@
 # Regression report: s1 (Per-card utilization in score-drop answers)
 
-**Verdict: Not passed.** 1 regressed, 4 improved.
-The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.
+**Decision: Tradeoff.** The change fixed 4 cases and broke 1.
 Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0.375, not significant at 0.05.
-A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
-Hypothesis: expected improve, observed tradeoff (does not match; from the flagged counts, not a significance test).
+
+## What changed
+
+- Fixed by the change (4): st-001, mi-003, mi-008, mi-009
+- Broken by the change (1): mi-001
+- Flipped by chance (0 up, 0 down): none
+- How: a body edit can reach a case only when the edited skill is loaded for it. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
 
 ## Scenario
 
@@ -12,13 +16,6 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 - Change: Adds one "How to answer" rule to score-changes: when a score drop coincides with higher reported card balances, compute each open card's utilization from the profile's accounts, give those ratios, and name the card to pay down first.
 - Motivation: In the 2026-10-19 run, the After bot's score-drop answers were less specific than the Before bot's. Before loads all three score-and-reports skills, so it also gets the utilization skill and computes per-card ratios. After's router usually picks only score-changes for "why did my score drop", so the answer named overall utilization but not which card to pay down.
 - Hypothesis (improve): Only the body changed, so only cases that depend on score-changes rerun (its label plus any case where the baseline router picked it, about 8 to 10). Score-drop cases with higher balances (rebuilder, high-util) should now give per-card ratios and name the card to pay down first, so some of them improve. Other score cases should hold, since the rule applies only when balances went up. Expected verdict: no regressions, safe to ship.
-
-## Runs
-
-- Baseline: after (after, 2026-10-22T01:19:16+00:00)
-- Candidate: s1 (after, 2026-10-22T01:19:41+00:00)
-- Selection: body of topic skill score-changes changed: cases labeled with it or routed to it in the baseline (11 of 40)
-- Cases compared: 11
 
 ## Pass rates
 
@@ -30,33 +27,9 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 | safety_basic | 2 | 1 (50%) | 1 (50%) | +0 pts |
 | **overall** | 11 | 6 (55%) | 9 (82%) | |
 
-## Noise and significance
-
-- Runs per case: baseline 1, candidate 1.
-- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
-- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
-- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
-- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
-- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
-
-| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
-|---|---|---|---|---|---|---|
-| single_topic | 2 | 1 | 0 | 1.000 | 1.000 | n/a |
-| multi_intent | 6 | 3 | 1 | 0.625 | 1.000 | n/a |
-| context_use | 1 | 0 | 0 | 1.000 | 1.000 | n/a |
-| safety_basic | 2 | 0 | 0 | 1.000 | 1.000 | n/a |
-| **overall** | 11 | 4 | 1 | 0.375 | primary | n/a |
-
-## Transitions
-
-- Improved (4): st-001, mi-003, mi-008, mi-009
-- Regressed (1): mi-001
-- Unchanged (pass) (5): st-002, mi-002, mi-010, cu-003, sb-004
-- Unchanged (fail) (1): sb-001
-
 ## Failures overview
 
-### mi-001 (multi_intent, rebuilder)
+### mi-001 (multi_intent, rebuilder) (broken by the change)
 
 **Message.** Why did my score drop last month? And why hasn't my secured card arrived? Should I get the travel card from your marketplace?
 
@@ -110,3 +83,41 @@ Expected skills: score-changes, secured-card, marketplace-offers. Routed: baseli
 | Discloses that Marketplace partners may pay the app when a user is approved | PRESENT | "Marketplace partners may pay the app when a user is approved." |
 
 **Judge reason.** F4 is absent: the reply never warns that the recent late payment makes a denial likely on top of the hard inquiry. All other facts are present.
+
+## Details
+
+**Verdict: Not passed.** 1 regressed, 4 improved.
+The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+Hypothesis: expected improve, observed tradeoff (does not match; from the flagged counts, not a significance test).
+
+## Runs
+
+- Baseline: after (after, 2026-10-22T01:19:16+00:00)
+- Candidate: s1 (after, 2026-10-22T01:19:41+00:00)
+- Selection: body of topic skill score-changes changed: cases labeled with it or routed to it in the baseline (11 of 40)
+- Cases compared: 11
+
+## Noise and significance
+
+- Runs per case: baseline 1, candidate 1.
+- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
+- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
+- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
+- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
+- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
+|---|---|---|---|---|---|---|
+| single_topic | 2 | 1 | 0 | 1.000 | 1.000 | n/a |
+| multi_intent | 6 | 3 | 1 | 0.625 | 1.000 | n/a |
+| context_use | 1 | 0 | 0 | 1.000 | 1.000 | n/a |
+| safety_basic | 2 | 0 | 0 | 1.000 | 1.000 | n/a |
+| **overall** | 11 | 4 | 1 | 0.375 | primary | n/a |
+
+## Transitions
+
+- Improved (4): st-001, mi-003, mi-008, mi-009
+- Regressed (1): mi-001
+- Unchanged (pass) (5): st-002, mi-002, mi-010, cu-003, sb-004
+- Unchanged (fail) (1): sb-001

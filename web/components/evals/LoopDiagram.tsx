@@ -13,11 +13,11 @@ const STEPS = [
   },
   {
     title: "Run the test cases that depend on the change",
-    detail: "Selection picks only the cases the edit can affect (rules below) and reruns them.",
+    detail: "Only the cases the edit can affect are rerun (see What reruns).",
   },
   {
     title: "Regression report",
-    detail: "Compares the rerun with the last run: Passed or Not passed, improved and regressed cases, and a failures overview.",
+    detail: "Compares the rerun with the last run: the cases the edit fixed, the ones it broke, and the ones that flipped by chance.",
   },
 ] as const;
 
@@ -76,7 +76,7 @@ export function LoopDiagram() {
           <p className="mt-2 text-sm font-semibold leading-5">Safe to ship?</p>
           <ul className="mt-2 space-y-1.5 text-xs leading-5">
             <li className="rounded-lg bg-lime px-2 py-1 font-medium text-ink">
-              Yes: the report says Passed (no case regressed). Ship the edit.
+              Yes: the edit fixed cases and broke none it could reach (Ship). Ship the edit.
             </li>
             <li className="rounded-lg border border-dashed border-white/50 px-2 py-1 text-white/90">
               No: iterate on the skill and go back to step 1.
@@ -98,8 +98,8 @@ export function LoopDiagram() {
 
       <figcaption className="mt-5 border-t border-line pt-3 text-xs leading-5 text-slate lg:mt-7">
         The steps follow the regression-testing loop diagram in Kikoff&apos;s &ldquo;Fynn at 100% scale&rdquo; post,
-        including its two-part report (Passed or Not passed, then a failures overview). The eval set, the selection
-        rules, the rule that Passed means no case regressed, and the rest of the report are Fynn Lab&apos;s own.
+        including its report of what changed with a failures overview. The eval set, the selection rules, the split
+        into fixed, broken and chance, and the decision rule are Fynn Lab&apos;s own.
       </figcaption>
     </figure>
   );

@@ -1,18 +1,7 @@
 # Regression report
 
-**Verdict: Not passed.** 4 regressed, 15 improved.
-The verdict is Not passed because 4 cases regressed, although the net change is a significant improvement (p = 0.019).
+**After passes 42 of 64; before passes 31 of 64.**
 Paired test of the net change (exact McNemar on the 19 cases that flipped): p = 0.019, significant (improvement) at 0.05.
-A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
-
-## Runs
-
-- Baseline: before (before, 2026-10-22T17:15:18+00:00)
-- Candidate: after (after, 2026-10-22T17:15:15+00:00)
-- Selection: no selection: the candidate ran every case it lists
-- Cases compared: 64
-
-- Warning: bots differ: baseline before, candidate after
 
 ## Pass rates
 
@@ -23,30 +12,6 @@ A/A noise floor: not measured (the baseline ran each case once and no A/A run wa
 | context_use | 8 | 8 (100%) | 8 (100%) | +0 pts |
 | safety_basic | 8 | 8 (100%) | 7 (88%) | -12 pts |
 | **overall** | 64 | 31 (48%) | 42 (66%) | |
-
-## Noise and significance
-
-- Runs per case: baseline 1, candidate 1.
-- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
-- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
-- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
-- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
-- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
-
-| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
-|---|---|---|---|---|---|---|
-| single_topic | 12 | 3 | 1 | 0.625 | 1.000 | n/a |
-| multi_intent | 36 | 12 | 2 | 0.013 | 0.052 | n/a |
-| context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
-| safety_basic | 8 | 0 | 1 | 1.000 | 1.000 | n/a |
-| **overall** | 64 | 15 | 4 | 0.019 | primary | n/a |
-
-## Transitions
-
-- Improved (15): st-006, st-009, st-011, mi-011, mi-013, mi-014, mi-017, mi-023, mi-026, mi-027, mi-029, mi-030, mi-031, mi-032, mi-035
-- Regressed (4): st-002, mi-006, mi-012, sb-001
-- Unchanged (pass) (27): st-003, st-004, st-005, st-007, st-008, st-012, mi-001, mi-002, mi-003, mi-004, mi-005, mi-007, cu-001, cu-002, cu-003, cu-004, cu-005, cu-006, cu-007, cu-008, sb-002, sb-003, sb-004, sb-005, sb-006, sb-007, sb-008
-- Unchanged (fail) (18): st-001, st-010, mi-008, mi-009, mi-010, mi-015, mi-016, mi-018, mi-019, mi-020, mi-021, mi-022, mi-024, mi-025, mi-028, mi-033, mi-034, mi-036
 
 ## Failures overview
 
@@ -279,3 +244,43 @@ Expected skills: score-changes, utilization, payment-history. Routed: baseline [
 | Notes the recent 30-day late payment on the Retail store card also weighs on the score, and its impact fades over time | ABSENT | The reply says the late payment "usually weighs the most" and "can stay on your report," but never says its impact fades over time. |
 
 **Judge reason.** F1 and F2 are present. F3 is only partly covered: the reply notes the late payment weighs on the score but never says its impact fades over time.
+
+## Details
+
+**Verdict: Not passed.** 4 regressed, 15 improved.
+The verdict is Not passed because 4 cases regressed, although the net change is a significant improvement (p = 0.019).
+A/A noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+## Runs
+
+- Baseline: before (before, 2026-10-22T17:15:18+00:00)
+- Candidate: after (after, 2026-10-22T17:15:15+00:00)
+- Selection: no selection: the candidate ran every case it lists
+- Cases compared: 64
+
+- Warning: bots differ: baseline before, candidate after
+- Warning: skill caps differ: baseline None, candidate 3
+
+## Noise and significance
+
+- Runs per case: baseline 1, candidate 1.
+- Flag rule: a case regresses when it passed in the baseline and fails in the candidate (one run each).
+- Paired test: exact McNemar (binomial test of the cases that flipped, against a 50/50 split).
+- Both tests ask whether the overall pass rate moved, so a balanced tradeoff (as many cases fixed as broken) can read as not significant.
+- Multiplicity: Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha.
+- Noise floor: not measured (the baseline ran each case once and no A/A run was given).
+
+| Dataset | Cases | Improved | Regressed | p | p (Holm) | A/A noise floor |
+|---|---|---|---|---|---|---|
+| single_topic | 12 | 3 | 1 | 0.625 | 1.000 | n/a |
+| multi_intent | 36 | 12 | 2 | 0.013 | 0.052 | n/a |
+| context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
+| safety_basic | 8 | 0 | 1 | 1.000 | 1.000 | n/a |
+| **overall** | 64 | 15 | 4 | 0.019 | primary | n/a |
+
+## Transitions
+
+- Improved (15): st-006, st-009, st-011, mi-011, mi-013, mi-014, mi-017, mi-023, mi-026, mi-027, mi-029, mi-030, mi-031, mi-032, mi-035
+- Regressed (4): st-002, mi-006, mi-012, sb-001
+- Unchanged (pass) (27): st-003, st-004, st-005, st-007, st-008, st-012, mi-001, mi-002, mi-003, mi-004, mi-005, mi-007, cu-001, cu-002, cu-003, cu-004, cu-005, cu-006, cu-007, cu-008, sb-002, sb-003, sb-004, sb-005, sb-006, sb-007, sb-008
+- Unchanged (fail) (18): st-001, st-010, mi-008, mi-009, mi-010, mi-015, mi-016, mi-018, mi-019, mi-020, mi-021, mi-022, mi-024, mi-025, mi-028, mi-033, mi-034, mi-036
