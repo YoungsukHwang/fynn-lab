@@ -13,7 +13,7 @@ import evals.scenarios
 from evals import report as report_cli
 from evals.cases import load_cases
 from evals.judge import Judge
-from evals.run import build_results, combine_runs, run_cases, write_results
+from evals.run import SKIPPED_ERROR, build_results, combine_runs, is_fatal, run_cases, write_results
 from fynn import config
 from fynn.bots import build_bots
 from fynn.llm import Generation, LLMError, Usage
@@ -163,9 +163,10 @@ def test_run_cases_after_bot(mini_library: SkillLibrary, personas, tmp_path: Pat
     saved = json.loads(out.read_text(encoding="utf-8"))
 
     assert set(saved) == {
-        "name", "bot", "scenario", "repeats", "skill_cap", "created_at", "models", "skill_fingerprint", "selection",
-        "cases", "summary",
+        "name", "bot", "scenario", "repeats", "skill_cap", "created_at", "models", "skill_fingerprint",
+        "setup_fingerprint", "selection", "cases", "summary",
     }
+    assert set(saved["setup_fingerprint"]) == {"bot_code", "judge_code", "settings"}
     assert saved["repeats"] == 1
     assert saved["skill_cap"] == config.MAX_NEW_SKILLS_PER_TURN
     assert (first["repeats"], first["passes"], first["pass_fraction"]) == (1, 1, 1.0) and "runs" not in first
@@ -287,6 +288,39 @@ def test_cli_skill_cap_reruns_every_case_and_is_recorded(tmp_path: Path, monkeyp
     assert back["skill_cap"] == config.MAX_NEW_SKILLS_PER_TURN
     assert len(back["cases"]) == 4
     assert back["selection"]["rule"] == f"all cases: the skill cap changed from {cap} to {config.MAX_NEW_SKILLS_PER_TURN}"
+
+
+def test_cli_a_model_or_code_change_reruns_every_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(), ScriptedLLM()))
+    baseline_path = tmp_path / "after.json"
+    baseline = evals.run.main(["--bot", "after", "--out", str(baseline_path)])
+
+    def rerun(edit: dict) -> dict:
+        edited = tmp_path / "edited.json"
+        edited.write_text(json.dumps({**baseline, **edit}), encoding="utf-8")
+        return evals.run.main(["--bot", "after", "--baseline", str(edited), "--out", str(tmp_path / "again.json")])
+
+    # Nothing changed: nothing reruns, and a report on the empty run passes nothing.
+    unchanged = rerun({})
+    assert unchanged["cases"] == [] and unchanged["selection"]["rule"].startswith("no skill changed")
+    report = report_cli.main(
+        ["--baseline", str(baseline_path), "--candidate", str(tmp_path / "again.json"), "--out", str(tmp_path / "r")]
+    )
+    assert report["verdict"] == "No cases compared"
+
+    models = rerun({"models": {**baseline["models"], "agent": "claude-old"}})
+    assert len(models["cases"]) == 4
+    assert models["selection"]["rule"] == f"all cases: the models (agent claude-old to {config.AGENT_MODEL}) changed"
+
+    code = rerun({"setup_fingerprint": {**baseline["setup_fingerprint"], "bot_code": "000000000000"}})
+    assert len(code["cases"]) == 4 and code["selection"]["rule"] == "all cases: the bot code changed"
+
+    # A baseline from before setup fingerprints can only be checked for models.
+    legacy = {k: v for k, v in baseline.items() if k != "setup_fingerprint"}
+    (tmp_path / "legacy.json").write_text(json.dumps(legacy), encoding="utf-8")
+    old = evals.run.main(["--bot", "after", "--baseline", str(tmp_path / "legacy.json"), "--out", str(tmp_path / "o.json")])
+    assert old["cases"] == []
 
 
 @pytest.mark.parametrize(
@@ -476,3 +510,167 @@ def test_errored_runs_inside_repeats(mini_library: SkillLibrary, personas) -> No
         build_results(name="b", bot="after", library=mini_library, case_results=results, repeats=3),
     )
     assert report["errors"] == ["st-002"] and report["baseline_errors"] == ["st-002"]
+
+
+# --- Fatal errors and --rerun-errors ----------------------------------------------------------
+
+
+class AuthenticationError(Exception):
+    """Named like the SDK's, so the runner treats it as fatal."""
+
+
+class OutOfCreditLLM(ScriptedLLM):
+    """ScriptedLLM whose answer calls fail with a fatal error after the first `ok` of them.
+    With a `gate`, the answer calls after the first failing one wait for it before failing too."""
+
+    def __init__(self, ok: int, gate: threading.Event | None = None):
+        super().__init__()
+        self.ok, self.gate, self.answers = ok, gate, 0
+
+    def generate(self, **kwargs: Any) -> Generation:
+        with self.lock:
+            self.answers += 1
+            n = self.answers
+        if self.gate is not None and n > self.ok + 1:
+            self.gate.wait(timeout=5)
+        if n > self.ok:
+            raise AuthenticationError("Error code: 401 - invalid x-api-key")
+        return super().generate(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("error", "fatal"),
+    [
+        ("bot: AuthenticationError: Error code: 401", True),
+        ("judge: PermissionDeniedError: Error code: 403", True),
+        ("bot: NotFoundError: Error code: 404 - model: claude-typo", True),
+        ("bot: BadRequestError: Error code: 400 - Your credit balance is too low to access the Anthropic API.", True),
+        ("bot: LLMError: answer call failed", False),
+        ("judge: BadRequestError: Error code: 400 - prompt is too long", False),
+        (None, False),
+    ],
+)
+def test_is_fatal(error: str | None, fatal: bool) -> None:
+    assert is_fatal(error) is fatal
+
+
+def test_a_fatal_error_cancels_the_runs_not_started(mini_library: SkillLibrary, personas) -> None:
+    gate = threading.Event()
+    llm = OutOfCreditLLM(ok=1, gate=gate)
+    results = run_cases(
+        load_cases(FIXTURE_CASES), bot=build_bots(llm, mini_library)["after"], judge=Judge(ScriptedLLM()),
+        personas=personas, workers=1, progress=lambda line: gate.set() if line.startswith("stopping") else None,
+    )
+    assert results[0]["status"] == "ok"
+    assert results[1]["error"].startswith("bot: AuthenticationError:")
+    # The third case may already have started when the run stopped; the fourth never does.
+    assert results[2]["status"] == "error" and results[3]["error"] == SKIPPED_ERROR
+    assert llm.answers in (2, 3)
+
+
+def test_cli_fatal_stop_writes_a_partial_file_then_rerun_errors_completes_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    out = tmp_path / "after.json"
+    out.write_text("{}", encoding="utf-8")  # an earlier complete file must survive the failed run
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (OutOfCreditLLM(ok=1), ScriptedLLM()))
+    with pytest.raises(SystemExit, match="--rerun-errors"):
+        evals.run.main(["--bot", "after", "--out", str(out)])
+    assert out.read_text(encoding="utf-8") == "{}"
+    partial = json.loads((tmp_path / "after.partial.json").read_text(encoding="utf-8"))
+    assert partial["complete"] is False and partial["name"] == "after"
+    kept = next(c for c in partial["cases"] if c["status"] == "ok")
+    assert sum(c["status"] == "error" for c in partial["cases"]) == 3
+
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(reply="Rerun reply, 47%."), ScriptedLLM()))
+    merged = evals.run.main(
+        ["--bot", "after", "--rerun-errors", str(tmp_path / "after.partial.json"), "--out", str(out)]
+    )
+    assert json.loads(out.read_text(encoding="utf-8"))["created_at"] == merged["created_at"]
+    assert "complete" not in merged and merged["rerun_errors"]["runs"] == 3
+    assert all(c["status"] == "ok" for c in merged["cases"])
+    by_id = {c["id"]: c for c in merged["cases"]}
+    assert by_id[kept["id"]]["reply"] == kept["reply"]  # the run that finished is kept, not rerun
+    assert sum(c["reply"] == "Rerun reply, 47%." for c in merged["cases"]) == 3
+
+
+def test_cli_rerun_errors_reruns_only_the_errored_repeats(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    first = tmp_path / "first.json"
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (FlakyLLM({}, error_on={ST002: {2}}), ScriptedLLM()))
+    before = evals.run.main(["--bot", "after", "--repeats", "3", "--out", str(first), "--workers", "1"])
+    runs_before = next(c for c in before["cases"] if c["id"] == "st-002")["runs"]
+    errored = [i for i, run in enumerate(runs_before) if run["status"] == "error"]
+    assert len(errored) == 1
+
+    rerun_llm = ScriptedLLM(reply="Rerun reply, 47%.")
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (rerun_llm, ScriptedLLM()))
+    merged = evals.run.main(["--bot", "after", "--rerun-errors", str(first), "--out", str(tmp_path / "m.json")])
+    st002 = next(c for c in merged["cases"] if c["id"] == "st-002")
+    assert merged["repeats"] == 3 and (st002["repeats"], st002["errors"], st002["passes"]) == (3, 0, 3)
+    assert rerun_llm.calls.count("router") == 1  # one errored run of one case, nothing else
+    # The rerun lands at the index that errored; the other runs are kept as they were.
+    for i, run in enumerate(st002["runs"]):
+        assert run["reply"] == ("Rerun reply, 47%." if i in errored else runs_before[i]["reply"])
+
+
+def test_cli_rerun_errors_refuses_another_setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(), ScriptedLLM()))
+    done = tmp_path / "after.json"
+    results = evals.run.main(["--bot", "after", "--out", str(done)])
+    with pytest.raises(SystemExit, match="it was run on the after bot, not before"):
+        evals.run.main(["--bot", "before", "--rerun-errors", str(done), "--out", str(tmp_path / "x.json")])
+    done.write_text(json.dumps({**results, "models": {**results["models"], "judge": "claude-old"}}), encoding="utf-8")
+    with pytest.raises(SystemExit, match="the models .* changed since then"):
+        evals.run.main(["--bot", "after", "--rerun-errors", str(done), "--out", str(tmp_path / "x.json")])
+    with pytest.raises(SystemExit):
+        evals.run.parse_args(["--bot", "after", "--rerun-errors", str(done), "--limit", "2", "--out", "x.json"])
+
+
+def test_cli_a_second_fatal_stop_keeps_the_runs_already_done(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    out, partial = tmp_path / "after.json", tmp_path / "after.partial.json"
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (OutOfCreditLLM(ok=1), ScriptedLLM()))
+    with pytest.raises(SystemExit):
+        evals.run.main(["--bot", "after", "--out", str(out), "--workers", "1"])
+    kept = next(c for c in json.loads(partial.read_text(encoding="utf-8"))["cases"] if c["status"] == "ok")
+
+    # Still no credit: the rerun stops again, and the rewritten partial keeps the run done the first time.
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (OutOfCreditLLM(ok=0), ScriptedLLM()))
+    with pytest.raises(SystemExit):
+        evals.run.main(["--bot", "after", "--rerun-errors", str(partial), "--out", str(out)])
+    again = json.loads(partial.read_text(encoding="utf-8"))
+    assert not out.exists() and again["complete"] is False and again["rerun_errors"]["runs"] == 3
+    assert next(c for c in again["cases"] if c["id"] == kept["id"])["reply"] == kept["reply"]
+
+
+def test_cli_every_run_erroring_writes_a_partial_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(), ScriptedLLM()))
+    monkeypatch.setattr(evals.run, "run_case", lambda case, *a: {**evals.run._skipped(case), "error": "bot: LLMError: down"})
+    with pytest.raises(SystemExit, match="every run errored"):
+        evals.run.main(["--bot", "after", "--out", str(tmp_path / "after.json")])
+    assert (tmp_path / "after.partial.json").exists() and not (tmp_path / "after.json").exists()
+
+
+def test_cli_rerun_errors_refuses_legacy_files_and_edited_cases(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(), ScriptedLLM()))
+    done = tmp_path / "after.json"
+    results = evals.run.main(["--bot", "after", "--out", str(done)])
+
+    legacy = tmp_path / "legacy.json"
+    legacy.write_text(json.dumps({k: v for k, v in results.items() if k != "setup_fingerprint"}), encoding="utf-8")
+    with pytest.raises(SystemExit, match="predates setup fingerprints"):
+        evals.run.main(["--bot", "after", "--rerun-errors", str(legacy), "--out", str(tmp_path / "x.json")])
+
+    edited = json.loads(done.read_text(encoding="utf-8"))
+    edited["cases"][0]["message"] += " (old wording)"
+    edited["cases"][1]["judge"]["facts"][0]["fact"] = "An older fact"
+    (tmp_path / "edited.json").write_text(json.dumps(edited), encoding="utf-8")
+    first, second = edited["cases"][0]["id"], edited["cases"][1]["id"]
+    with pytest.raises(SystemExit, match=f"these cases were edited since then: {first}, {second}"):
+        evals.run.main(["--bot", "after", "--rerun-errors", str(tmp_path / "edited.json"), "--out", str(tmp_path / "x.json")])
+

@@ -14,3 +14,6 @@ node_modules/
 
 # OS
 .DS_Store
+
+# Eval runs that stopped on a fatal API error; complete them with run.py --rerun-errors
+*.partial.json

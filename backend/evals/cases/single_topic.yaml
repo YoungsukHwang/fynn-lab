@@ -14,8 +14,8 @@
     - "Names the Retail store card, the card with the higher utilization, as the one to pay down first"
   must_not_regex:
     - '\bI guarantee\b'
-    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
-    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
   must_include_regex:
     - '47\s*(%|percent)'
 
@@ -32,8 +32,8 @@
     - "Names the Rewards credit card, the card with the higher utilization, as the one to pay down first"
   must_not_regex:
     - '\bI guarantee\b'
-    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
-    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
   must_include_regex:
     - '85\s*(%|percent)'
 
@@ -134,7 +134,7 @@
     - "Says no settlement amount is guaranteed, and her account is still being negotiated"
     - "Mentions that forgiven debt may be taxable income, and $600 or more forgiven usually triggers a Form 1099-C"
   must_not_regex:
-    - '(?m)(?:^|(?<=[.!?])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|say|tell|know|sure|certain)\b)[^.!?\n])*?\b(?:usually|typically|often) settles? for (?:about |around |roughly )?\d+\s*(?:%|percent)'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:usually|typically|often) settles? for (?:about |around |roughly )?\d+\s*(?:%|percent)'
 
 - id: st-011
   dataset: single_topic

@@ -22,6 +22,7 @@ from typing import Any
 
 from evals.cases import DATASETS
 from evals.scenarios import Scenario, load_scenario
+from evals.setup import PART_LABELS
 from evals.stats import (
     ALPHA,
     case_runs,
@@ -42,6 +43,8 @@ from evals.stats import (
 
 # "unstable" is empty with one run per side: there every case either flips or stays put.
 TRANSITIONS = ("improved", "regressed", "unchanged_pass", "unchanged_fail", "unstable")
+# The verdict when no case could be compared: nothing passed or failed, so neither Passed nor Not passed.
+NO_CASES = "No cases compared"
 
 
 def _rate(passed: int, total: int) -> float | None:
@@ -122,9 +125,11 @@ def _run_info(results: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _same_setup(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
-    """Same bot, skills, models, skill cap and scenario. Code and the judge are not fingerprinted,
-    so two such runs differ only by noise if nothing else changed between them."""
-    keys = ("bot", "scenario", "models", "skill_fingerprint")
+    """Same bot, skills, models, skill cap, scenario and setup fingerprint (bot code, judge code and
+    settings). A file without a setup fingerprint matches only another file without one. Cases are not
+    fingerprinted beyond the facts the judge graded, so two such runs differ only by noise if nothing
+    else changed between them."""
+    keys = ("bot", "scenario", "models", "skill_fingerprint", "setup_fingerprint")
     return (
         all(a.get(key) == b.get(key) for key in keys)
         and a.get("skill_fingerprint") is not None
@@ -156,7 +161,7 @@ def _noise_floor(
     aa_unusable = False
     if aa is not None:
         if not _same_setup(baseline, aa):
-            warnings.append("the A/A run differs from the baseline in bot, scenario, models or skills")
+            warnings.append("the A/A run differs from the baseline in bot, scenario, models, skills, skill cap or setup fingerprint")
         aa_cases = {c["id"]: c for c in aa.get("cases", [])}
         pairs = [(base, aa_cases[base["id"]]) for base, _ in compared if base["id"] in aa_cases]
         missing = [base["id"] for base, _ in compared if base["id"] not in aa_cases]
@@ -204,10 +209,13 @@ def verdict_note(
 ) -> str | None:
     """A sentence when the verdict (a per-case gate) and the paired test (the net change) tell
     different stories, or when the comparison is an A/A one."""
+    if verdict == NO_CASES:
+        return "No case was in both runs (or every shared case was left out), so there is nothing to pass or fail."
     if kind == "aa":
         return (
-            "This is an A/A comparison: both runs share the bot, skills and models, so if nothing else changed "
-            "(code, judge or cases) every flip is run-to-run noise, and the verdict is counting noise."
+            "This is an A/A comparison: both runs share the bot, skills, models, skill cap and setup, so if "
+            "nothing else changed (the cases or personas, or code and judge when a run has no setup fingerprint) "
+            "every flip is run-to-run noise, and the verdict is counting noise."
         )
     if test is None:
         return None
@@ -272,8 +280,19 @@ def compare(
         warnings.append(f"models differ: baseline {baseline.get('models')}, candidate {candidate.get('models')}")
     if base_repeats != cand_repeats:
         warnings.append(f"runs per case differ: baseline {base_repeats}, candidate {cand_repeats}")
+    for side, results in (("baseline", baseline), ("candidate", candidate)):
+        if results.get("complete") is False:
+            warnings.append(f"the {side} is a partial run that stopped on a fatal error; complete it with --rerun-errors")
     if run_skill_cap(baseline) != run_skill_cap(candidate):
         warnings.append(f"skill caps differ: baseline {run_skill_cap(baseline)}, candidate {run_skill_cap(candidate)}")
+    base_setup, cand_setup = baseline.get("setup_fingerprint"), candidate.get("setup_fingerprint")
+    if isinstance(base_setup, Mapping) and isinstance(cand_setup, Mapping):
+        differ = [PART_LABELS.get(part, part) for part in sorted(set(base_setup) | set(cand_setup)) if base_setup.get(part) != cand_setup.get(part)]
+        if differ:
+            warnings.append(f"setups differ between the runs: {', '.join(differ)}")
+    elif base_setup or cand_setup:
+        side = "baseline" if not base_setup else "candidate"
+        warnings.append(f"the {side} does not record a setup fingerprint, so prompt, judge and setting changes cannot be checked")
 
     transitions: dict[str, list[str]] = {name: [] for name in TRANSITIONS}
     compared: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
@@ -340,7 +359,7 @@ def compare(
     selection = candidate.get("selection")
     scenario_id = scenario.id if scenario else candidate.get("scenario")
     hypothesis_result = None
-    if scenario is not None:
+    if scenario is not None and total:
         expected = scenario.hypothesis.expected
         hypothesis_result = {
             "expected": expected,
@@ -350,7 +369,7 @@ def compare(
 
     noise_floor, noise_note = _noise_floor(baseline, compared, aa, min_fails, cand_repeats, warnings)
     test = paired_tests(compared, DATASETS)
-    verdict = "Passed" if regressed == 0 else "Not passed"
+    verdict = NO_CASES if total == 0 else "Passed" if regressed == 0 else "Not passed"
     return {
         "scenario": scenario.model_dump(mode="json") if scenario else ({"id": scenario_id} if scenario_id else None),
         "baseline": _run_info(baseline),

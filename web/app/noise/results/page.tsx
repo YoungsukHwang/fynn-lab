@@ -5,7 +5,7 @@ import { type FlipLabels, NoiseCheck } from "@/components/evals/NoiseCheck";
 import { RunDetails } from "@/components/evals/RunDetails";
 import { SCENARIO_TRANSITIONS } from "@/components/evals/ScenarioCard";
 import { Chip, NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
-import { type Comparison, getCapData, getResultsData } from "@/lib/evalData";
+import { type Comparison, getCapData, getCases, getResultsData } from "@/lib/evalData";
 import { pPhrase, signedPoints, TEST_METHOD_LABELS } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Noise & A/A results" };
@@ -53,14 +53,17 @@ interface Row {
 }
 
 export default async function NoiseResultsPage() {
-  const [data, capData] = await Promise.all([getResultsData(), getCapData()]);
+  const [data, capData, cases] = await Promise.all([getResultsData(), getCapData(), getCases()]);
+  const addedCount = cases.filter((c) => c.added).length;
   const rows: Row[] = [
     ...(data.beforeVsAfter
       ? [
           {
             id: "before-vs-after",
             name: "Before vs After",
-            title: "The two bots on all cases",
+            title: addedCount
+              ? `The two bots on all cases, ${addedCount} of them added after the first run to test where they differ; the results page shows them apart`
+              : "The two bots on all cases",
             comparison: data.beforeVsAfter,
             flips: BOT_FLIPS,
             href: "/before-after/results",
@@ -180,7 +183,7 @@ export default async function NoiseResultsPage() {
                       <td className="py-2.5 pr-3">{noise ? "measured" : <span className="text-slate">not measured</span>}</td>
                       <td className="py-2.5">
                         {shipCheck ? (
-                          <Chip tone={verdict === "Passed" ? "lime" : "bad"}>{verdict || "unknown"}</Chip>
+                          <Chip tone={verdict === "Passed" ? "lime" : verdict === "Not passed" ? "bad" : "neutral"}>{verdict || "unknown"}</Chip>
                         ) : (
                           <span className="text-xs text-slate">not a ship check</span>
                         )}

@@ -39,6 +39,21 @@ function points(group: CaseGroup | null | undefined): number | null {
   return deltaPoints(group?.before?.rate, group?.after?.rate);
 }
 
+/** After's position against Before on a group: "ahead by 37 pts", "behind by 3 pts", "level". */
+function lead(group: CaseGroup | null | undefined): string {
+  const p = points(group);
+  if (p === null) return "n/a";
+  return p === 0 ? "level" : p > 0 ? `ahead by ${p} pts` : `behind by ${-p} pts`;
+}
+
+/** "Before 31 of 40, After 31 of 40" (runs when cases ran more than once); "Before not run" for a bot with no runs. */
+function passedLine(group: CaseGroup, repeated: boolean): string {
+  const unit = repeated ? " runs" : "";
+  const side = (name: string, stat: CaseGroup["before"]) =>
+    stat && stat.runs > 0 ? `${name} ${stat.passed} of ${stat.runs}${unit}` : `${name} not run`;
+  return `${side("Before", group.before)}, ${side("After", group.after)}`;
+}
+
 /** One side of an over-cap case: how many skills loaded, which labeled ones were left out, and the outcome. */
 function CapCell({ side }: { side: CapCaseSide | null }) {
   if (!side) return <span className="text-slate">not run</span>;
@@ -68,6 +83,9 @@ export default async function BeforeAfterResultsPage() {
     .filter((g) => (g.before?.rate ?? 0) >= 0.9 && (g.after?.rate ?? 0) >= 0.9)
     .map((g) => datasetLabel(g.key));
   const mismatch = overall?.after && after && overall.after.cases !== after.meta.cases;
+  const original = data.byOrigin.find((g) => g.key === "original");
+  const later = data.byOrigin.filter((g) => g.key !== "original");
+  const laterCases = later.reduce((sum, g) => sum + (g.after?.cases ?? g.before?.cases ?? 0), 0);
 
   if (!before && !after) {
     return (
@@ -89,12 +107,20 @@ export default async function BeforeAfterResultsPage() {
           {cross?.after && single?.after && (
             <>
               {" "}
-              Its lead is {deltaLabel(points(cross))} on the {plural(cross.after.cases, "case")} that need a second
-              domain, where a Before agent lacks some of the skills, and {deltaLabel(points(single))} on the{" "}
-              {single.after.cases} that fit in one.
+              It is {lead(cross)} on the {plural(cross.after.cases, "case")} that need a second domain, where a Before
+              agent lacks some of the skills, and {lead(single)} on the {single.after.cases} that fit in one.
             </>
           )}
         </p>
+        {original?.after && later.length > 0 && (
+          <p>
+            {plural(laterCases, "case")} {laterCases === 1 ? "was" : "were"} added after the first run, which showed
+            little difference, to test where the designs differ. They need a second domain more often than the
+            original cases, so the overall rate and its test depend on that mix: read the groups below. Passed, on the{" "}
+            {original.after.cases} cases of the first run: {passedLine(original, repeated)}.{" "}
+            {later.map((g) => `${g.label}: ${passedLine(g, repeated)}.`).join(" ")}
+          </p>
+        )}
       </PageHero>
 
       {data.pending.length > 0 && (
@@ -166,6 +192,9 @@ export default async function BeforeAfterResultsPage() {
                 ...(overall ? [{ ...overall, note: "" }] : []),
               ],
             },
+            ...(later.length
+              ? [{ title: "When the case joined the set", note: "cases added after the first run", rows: data.byOrigin }]
+              : []),
             {
               title: "Needs a second domain, by questions",
               rows: data.crossByQuestions.map((g) => ({ ...g, label: `${g.label}, second domain` })),

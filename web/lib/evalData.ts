@@ -63,6 +63,7 @@ export interface EvalCase {
   expectedFacts: string[];
   mustNotRegex: string[];
   mustIncludeRegex: string[];
+  added: string | null; // YYYY-MM-DD the case joined the set after the first Before vs After run; null if it was in it
 }
 
 export interface PersonaInfo {
@@ -529,6 +530,8 @@ export async function getCases(): Promise<EvalCase[]> {
         expectedFacts: strList(item.expected_facts),
         mustNotRegex: strList(item.must_not_regex),
         mustIncludeRegex: strList(item.must_include_regex),
+        added:
+          typeof item.added === "string" ? item.added : item.added instanceof Date ? item.added.toISOString().slice(0, 10) : null,
       });
     }
   }
@@ -1131,6 +1134,7 @@ export interface BeforeAfterData {
   crossByQuestions: CaseGroup[]; // the cases that need a second domain, split by number of questions
   byQuestions: CaseGroup[];
   byDataset: CaseGroup[];
+  byOrigin: CaseGroup[]; // the cases of the first Before vs After run, then each later batch by date added
   crossDomain: { ids: string[]; domains: Record<string, string[]> }; // case id -> Before domains it spans
   pending: string[]; // cases in the eval set that the committed results do not cover yet
   caseCount: number;
@@ -1190,6 +1194,18 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
   const byDataset = DATASETS.map((d) => group(d, d, "", cases.filter((c) => c.dataset === d).map((c) => c.id))).filter(
     (g) => (g.after?.cases ?? g.before?.cases ?? 0) > 0,
   );
+  const addedDates = [...new Set(cases.flatMap((c) => (c.added ? [c.added] : [])))].sort();
+  const byOrigin = addedDates.length
+    ? [
+        group("original", "In the first run", "", cases.filter((c) => !c.added).map((c) => c.id)),
+        ...addedDates.map((d) => {
+          const ids = cases.filter((c) => c.added === d).map((c) => c.id);
+          const needSecond = ids.filter((id) => cross.has(id)).length;
+          const note = needSecond === ids.length ? "each needs a second domain" : `${needSecond} of ${ids.length} need a second domain`;
+          return group(`added-${d}`, `Added ${d}`, note, ids);
+        }),
+      ].filter(hasCases)
+    : [];
 
   return {
     before: before ? { meta: runMeta("before.json", before), run: before } : null,
@@ -1213,6 +1229,7 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
     crossByQuestions,
     byQuestions,
     byDataset,
+    byOrigin,
     crossDomain: { ids: crossIds, domains },
     pending: cases
       .map((c) => c.id)

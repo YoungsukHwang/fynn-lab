@@ -107,7 +107,7 @@ export default async function SkillEditsResultsPage() {
                         </span>
                       </td>
                       <td className="py-2.5 pr-3">
-                        <Chip tone={report.verdict === "Passed" ? "lime" : "bad"}>{report.verdict || "unknown"}</Chip>
+                        <Chip tone={report.verdict === "Passed" ? "lime" : report.verdict === "Not passed" ? "bad" : "neutral"}>{report.verdict || "unknown"}</Chip>
                       </td>
                       <td className="py-2.5">
                         {report.hypothesisResult ? (

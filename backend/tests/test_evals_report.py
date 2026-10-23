@@ -510,7 +510,7 @@ def test_aa_run_with_fewer_repeats_names_the_rule_it_used() -> None:
 def test_aa_run_from_a_different_setup_is_flagged() -> None:
     aa = {**_results([_case("st-001", True)]), "models": {"router": "x", "agent": "y", "judge": "z"}}
     report = compare(BASELINE, CANDIDATE, aa=aa)
-    assert "the A/A run differs from the baseline in bot, scenario, models or skills" in report["warnings"]
+    assert "the A/A run differs from the baseline in bot, scenario, models, skills, skill cap or setup fingerprint" in report["warnings"]
 
 
 def test_aa_run_with_no_shared_cases_falls_back_to_the_baseline_repeats() -> None:
@@ -536,7 +536,7 @@ def test_a_run_against_its_own_setup_is_an_aa_report() -> None:
     again = {**_results([_case("st-001", False), _case("st-002", False)]), "skill_fingerprint": fingerprint}
     report = compare(base, again)
     assert report["kind"] == "aa"
-    assert "if nothing else changed (code, judge or cases)" in report["verdict_note"]
+    assert "if nothing else changed (the cases or personas" in report["verdict_note"]
     assert "This is an A/A comparison" in render_markdown(report)
     assert compare(base, {**again, "skill_fingerprint": {}})["kind"] == "change"
 
@@ -556,6 +556,32 @@ def test_a_different_skill_cap_is_a_change_and_old_files_read_as_cap_3(monkeypat
     assert any(w.startswith("skill caps differ") for w in report["warnings"])
     # The Before bot has no skill cap.
     assert compare({**base, "bot": "before"}, {**wider, "bot": "before"})["candidate"]["skill_cap"] is None
+
+
+def test_a_partial_run_is_flagged() -> None:
+    report = compare(BASELINE, {**CANDIDATE, "complete": False})
+    assert any(w.startswith("the candidate is a partial run") for w in report["warnings"])
+
+
+def test_no_compared_case_is_neither_passed_nor_not_passed() -> None:
+    report = compare(BASELINE, _results([]), SCENARIO)
+    assert report["verdict"] == "No cases compared"
+    assert report["verdict_note"].startswith("No case was in both runs")
+    assert report["hypothesis_result"] is None
+
+
+def test_setup_fingerprints_that_differ_make_a_change_with_a_warning() -> None:
+    fingerprint = {"bot_code": "b", "judge_code": "j", "settings": "s"}
+    skills = {"score-changes": {"description": "d", "body": "b", "meta": "m"}}
+    base = {**BASELINE, "skill_fingerprint": skills, "setup_fingerprint": fingerprint}
+    assert compare(base, {**base})["kind"] == "aa"
+
+    report = compare(base, {**base, "setup_fingerprint": {**fingerprint, "judge_code": "x"}})
+    assert report["kind"] == "change"
+    assert "setups differ between the runs: the judge code" in report["warnings"]
+    legacy = compare({**base, "setup_fingerprint": None}, base)
+    assert legacy["kind"] == "change"  # a file without the fingerprint matches only another without one
+    assert any("baseline does not record a setup fingerprint" in w for w in legacy["warnings"])
 
 
 def test_cases_whose_expected_facts_changed_are_not_compared() -> None:
