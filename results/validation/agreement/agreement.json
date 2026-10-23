@@ -1,0 +1,377 @@
+{
+  "kind": "judge_agreement",
+  "created_at": "2026-10-23T18:52:30+00:00",
+  "sample_id": "524a504be8710b63",
+  "judge_vs_judge": [
+    {
+      "label": "claude-haiku-5-5",
+      "source": "after-haiku",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 34,
+        "regrade": 37,
+        "both": 33
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 249,
+      "agree_binary": 249,
+      "rate_binary": 0.9504,
+      "ci_binary": [
+        0.9213,
+        0.9767
+      ],
+      "kappa": 0.7921,
+      "kappa_binary": 0.7885,
+      "stricter": 3,
+      "lenient": 10,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 220,
+          "ABSENT": 7,
+          "CONTRADICTED": 3
+        },
+        "ABSENT": {
+          "PRESENT": 1,
+          "ABSENT": 27,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 2,
+          "ABSENT": 0,
+          "CONTRADICTED": 2
+        }
+      }
+    },
+    {
+      "label": "claude-haiku-5-5",
+      "source": "after-opus",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 46,
+        "regrade": 47,
+        "both": 43
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 254,
+      "agree_binary": 254,
+      "rate_binary": 0.9695,
+      "ci_binary": [
+        0.9491,
+        0.9884
+      ],
+      "kappa": 0.7635,
+      "kappa_binary": 0.7614,
+      "stricter": 4,
+      "lenient": 4,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 240,
+          "ABSENT": 3,
+          "CONTRADICTED": 1
+        },
+        "ABSENT": {
+          "PRESENT": 4,
+          "ABSENT": 12,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 0,
+          "ABSENT": 0,
+          "CONTRADICTED": 2
+        }
+      }
+    },
+    {
+      "label": "claude-haiku-5-5",
+      "source": "after-sonnet",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 47,
+        "regrade": 50,
+        "both": 46
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 256,
+      "agree_binary": 256,
+      "rate_binary": 0.9771,
+      "ci_binary": [
+        0.959,
+        0.9925
+      ],
+      "kappa": 0.8225,
+      "kappa_binary": 0.8211,
+      "stricter": 2,
+      "lenient": 4,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 241,
+          "ABSENT": 4,
+          "CONTRADICTED": 0
+        },
+        "ABSENT": {
+          "PRESENT": 0,
+          "ABSENT": 14,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 2,
+          "ABSENT": 0,
+          "CONTRADICTED": 1
+        }
+      }
+    },
+    {
+      "label": "claude-opus-5-5 (again)",
+      "source": "after-haiku",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 34,
+        "regrade": 35,
+        "both": 34
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 259,
+      "agree_binary": 259,
+      "rate_binary": 0.9885,
+      "ci_binary": [
+        0.9742,
+        1.0
+      ],
+      "kappa": 0.9562,
+      "kappa_binary": 0.9553,
+      "stricter": 2,
+      "lenient": 1,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 221,
+          "ABSENT": 1,
+          "CONTRADICTED": 0
+        },
+        "ABSENT": {
+          "PRESENT": 1,
+          "ABSENT": 33,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 1,
+          "ABSENT": 0,
+          "CONTRADICTED": 5
+        }
+      }
+    },
+    {
+      "label": "claude-opus-5-5 (again)",
+      "source": "after-opus",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 46,
+        "regrade": 48,
+        "both": 45
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 258,
+      "agree_binary": 258,
+      "rate_binary": 0.9847,
+      "ci_binary": [
+        0.9695,
+        0.9963
+      ],
+      "kappa": 0.8755,
+      "kappa_binary": 0.8742,
+      "stricter": 1,
+      "lenient": 3,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 243,
+          "ABSENT": 3,
+          "CONTRADICTED": 0
+        },
+        "ABSENT": {
+          "PRESENT": 1,
+          "ABSENT": 12,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 0,
+          "ABSENT": 0,
+          "CONTRADICTED": 3
+        }
+      }
+    },
+    {
+      "label": "claude-opus-5-5 (again)",
+      "source": "after-sonnet",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 47,
+        "regrade": 48,
+        "both": 47
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 260,
+      "agree_binary": 260,
+      "rate_binary": 0.9924,
+      "ci_binary": [
+        0.9807,
+        1.0
+      ],
+      "kappa": 0.9406,
+      "kappa_binary": 0.9404,
+      "stricter": 0,
+      "lenient": 2,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 243,
+          "ABSENT": 2,
+          "CONTRADICTED": 0
+        },
+        "ABSENT": {
+          "PRESENT": 0,
+          "ABSENT": 16,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 0,
+          "ABSENT": 0,
+          "CONTRADICTED": 1
+        }
+      }
+    },
+    {
+      "label": "claude-sonnet-5-5",
+      "source": "after-haiku",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 34,
+        "regrade": 31,
+        "both": 30
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 247,
+      "agree_binary": 249,
+      "rate_binary": 0.9504,
+      "ci_binary": [
+        0.9234,
+        0.9742
+      ],
+      "kappa": 0.7863,
+      "kappa_binary": 0.8102,
+      "stricter": 8,
+      "lenient": 5,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 215,
+          "ABSENT": 3,
+          "CONTRADICTED": 2
+        },
+        "ABSENT": {
+          "PRESENT": 3,
+          "ABSENT": 30,
+          "CONTRADICTED": 1
+        },
+        "CONTRADICTED": {
+          "PRESENT": 5,
+          "ABSENT": 1,
+          "CONTRADICTED": 2
+        }
+      }
+    },
+    {
+      "label": "claude-sonnet-5-5",
+      "source": "after-opus",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 46,
+        "regrade": 45,
+        "both": 42
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 251,
+      "agree_binary": 252,
+      "rate_binary": 0.9618,
+      "ci_binary": [
+        0.9356,
+        0.9846
+      ],
+      "kappa": 0.6916,
+      "kappa_binary": 0.7163,
+      "stricter": 6,
+      "lenient": 4,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 238,
+          "ABSENT": 3,
+          "CONTRADICTED": 1
+        },
+        "ABSENT": {
+          "PRESENT": 5,
+          "ABSENT": 11,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 1,
+          "ABSENT": 1,
+          "CONTRADICTED": 2
+        }
+      }
+    },
+    {
+      "label": "claude-sonnet-5-5",
+      "source": "after-sonnet",
+      "original_judge": "claude-opus-5-5",
+      "same_judge_code": true,
+      "passes": {
+        "original": 47,
+        "regrade": 46,
+        "both": 44
+      },
+      "facts": 262,
+      "replies": 64,
+      "agree": 252,
+      "agree_binary": 252,
+      "rate_binary": 0.9618,
+      "ci_binary": [
+        0.9368,
+        0.9845
+      ],
+      "kappa": 0.7445,
+      "kappa_binary": 0.7414,
+      "stricter": 7,
+      "lenient": 3,
+      "confusion": {
+        "PRESENT": {
+          "PRESENT": 236,
+          "ABSENT": 3,
+          "CONTRADICTED": 0
+        },
+        "ABSENT": {
+          "PRESENT": 2,
+          "ABSENT": 15,
+          "CONTRADICTED": 0
+        },
+        "CONTRADICTED": {
+          "PRESENT": 5,
+          "ABSENT": 0,
+          "CONTRADICTED": 1
+        }
+      }
+    }
+  ],
+  "warnings": []
+}

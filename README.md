@@ -33,6 +33,7 @@ Every result is from one run per case. A decision is a lead to read: a case an e
 
 - **Eval set.** 64 single-message cases over 6 synthetic members, in four datasets: single-topic questions, multi-part questions (36, of which 32 need a second domain), use of the member's own data, and basic safety. Cases live in `backend/evals/cases/`.
 - **Scoring.** A case passes only if both checks pass: code checks (for example no promised score gains, using the member's own figures) and an LLM judge (Opus) that looks for every expected fact in the reply.
+- **Judge check.** `evals.judge_validation` draws a blind sample of graded replies for a person to label with the judge's own rules, regrades stored replies with other judge models, and reports how often each judge agrees with the person and with the original judge.
 - **Before vs After.** Both bots answer every case; the report pairs the cases and tests the net change.
 - **Skill edits.** A scenario in `scenarios/<id>/` holds an edited copy of one skill, laid over `skills/` for the run. Only the cases the edit can affect rerun: a body edit reruns the cases labeled with that skill or routed to it, a description edit, an always-on edit or a cap change reruns all. The report then counts a flip for the edit only when the edit could reach that case's prompt: the edited skill was loaded (body edit), the routing changed (description or cap), or always (always-on edit).
 - **Online evaluation.** The site has a framework page for evaluating the bots on real traffic: metrics, A/B tests, and causal inference when a change cannot be randomized. It has no data.
@@ -62,6 +63,18 @@ cd backend
 
 # After a fatal API error (a bad key, no credit) the run stops and writes <out>.partial.json; rerun only what errored
 .venv/bin/python -m evals.run --bot after --rerun-errors ../results/after.partial.json --out ../results/after.json
+
+# Judge check: draw a blind sample to label and its page (no API), regrade stored replies with another judge
+# model (API), then compare. The committed sample's exact arguments are in its "args"; it is not overwritten without --force.
+.venv/bin/python -m evals.judge_validation sample --runs ../results/models/after-*.json \
+  --include after-sonnet:mi-023 --out ../results/validation/sample.json
+.venv/bin/python -m evals.judge_validation page --sample ../results/validation/sample.json \
+  --translations ../results/validation/translations.ko.json --out judge-check.html
+.venv/bin/python -m evals.judge_validation regrade --results ../results/models/after-sonnet.json \
+  --judge-model claude-sonnet-5-5 --out ../results/validation/regrades/sonnet-on-after-sonnet.json
+.venv/bin/python -m evals.judge_validation agreement --sample ../results/validation/sample.json \
+  --labels ../results/validation/human-labels.json --regrades ../results/validation/regrades \
+  --runs ../results/models/after-*.json --out ../results/validation/agreement
 ```
 
 - **Cost.** At most about $2.20 per bot for one run of the 64 cases at list prices (Sonnet answering, Opus judging, roughly half each). Older results files add the router's tokens to the answer's, so that figure prices them at Sonnet rates. Each case's result now records the router's, the answering model's and the judge's tokens apart (`routing.usage`, `usage`, `judge.usage`), since the three run on different models. The billing console is the final word, and the runner does not ask before spending.

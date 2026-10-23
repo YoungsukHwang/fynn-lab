@@ -50,7 +50,8 @@ def test_every_module_that_builds_a_prompt_is_hashed() -> None:
         defined = {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
         imported = {a.name for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) for a in node.names}
         uses_builder = bool(defined & builders) or bool(imported & builders)
-        if uses_builder and path.name not in ("run.py", "report.py"):  # they only pass replies through
+        # run.py and report.py only pass replies through; judge_validation.py shows a labeler the profile text.
+        if uses_builder and path.name not in ("run.py", "report.py", "judge_validation.py"):
             assert str(path.relative_to(BACKEND)) in hashed, path
 
 

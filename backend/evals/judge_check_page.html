@@ -1,0 +1,563 @@
+<title>Fynn judge check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a reading column for the reply beside a sticky marking panel for its facts; one reply at a time. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #18202c;
+  --muted: #5b6676;
+  --line: #d9dee6;
+  --accent: #2f4fb3;
+  --accent-soft: #e5eafa;
+  --present: #1f7a4d;
+  --present-soft: #e2f3ea;
+  --absent: #8a5a00;
+  --absent-soft: #fbf0d9;
+  --contra: #b3261e;
+  --contra-soft: #fbe5e3;
+  --font-ui: "Public Sans", "Noto Sans KR", "Apple SD Gothic Neo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-read: "Source Serif 4", "Noto Sans KR", "Apple SD Gothic Neo", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10141b; --surface: #171d26; --ink: #e6eaf0; --muted: #9aa5b4; --line: #2a3340;
+    --accent: #8ea6ff; --accent-soft: #1f2a4a;
+    --present: #6fd3a0; --present-soft: #15301f; --absent: #f0c46a; --absent-soft: #33280f;
+    --contra: #ff8f86; --contra-soft: #3a1a18; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10141b; --surface: #171d26; --ink: #e6eaf0; --muted: #9aa5b4; --line: #2a3340;
+  --accent: #8ea6ff; --accent-soft: #1f2a4a;
+  --present: #6fd3a0; --present-soft: #15301f; --absent: #f0c46a; --absent-soft: #33280f;
+  --contra: #ff8f86; --contra-soft: #3a1a18; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--font-read); font-weight: 600; font-size: 28px; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 2px 0 0; max-width: 62ch; }
+.meter { min-width: 220px; display: flex; flex-direction: column; gap: 6px; font-variant-numeric: tabular-nums; }
+.meter-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.meter-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.meter-fill { height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+details.rubric { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+details.rubric summary { cursor: pointer; font-weight: 600; }
+details.rubric ul { margin: 10px 0 2px; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; max-width: 90ch; }
+.nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 500 12px/1 var(--font-mono); padding: 7px 8px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--muted); cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.chip[data-state="partial"] { border-color: var(--accent); color: var(--accent); }
+.chip[data-state="done"] { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent); }
+.chip[aria-current="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
+.message { font-family: var(--font-read); font-size: 17px; margin: 0; white-space: pre-line; }
+.reply { font-family: var(--font-read); font-size: 16.5px; line-height: 1.65; max-width: 68ch; overflow-wrap: anywhere; }
+.reply h1, .reply h2, .reply h3, .reply h4 { font-family: var(--font-ui); font-size: 15px; margin: 18px 0 6px; }
+.reply p { margin: 0 0 12px; }
+.reply ul, .reply ol { margin: 0 0 12px; padding-left: 22px; }
+.reply code { font-family: var(--font-mono); font-size: 13px; }
+.reply table { border-collapse: collapse; display: block; overflow-x: auto; }
+.reply td, .reply th { border: 1px solid var(--line); padding: 4px 8px; }
+details.profile summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+details.profile pre {
+  font: 12px/1.5 var(--font-mono); background: var(--bg); border-radius: 8px; padding: 10px 12px;
+  overflow-x: auto; margin: 8px 0 0; max-height: 420px;
+}
+.left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 860px) { .panel { position: static; } }
+.fact { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.fact:first-of-type { border-top: 0; padding-top: 2px; }
+.fact-text { margin: 0; }
+.ko { font-family: var(--font-ui); color: var(--muted); font-size: 14px; margin: 2px 0 0; }
+.message-ko { white-space: pre-line; margin-top: 8px; }
+.fact.focused { background: var(--accent-soft); margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 8px; }
+kbd { font: 500 11px var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: var(--surface); }
+.fact-id { font: 500 12px var(--font-mono); color: var(--muted); margin-right: 6px; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice {
+  font: 500 13px var(--font-ui); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer;
+}
+.choice[aria-pressed="true"][data-s="PRESENT"] { background: var(--present-soft); border-color: var(--present); color: var(--present); }
+.choice[aria-pressed="true"][data-s="ABSENT"] { background: var(--absent-soft); border-color: var(--absent); color: var(--absent); }
+.choice[aria-pressed="true"][data-s="CONTRADICTED"] { background: var(--contra-soft); border-color: var(--contra); color: var(--contra); }
+button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+label.note { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+textarea {
+  font: 14px/1.5 var(--font-ui); color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; min-height: 64px; resize: vertical; width: 100%;
+}
+.steps { display: flex; justify-content: space-between; gap: 8px; }
+.btn {
+  font: 600 14px var(--font-ui); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn:disabled { opacity: .45; cursor: default; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.4em; }
+.status[data-tone="error"] { color: var(--contra); }
+.banner { border-radius: 10px; padding: 12px 16px; background: var(--accent-soft); color: var(--ink); }
+.banner[data-tone="warn"] { background: var(--absent-soft); }
+footer textarea { min-height: 160px; font: 12px/1.4 var(--font-mono); }
+footer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .meter-fill { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fynn judge 검증</h1>
+      <p class="sub">코치 답변(영어 원문)을 읽고 기대 사실마다 있음, 없음, 모순 중 하나를 고르세요. eval judge와 같은 규칙입니다. 어느 모델이 쓴 답인지, judge가 뭐라고 했는지는 숨겨져 있어요. 한국어는 빨리 읽기 위한 번역이고, 판정은 영어 원문 기준입니다.</p>
+    </div>
+    <div class="meter" aria-live="polite">
+      <div class="meter-row"><span id="m-replies">답변 0/0</span><span id="m-facts">사실 0/0</span></div>
+      <div class="meter-track"><div class="meter-fill" id="m-fill"></div></div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <details class="rubric" id="rubric" open>
+    <summary>채점 규칙 (judge와 같음)</summary>
+    <ul>
+      <li><strong>있음 (Present):</strong> 답변이 그 사실이나 같은 뜻을 말한다. 다른 표현, 다른 순서, 뜻이 같은 반올림도 있음이다.</li>
+      <li><strong>없음 (Absent):</strong> 답변이 그 사실을 말하지 않거나, 확인할 수 없을 만큼 모호하게 말한다.</li>
+      <li><strong>모순 (Contradicted):</strong> 답변이 그 사실과 맞지 않는 말을 한다. 조건이 붙는 사실("may", "if", "usually")을 확정된 것처럼 말하면 모순이다.</li>
+      <li>"~하지 않는다"로 된 사실("Does not promise approval")은 답변이 그걸 지키면 있음, 어기면 모순이다.</li>
+      <li>적힌 사실만, 답변 글로만 판단한다. 말투, 형식, 길이, 덤으로 붙은 맞는 내용은 보지 않는다. 회원 프로필은 숫자, 날짜, 상품 상태를 확인할 때만 쓴다.</li>
+      <li>단축키: <kbd>1</kbd> 있음, <kbd>2</kbd> 없음, <kbd>3</kbd> 모순 (표시된 사실에 매기고 다음 사실로 넘어감), <kbd>↑</kbd><kbd>↓</kbd> 사실 이동, <kbd>Enter</kbd> 또는 <kbd>→</kbd> 다음 답변, <kbd>←</kbd> 이전 답변.</li>
+    </ul>
+  </details>
+
+  <nav class="nav" id="nav" aria-label="답변 목록"></nav>
+
+  <div class="grid">
+    <div class="left">
+      <section class="card" aria-labelledby="q-label">
+        <p class="eyebrow" id="q-label"><span id="item-id"></span> · 회원 질문</p>
+        <p class="message" id="message"></p>
+        <p class="ko message-ko" id="message-ko"></p>
+        <details class="profile" id="profile-box">
+          <summary id="profile-summary">회원 프로필</summary>
+          <p class="sub" id="profile-lead"></p>
+          <pre id="profile"></pre>
+        </details>
+      </section>
+      <section class="card" aria-labelledby="r-label">
+        <p class="eyebrow" id="r-label">코치 답변 (영어 원문)</p>
+        <div class="reply" id="reply"></div>
+      </section>
+    </div>
+
+    <aside class="panel">
+      <section class="card" aria-labelledby="f-label">
+        <p class="eyebrow" id="f-label">기대 사실</p>
+        <div id="facts"></div>
+        <label class="note" for="note">메모 (선택)
+          <textarea id="note" placeholder="판단하기 애매했던 점이 있으면 적어 주세요"></textarea>
+        </label>
+      </section>
+      <div class="steps">
+        <button class="btn" id="prev" type="button">이전</button>
+        <button class="btn primary" id="next" type="button">다음 답변</button>
+      </div>
+      <p class="status" id="status" role="status"></p>
+      <button class="btn" id="retry" type="button" hidden>다시 저장</button>
+    </aside>
+  </div>
+
+  <footer>
+    <span>누를 때마다 저장되니 중간에 멈췄다가 이어서 하셔도 됩니다.</span>
+    <button class="btn" id="copy" type="button">라벨을 JSON으로 복사</button>
+    <textarea id="export" aria-label="라벨 JSON" readonly hidden></textarea>
+  </footer>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById("data").textContent);
+  const SAMPLE = DATA.sample_id;
+  const items = DATA.items;
+  const STATUSES = [["PRESENT", "있음", "1"], ["ABSENT", "없음", "2"], ["CONTRADICTED", "모순", "3"]];
+  const LOCAL_KEY = "fynn-judge-check:" + SAMPLE;
+  const totalFacts = items.reduce((n, it) => n + it.facts.length, 0);
+  const $ = (id) => document.getElementById(id);
+
+  // labels[item] = {facts: {F1: status}, note, updated}. `dirty` holds items whose latest local
+  // state the store has not confirmed; a snapshot never overwrites those. Until the store's first
+  // definitive snapshot nothing is written: `edits` keeps what the person changed meanwhile and
+  // `base` the item's timestamp before that, so a newer copy saved elsewhere gets the edits on top
+  // instead of being overwritten by this browser's older copy.
+  let labels = {};
+  const dirty = new Set();
+  const edits = {};
+  const base = {};
+  const failed = new Set();
+  const pending = {};
+  const inflight = {};
+  let current = 0;
+  let focusFact = 0;
+  let touched = false;
+  let db = null;
+  let dbState = "connecting";
+  let synced = false;
+  let noteTimer = null;
+
+  try { labels = JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}") || {}; } catch (e) { labels = {}; }
+
+  function entry(id) {
+    if (!labels[id]) labels[id] = { facts: {}, note: "", updated: "" };
+    if (!labels[id].facts) labels[id].facts = {};
+    return labels[id];
+  }
+  function doneCount(it) { const f = (labels[it.item] || {}).facts || {}; return it.facts.filter((x) => f[x.id]).length; }
+  function persistLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(labels)); } catch (e) { /* storage blocked */ } }
+
+  function escapeHtml(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function renderReply(text) {
+    const el = $("reply");
+    if (window.marked && typeof window.marked.parse === "function") {
+      el.style.whiteSpace = "";
+      el.innerHTML = window.marked.parse(escapeHtml(text), { gfm: true, breaks: false });
+    } else {
+      el.textContent = text;
+      el.style.whiteSpace = "pre-wrap";
+    }
+  }
+  function renderProfile(pid) {
+    const raw = DATA.profiles[pid] || "";
+    const open = raw.indexOf("{");
+    const close = raw.lastIndexOf("}");
+    let lead = raw, body = "";
+    if (open >= 0 && close > open) {
+      try {
+        body = JSON.stringify(JSON.parse(raw.slice(open, close + 1)), null, 2);
+        lead = raw.slice(0, open).replace(/```json\s*$/, "").trim();
+      } catch (e) { lead = ""; body = raw; }
+    }
+    $("profile-summary").textContent = "회원 프로필 (" + pid + ")";
+    $("profile-lead").textContent = lead;
+    $("profile").textContent = body;
+  }
+
+  function renderMeter() {
+    const facts = items.reduce((n, it) => n + doneCount(it), 0);
+    const replies = items.filter((it) => doneCount(it) === it.facts.length).length;
+    $("m-replies").textContent = "답변 " + replies + "/" + items.length;
+    $("m-facts").textContent = "사실 " + facts + "/" + totalFacts;
+    $("m-fill").style.width = (100 * facts / totalFacts).toFixed(1) + "%";
+    const banner = $("banner");
+    if (dbState === "absent") {
+      banner.hidden = false; banner.dataset.tone = "warn";
+      banner.textContent = "이 화면에서는 Claude가 읽을 수 있게 저장되지 않아서, 이 브라우저에만 남습니다. claude.ai에 로그인해서 열거나, \"라벨을 JSON으로 복사\"를 눌러 채팅에 붙여 넣어 주세요.";
+    } else if (facts === totalFacts && !dirty.size) {
+      banner.hidden = false; banner.dataset.tone = "";
+      banner.textContent = "사실 " + totalFacts + "개를 모두 매기고 저장했어요. 채팅에서 Claude에게 끝났다고 알려 주세요.";
+    } else {
+      banner.hidden = true;
+    }
+  }
+
+  function renderNav() {
+    const nav = $("nav");
+    nav.textContent = "";
+    items.forEach((it, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = it.item;
+      const d = doneCount(it);
+      b.dataset.state = d === 0 ? "empty" : d === it.facts.length ? "done" : "partial";
+      b.setAttribute("aria-current", i === current ? "true" : "false");
+      b.setAttribute("aria-label", it.item + ", 사실 " + it.facts.length + "개 중 " + d + "개 매김");
+      b.addEventListener("click", () => go(i));
+      nav.appendChild(b);
+    });
+  }
+
+  function renderFacts() {
+    const it = items[current];
+    const e = labels[it.item] || { facts: {}, note: "" };
+    const box = $("facts");
+    box.textContent = "";
+    it.facts.forEach((f, index) => {
+      const row = document.createElement("div");
+      row.className = "fact" + (index === focusFact ? " focused" : "");
+      const p = document.createElement("p");
+      p.className = "fact-text";
+      const fid = document.createElement("span");
+      fid.className = "fact-id"; fid.textContent = f.id;
+      p.appendChild(fid);
+      p.appendChild(document.createTextNode(f.fact));
+      row.appendChild(p);
+      if (f.ko) {
+        const ko = document.createElement("p");
+        ko.className = "ko"; ko.textContent = f.ko;
+        row.appendChild(ko);
+      }
+      const group = document.createElement("div");
+      group.className = "choices"; group.setAttribute("role", "group"); group.setAttribute("aria-label", f.id + " 판정");
+      STATUSES.forEach(([s, label, key]) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "choice"; b.dataset.s = s;
+        b.textContent = label + (index === focusFact ? " " + key : "");
+        b.setAttribute("aria-pressed", (e.facts || {})[f.id] === s ? "true" : "false");
+        b.addEventListener("click", () => { focusFact = index; mark(it.item, f.id, s); });
+        group.appendChild(b);
+      });
+      row.appendChild(group);
+      box.appendChild(row);
+    });
+    const note = $("note");
+    if (document.activeElement !== note) note.value = e.note || "";
+  }
+
+  function renderNext() {
+    const it = items[current];
+    $("prev").disabled = current === 0;
+    $("next").disabled = current === items.length - 1;
+    $("next").textContent = doneCount(it) === it.facts.length ? "다음 답변" : "건너뛰기";
+  }
+
+  function renderItem(resetFocus) {
+    const it = items[current];
+    $("item-id").textContent = it.item;
+    $("message").textContent = it.message;
+    $("message-ko").textContent = it.message_ko || "";
+    if (resetFocus) focusFact = firstOpenFact(it, -1);
+    renderProfile(it.persona);
+    renderReply(it.reply);
+    renderFacts();
+    renderNext();
+  }
+
+  // Moving to another reply puts the marker on its first open fact; a store update keeps it in place.
+  function renderAll(resetFocus) { renderNav(); renderItem(resetFocus); renderMeter(); }
+
+  // The next fact after `after` with no mark yet, wrapping within the reply; -1 when all are marked.
+  function firstOpenFact(it, after) {
+    const f = (labels[it.item] || {}).facts || {};
+    for (let k = 1; k <= it.facts.length; k++) {
+      const i = (after + k) % it.facts.length;
+      if (!f[it.facts[i].id]) return i;
+    }
+    return -1;
+  }
+
+  function go(i) {
+    flushNote();
+    touched = true;
+    current = Math.max(0, Math.min(items.length - 1, i));
+    renderAll(true);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function remember(itemId) {
+    if (synced) return null;
+    if (!(itemId in base)) base[itemId] = entry(itemId).updated || "";
+    if (!edits[itemId]) edits[itemId] = { facts: {} };
+    return edits[itemId];
+  }
+
+  function mark(itemId, factId, status) {
+    touched = true;
+    const e = entry(itemId);
+    if (e.facts[factId] === status) delete e.facts[factId]; else e.facts[factId] = status;
+    const pendingEdit = remember(itemId);
+    if (pendingEdit) pendingEdit.facts[factId] = e.facts[factId] || null;
+    save(itemId);
+    const it = items[current];
+    if (it.item === itemId && e.facts[factId]) focusFact = firstOpenFact(it, it.facts.findIndex((f) => f.id === factId));
+    renderNav(); renderFacts(); renderMeter(); renderNext();
+  }
+
+  function setStatus(text, tone) {
+    const s = $("status"); s.textContent = text; s.dataset.tone = tone || "";
+    $("retry").hidden = failed.size === 0;
+  }
+
+  function save(itemId) {
+    const e = entry(itemId);
+    e.updated = new Date().toISOString();
+    dirty.add(itemId);
+    persistLocal();
+    if (!db || !synced) { setStatus(dbState === "absent" ? "이 브라우저에만 저장됨" : "이 브라우저에 저장됨, 저장소에 연결하는 중"); return; }
+    queue(itemId);
+  }
+
+  function queue(itemId) {
+    const e = entry(itemId);
+    pending[itemId] = { facts: Object.assign({}, e.facts), note: e.note || "", updated: e.updated, sample: SAMPLE };
+    if (!inflight[itemId]) flush(itemId);
+  }
+
+  async function flush(itemId) {
+    inflight[itemId] = true;
+    setStatus("저장 중");
+    while (pending[itemId]) {
+      const body = pending[itemId];
+      pending[itemId] = null;
+      let err = null;
+      try {
+        await db.collection("labels").doc(itemId).set(body);
+      } catch (e1) {
+        err = e1;
+        if (e1 && e1.code === "unavailable") {
+          await new Promise((r) => setTimeout(r, 400 + Math.random() * 600));
+          try { await db.collection("labels").doc(itemId).set(body); err = null; } catch (e2) { err = e2; }
+        }
+      }
+      if (err) {
+        failed.add(itemId);
+        inflight[itemId] = false;
+        setStatus(itemId + " 저장 실패" + (err.message ? ": " + err.message : "") + ". 표시는 이 브라우저에 남아 있어요.", "error");
+        renderMeter();
+        return;
+      }
+      failed.delete(itemId);
+      if (!pending[itemId] && (labels[itemId] || {}).updated === body.updated) dirty.delete(itemId);
+    }
+    inflight[itemId] = false;
+    if (failed.size) setStatus("아직 저장 안 된 답변: " + Array.from(failed).join(", "), "error");
+    else if (!Object.values(inflight).some(Boolean)) setStatus("저장됨");
+    renderMeter();
+  }
+
+  function flushNote() {
+    if (noteTimer) { clearTimeout(noteTimer); noteTimer = null; }
+    const it = items[current];
+    const value = $("note").value;
+    if (((labels[it.item] || {}).note || "") !== value) {
+      entry(it.item).note = value;
+      const pendingEdit = remember(it.item);
+      if (pendingEdit) pendingEdit.note = value;
+      save(it.item);
+    }
+  }
+
+  function merge(snap) {
+    const definitive = !snap.metadata.fromCache;
+    let jumped = false;
+    const inStore = new Set();
+    snap.docs.forEach((d) => {
+      const body = d.data() || {};
+      if (body.sample !== SAMPLE) return; // saved for another sample: its item numbers mean other replies
+      inStore.add(d.id);
+      if (definitive && !synced && edits[d.id]) {
+        if ((body.updated || "") > (base[d.id] || "")) {
+          // Saved elsewhere after this browser's copy: start from that copy and replay the edits.
+          const facts = Object.assign({}, body.facts || {});
+          Object.entries(edits[d.id].facts).forEach(([fid, s]) => { if (s) facts[fid] = s; else delete facts[fid]; });
+          const note = "note" in edits[d.id] ? edits[d.id].note : body.note || "";
+          labels[d.id] = { facts, note, updated: new Date().toISOString() };
+        }
+        dirty.add(d.id);
+        return;
+      }
+      if (dirty.has(d.id) || inflight[d.id]) return;
+      const local = labels[d.id];
+      if (!local || (body.updated || "") >= (local.updated || "")) {
+        labels[d.id] = { facts: Object.assign({}, body.facts || {}), note: body.note || "", updated: body.updated || "" };
+      } else if (definitive) {
+        dirty.add(d.id); queue(d.id); // this browser holds a newer copy the store never got
+      }
+    });
+    if (definitive && !synced) {
+      synced = true;
+      Object.keys(labels).forEach((id) => {
+        const e = labels[id];
+        if (!inStore.has(id) && e && Object.keys(e.facts || {}).length) dirty.add(id);
+      });
+      Array.from(dirty).forEach((id) => queue(id));
+      if (!touched && start < 0 && document.activeElement !== $("note")) {
+        const firstOpen = items.findIndex((it) => doneCount(it) < it.facts.length);
+        if (firstOpen >= 0 && firstOpen !== current) { flushNote(); current = firstOpen; jumped = true; }
+      }
+    }
+    persistLocal();
+    renderAll(jumped);
+  }
+
+  $("note").addEventListener("input", () => {
+    touched = true;
+    if (noteTimer) clearTimeout(noteTimer);
+    noteTimer = setTimeout(flushNote, 800);
+  });
+  $("note").addEventListener("blur", flushNote);
+  $("prev").addEventListener("click", () => go(current - 1));
+  $("next").addEventListener("click", () => go(current + 1));
+  $("retry").addEventListener("click", () => { Array.from(failed).forEach((id) => queue(id)); });
+  document.addEventListener("keydown", (ev) => {
+    const t = ev.target;
+    if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT")) {
+      if (ev.key === "Escape") t.blur();
+      return;
+    }
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const it = items[current];
+    const choice = STATUSES.find(([, , key]) => key === ev.key);
+    if (choice && focusFact >= 0) {
+      ev.preventDefault();
+      mark(it.item, it.facts[focusFact].id, choice[0]);
+    } else if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault();
+      const n = it.facts.length;
+      focusFact = ((focusFact < 0 ? 0 : focusFact) + (ev.key === "ArrowDown" ? 1 : n - 1)) % n;
+      renderFacts();
+    } else if (ev.key === "ArrowRight" || (ev.key === "Enter" && !(t && t.tagName === "BUTTON"))) {
+      go(current + 1);
+    } else if (ev.key === "ArrowLeft") {
+      go(current - 1);
+    }
+  });
+  $("copy").addEventListener("click", () => {
+    flushNote();
+    const out = {};
+    Object.keys(labels).sort().forEach((k) => { out[k] = Object.assign({ sample: SAMPLE }, labels[k]); });
+    const text = JSON.stringify({ sample_id: SAMPLE, labels: out }, null, 2);
+    try {
+      navigator.clipboard.writeText(text).then(() => setStatus("라벨을 JSON으로 복사했어요"), () => fallbackCopy(text));
+    } catch (e) { fallbackCopy(text); }
+  });
+  function fallbackCopy(text) {
+    const area = $("export");
+    area.hidden = false; area.value = text; area.focus(); area.select();
+    setStatus("여기서는 복사가 막혀 있어서, 버튼 아래 상자에 JSON을 선택해 두었어요. 키보드로 복사해 주세요.");
+  }
+
+  const hash = (location.hash || "").slice(1);
+  const start = items.findIndex((it) => it.item === hash);
+  if (start >= 0) current = start;
+  else {
+    const firstOpen = items.findIndex((it) => doneCount(it) < it.facts.length);
+    current = firstOpen >= 0 ? firstOpen : 0;
+  }
+  renderAll(true);
+
+  Promise.resolve(window.claude && window.claude.use ? window.claude.use("db") : null).then((store) => {
+    if (!store) { dbState = "absent"; renderMeter(); return; }
+    db = store;
+    dbState = "ready";
+    db.collection("labels").onSnapshot(merge, (err) => {
+      setStatus("저장소 응답이 끊겼어요" + (err && err.code ? " (" + err.code + ")" : "") + ". 표시는 이 브라우저에 남아 있으니 새로고침해서 다시 연결해 주세요.", "error");
+    });
+  }, () => { dbState = "absent"; renderMeter(); });
+})();
+</script>
