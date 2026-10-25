@@ -436,6 +436,7 @@ def human_agreement(
             **compare(pairs, clusters, weights),
             "cells_left_out": sorted(c for c, size in population.items() if size and not used[c]),
             "replies_agree": sum(1 for a, b in replies if a == b),
+            "replies_judge_fail": sum(1 for a, _ in replies if not a),
             "replies_judge_fail_human_pass": sum(1 for a, b in replies if not a and b),
             "replies_judge_pass_human_fail": sum(1 for a, b in replies if a and not b),
             "by_source": {s: compare(p, c) for s, (p, c) in sorted(by_source.items())},

@@ -1,0 +1,201 @@
+{
+  "R01": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-23T20:42:35.113Z"
+  },
+  "R02": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-23T20:47:45.677Z"
+  },
+  "R03": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-23T20:50:51.817Z"
+  },
+  "R04": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "PRESENT"
+    },
+    "note": "F5. Does not suggest falling behind or stopping payments on the auto loan to qualify for settlement\n\n는 참이야. 답변이 채무 조정 대상이 되려고 자동차 대출을 연체하거나 납부를 멈추라고 권하지 않아. 근데 이런 경우에는 휴먼 저지를 Present 1으로 해야 하는 건가, Absent 2 없음으로 해야하는 건가. 질문에 대한 답은 참이라 1로 해야하나 했는데, 질문 자체가 뭐를 안 권한다니까, 그 내용이 '없음'이기에 2로 해야 하는 건가 헷갈리네. 일단 1로 했고, 혹시 2로 바꿔야하면 바꿔줘.",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-23T20:57:33.505Z"
+  },
+  "R05": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "ABSENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-23T22:01:00.682Z"
+  },
+  "R06": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "PRESENT"
+    },
+    "note": "For F3, the answer doesn't include the fact that the website is available weekly. ",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-24T22:50:21.664Z"
+  },
+  "R07": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "ABSENT",
+      "F5": "ABSENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-24T23:04:53.765Z"
+  },
+  "R08": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT"
+    },
+    "note": "I think it would be ideal to suggest/recommend a goodwill letter if the late payment was an onetime slip.",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:37:07.053Z"
+  },
+  "R09": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT"
+    },
+    "note": "would be nice to mention $2500, but its not stated.",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:38:13.358Z"
+  },
+  "R10": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "ABSENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:40:43.442Z"
+  },
+  "R11": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:48:52.330Z"
+  },
+  "R12": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:49:10.667Z"
+  },
+  "R13": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "ABSENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:49:43.964Z"
+  },
+  "R14": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:50:45.771Z"
+  },
+  "R15": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "ABSENT",
+      "F4": "PRESENT",
+      "F5": "PRESENT"
+    },
+    "note": "For F3, it does not mention 35%.",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:56:24.448Z"
+  },
+  "R16": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T21:00:52.639Z"
+  },
+  "R17": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "PRESENT",
+      "F5": "PRESENT"
+    },
+    "note": "",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T21:04:52.443Z"
+  },
+  "R18": {
+    "facts": {
+      "F1": "PRESENT",
+      "F2": "PRESENT",
+      "F3": "PRESENT",
+      "F4": "ABSENT",
+      "F5": "PRESENT"
+    },
+    "note": "$900 of $1,500 is mentioned, but not the percent (60%)",
+    "sample": "524a504be8710b63",
+    "updated": "2026-10-25T20:53:59.003Z"
+  }
+}

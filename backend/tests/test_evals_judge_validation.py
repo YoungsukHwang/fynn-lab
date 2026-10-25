@@ -334,6 +334,7 @@ def test_human_agreement_weights_by_the_replies_compared() -> None:
     assert (original["replies"], original["facts"], original["agree_binary"], original["stricter"]) == (2, 4, 3, 1)
     assert original["weighted_rate_binary"] == 0.875  # R01 stands for 9 replies (2 agree), R02 for 3 (1 of 2 agree)
     assert (original["replies_agree"], original["replies_judge_fail_human_pass"]) == (1, 1)
+    assert original["replies_judge_fail"] == 1  # R02; the person passes it, so it is also the one disagreement
     assert (report["labeled_items"], report["partly_labeled_items"], report["labeled_random_replies"]) == (3, 1, 2)
     assert report["targeted"][0]["facts"] == [{"id": "F1", "human": P, "original (m)": A},
                                               {"id": "F2", "human": P, "original (m)": P}]
