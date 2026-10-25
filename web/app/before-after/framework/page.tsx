@@ -169,6 +169,14 @@ export default async function BeforeAfterFrameworkPage() {
             skills from two or more domains. In the other cases the two prompts still differ (full domain against a
             routed subset), so their results can differ too, but not because one bot lacks a needed skill.
           </p>
+          <p>
+            {cases.filter((c) => c.designed).length} of the multi-domain cases were written for this comparison: every
+            question beyond the Before router&apos;s likely pick was built around a fact only another domain&apos;s skill
+            held, so a Before agent should rarely pass them. (One no longer fits: a later skill edit copied its fact into
+            a skill of the Before router&apos;s pick.) They show the mechanism. The results page reports them apart from
+            the other multi-domain cases, which show how big the gap is when a case was not built around the Before
+            domains.
+          </p>
         </SectionHeader>
 
         {domains.length > 0 && (

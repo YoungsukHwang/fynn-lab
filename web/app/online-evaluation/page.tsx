@@ -70,7 +70,7 @@ const LANES: { eyebrow: string; title: string; entries: Entry[]; style: "decides
     style: "plain",
     entries: [
       { name: "Safety violations", text: "Promising a score gain, suggesting a product to a member in hardship, repeating a card number." },
-      { name: "Preventable handoffs", text: "Chats sent to human support that Coach should have solved." },
+      { name: "Preventable handoffs", text: "Chats sent to human support that the coach should have solved." },
       { name: "Latency, 95th percentile", text: "95 of 100 replies arrive within it. An average hides the slow ones." },
       { name: "Cost per chat", text: "Before and After load different skills, so cost is measured." },
     ],
@@ -107,12 +107,12 @@ const RULES: Entry[] = [
     text: "Each member sees one version on every visit and device, so no chat switches bots mid-way. Per-reply metrics such as latency are combined per member, since one member's messages are alike.",
   },
   {
-    name: "Count members from their first Coach chat",
-    text: "Others cannot be affected. Nobody sees a difference before opening Coach, so both groups open it at the same rate.",
+    name: "Count members from their first coach chat",
+    text: "Others cannot be affected. Nobody sees a difference before opening the coach, so both groups open it at the same rate.",
   },
   {
     name: "Name one primary metric",
-    text: "If a change does nothing, 20 metrics tested at 5% still show about one win by chance. Correct the rest, for example with the Holm method, which keeps the chance of any false win at 5% or less.",
+    text: "If a change does nothing, 20 metrics tested at 5% still show about one significant result by chance, as likely against B as for it. Correct the rest, for example with the Holm method, which keeps the chance of any false win at 5% or less.",
   },
   {
     name: "Set guardrail margins",
@@ -167,9 +167,9 @@ const METHODS: Method[] = [
   {
     situation: "As an opt-in, with an invitation sent to a random half",
     method: "Encouragement design (instrumental variables)",
-    what: "The gap between invited and not invited, scaled by the rise in Coach use, estimates Coach's effect for members who use it because they were invited.",
-    assumes: "The invitation acts only through Coach use, and no one uses Coach less because of it.",
-    probe: "The rise in use can be measured. Acting only through Coach can only be argued.",
+    what: "The gap between invited and not invited, scaled by the rise in coach use, estimates the coach's effect for members who use it because they were invited.",
+    assumes: "The invitation acts only through coach use, and no one uses the coach less because of it.",
+    probe: "The rise in use can be measured. Acting only through the coach can only be argued.",
   },
   {
     situation: "As an opt-in, with nothing random (turning on Rent Reporting)",

@@ -26,8 +26,7 @@ export function Nav() {
             key={link.href}
             href={link.href}
             aria-current={current}
-            aria-label={link.label}
-            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors sm:px-3.5 ${
+            className={`whitespace-nowrap rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3.5 ${
               active ? "bg-ink text-white" : "text-slate hover:bg-white hover:text-ink"
             }`}
           >

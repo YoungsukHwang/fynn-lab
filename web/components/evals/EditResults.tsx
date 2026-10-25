@@ -1,7 +1,7 @@
 import { CaseChangeList } from "@/components/evals/CaseChangeList";
 import { Chip, type ChipTone } from "@/components/evals/ui";
 import type { Attribution, CaseChange, Comparison, Decision } from "@/lib/evalData";
-import { formatTimestamp, plural } from "@/lib/evalLabels";
+import { formatTimestamp, plural, pPhrase, runsPerCase } from "@/lib/evalLabels";
 
 /** One skill edit (or the skill-cap change) and the report that compared it with the After run. */
 export interface EditResult {
@@ -34,13 +34,46 @@ const MARKS = {
 
 type MarkKind = keyof typeof MARKS;
 
+/** "Ship", or "Lead: ship" when the paired test of the net change does not back the decision. */
+export function decisionLabel(a: Attribution): string {
+  const label = DECISIONS[a.decision].label;
+  return a.tested === false ? `Lead: ${label.toLowerCase()}` : label;
+}
+
 function DecisionChip({ attribution, shipped }: { attribution: Attribution; shipped: string | null }) {
-  const decision = DECISIONS[attribution.decision];
+  // A lead keeps a quiet chip, so only decisions the test backs carry the decision's color.
+  const tone = attribution.tested === false ? "neutral" : DECISIONS[attribution.decision].tone;
   return (
     <span className="flex flex-wrap items-center gap-1.5">
-      <Chip tone={decision.tone}>{decision.label}</Chip>
+      <Chip tone={tone}>{decisionLabel(attribution)}</Chip>
       {shipped && <Chip tone="dark">Shipped {shipped}</Chip>}
     </span>
+  );
+}
+
+/** The report's own evidence next to the decision: the flag-rule verdict, the paired test, the hypothesis. */
+function Evidence({ comparison }: { comparison: Comparison }) {
+  const { report } = comparison;
+  const test = report.pairedTest;
+  const hyp = report.hypothesisResult;
+  const runs = report.flagRule ? Math.max(report.flagRule.baselineRepeats, report.flagRule.candidateRepeats) : 1;
+  return (
+    <dl className="mt-3 grid gap-x-4 gap-y-1 rounded-xl bg-canvas px-3 py-2.5 text-sm leading-6 sm:grid-cols-[11rem_minmax(0,1fr)]">
+      <dt className="text-slate">Net-change test</dt>
+      <dd className="text-ink">
+        {test ? `${pPhrase(test.overall.pValue, test.alpha)}, ${runsPerCase(runs)} per case` : "not run"}
+      </dd>
+      <dt className="text-slate">Flag-rule verdict</dt>
+      <dd className="text-ink">{report.verdict || "n/a"}</dd>
+      {hyp && (
+        <>
+          <dt className="text-slate">Hypothesis</dt>
+          <dd className="text-ink">
+            expected {hyp.expected}, observed {hyp.observed} ({hyp.matches ? "matches" : "does not match"})
+          </dd>
+        </>
+      )}
+    </dl>
   );
 }
 
@@ -73,7 +106,7 @@ export function EditScorecard({ edits }: { edits: EditResult[] }) {
         <h3 className="text-base font-semibold text-ink">What each edit changed</h3>
         <p className="mt-1 text-sm leading-6 text-slate">
           One mark per case that flipped. A flip counts for the edit only when the edit could reach that case&apos;s
-          prompt; the rest got the same prompt as before, so they flipped by chance.
+          prompt; the rest count as chance.
         </p>
       </figcaption>
       <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate" aria-label="Legend">
@@ -120,6 +153,7 @@ export function EditScorecard({ edits }: { edits: EditResult[] }) {
                 <th scope="col" className="py-2 pr-3 font-semibold">Fixed</th>
                 <th scope="col" className="py-2 pr-3 font-semibold">Broken</th>
                 <th scope="col" className="py-2 pr-3 font-semibold">By chance</th>
+                <th scope="col" className="py-2 pr-3 font-semibold">Net-change test</th>
                 <th scope="col" className="py-2 font-semibold">Decision</th>
               </tr>
             </thead>
@@ -132,7 +166,12 @@ export function EditScorecard({ edits }: { edits: EditResult[] }) {
                     <td className="py-2 pr-3 font-mono text-xs">{a.fixed.join(", ") || "none"}</td>
                     <td className="py-2 pr-3 font-mono text-xs">{a.broken.join(", ") || "none"}</td>
                     <td className="py-2 pr-3 font-mono text-xs">{[...a.chanceUp.map((id) => `${id} (now passes)`), ...a.chanceDown.map((id) => `${id} (now fails)`)].join(", ") || "none"}</td>
-                    <td className="py-2">{DECISIONS[a.decision].label}{edit.shipped ? ` (shipped ${edit.shipped})` : ""}</td>
+                    <td className="py-2 pr-3 text-xs">
+                      {edit.comparison?.report.pairedTest
+                        ? pPhrase(edit.comparison.report.pairedTest.overall.pValue, edit.comparison.report.pairedTest.alpha)
+                        : "not run"}
+                    </td>
+                    <td className="py-2">{decisionLabel(a)}{edit.shipped ? ` (shipped ${edit.shipped})` : ""}</td>
                   </tr>
                 );
               })}
@@ -188,6 +227,7 @@ export function EditCard({ edit, personaNames }: { edit: EditResult; personaName
       ) : (
         <>
           <p className="mt-4 text-base font-semibold text-ink">{decisionSentence(a)}</p>
+          <Evidence comparison={comparison} />
           {(
             [
               ["Fixed by the edit", pick(comparison.improved, a.fixed)],
@@ -212,7 +252,8 @@ export function EditCard({ edit, personaNames }: { edit: EditResult; personaName
                 ...a.chanceUp.map((id) => `${id} ↑`),
                 ...a.chanceDown.map((id) => `${id} ↓`),
               ].join(", ")}
-              . The edit could not reach these cases, so they got the same prompt as before.
+              . These were outside the edit&apos;s reach: it was not in their answering prompt, or was not the only
+              thing that changed it.
             </p>
           )}
           <p className="mt-3 text-xs leading-5 text-slate">

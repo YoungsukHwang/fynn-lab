@@ -20,17 +20,19 @@ const CHANGES = [
   {
     change: "A topic skill's body",
     rerun: "The cases labeled with that skill or routed to it last time",
-    reaches: "A case whose answer loads the edited skill",
+    reaches:
+      "A case whose answer loaded the edited skill both before and with the edit. The router never reads bodies, so when only one side loaded it, the router changed the prompt too and the flip is not put on the edit",
   },
   {
     change: "A topic skill's description",
     rerun: "Every case",
-    reaches: "A case whose routing changed, since only the router reads descriptions",
+    reaches: "A case where the edited skill entered or left the routing, since only the router reads descriptions",
   },
   {
     change: "The skill cap",
     rerun: "Every case",
-    reaches: "A case whose routing changed",
+    reaches:
+      "A case whose routing changed where the cap mattered: the run with the lower cap filled it, or the run with the higher cap went past it",
   },
   {
     change: "An always-on skill",
@@ -85,9 +87,13 @@ export default async function SkillEditsFrameworkPage() {
       <section aria-labelledby="counting" className="flex flex-col gap-4">
         <SectionHeader id="counting" eyebrow="3 · Fixed, broken, chance" title="Telling the edit apart from chance">
           <p>
-            The same prompt can pass one time and fail the next. In these runs about one case in eight flipped with
-            nothing changed. So a flip only counts for the edit when the edit could have reached that case&apos;s answer.
-            The answering agent sees only the skills it loads, so each kind of edit has one way in:
+            The same prompt can pass one time and fail the next: in cases these edits could not reach and whose routing
+            did not change, about one in eight flipped between runs. The router also reorders, and now and then changes, its picks between identical
+            runs. So a flip only counts for the edit when the edit itself could have changed that case&apos;s answering
+            prompt (routes compare as sets, so a new order alone does not count). Descriptions and the cap are also in
+            the router&apos;s instructions, so these rules assume such an edit acts only through the skills it adds or
+            removes. Each kind of edit has one way in (when an edit also comes with a cap change, the cases where the
+            cap mattered count too):
           </p>
         </SectionHeader>
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
@@ -102,7 +108,10 @@ export default async function SkillEditsFrameworkPage() {
           {[
             ["Fixed by the edit", "The edit reached the case, and it now passes."],
             ["Broken by the edit", "The edit reached the case, and it now fails."],
-            ["Flipped by chance", "The edit could not reach the case: its prompt was the same as before."],
+            [
+              "Flipped by chance",
+              "Outside the edit's reach: the edit was not in the case's answering prompt, or was not the only thing that changed it.",
+            ],
           ].map(([title, body]) => (
             <div key={title} className="rounded-2xl border border-line bg-white p-4">
               <p className="text-sm font-semibold text-ink">{title}</p>
@@ -115,7 +124,11 @@ export default async function SkillEditsFrameworkPage() {
           fixed cases and broke none, <span className="font-semibold text-ink">Tradeoff</span> when it broke some but
           fixed at least as many, <span className="font-semibold text-ink">Do not ship</span> when it broke more than it
           fixed, and <span className="font-semibold text-ink">No effect</span> when no case it could reach flipped. A
-          case the edit could reach may still have flipped by chance, so a fix or a break is a lead to read, not proof.
+          case the edit could reach may still have flipped by chance. So unless the paired test of the net change backs
+          it (a significant gain for Ship, a significant loss for Do not ship), the decision is shown as a{" "}
+          <span className="font-semibold text-ink">lead</span> (for example &ldquo;Lead: ship&rdquo;): worth checking
+          with more runs, not proof. A tradeoff is always a lead. The test counts every flip, including those outside
+          the edit&apos;s reach.
         </p>
       </section>
 

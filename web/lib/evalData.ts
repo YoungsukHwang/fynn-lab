@@ -63,6 +63,7 @@ export interface EvalCase {
   expectedFacts: string[];
   mustNotRegex: string[];
   mustIncludeRegex: string[];
+  designed: boolean; // written so a Before agent cannot pass it (backend/evals/cases.py)
 }
 
 export interface PersonaInfo {
@@ -285,6 +286,8 @@ export interface Report {
   // Not part of the verdict; null in reports written before evals/quality.py.
   routing: { baseline: RoutingQuality; candidate: RoutingQuality } | null;
   lengths: { baseline: ReplyLengths; candidate: ReplyLengths } | null;
+  // Answer plus router per 1,000 replies, warm cache; null per side for files without router tokens apart.
+  costPer1000: { baseline: number | null; candidate: number | null } | null;
 }
 
 /** Whether the answering agent had every topic skill a case is labeled with (evals/quality.py). */
@@ -551,6 +554,7 @@ export async function getCases(): Promise<EvalCase[]> {
         intents: num(item.intents, 1),
         skills: strList(item.skills),
         expectedFacts: strList(item.expected_facts),
+        designed: item.designed === true,
         mustNotRegex: strList(item.must_not_regex),
         mustIncludeRegex: strList(item.must_include_regex),
       });
@@ -779,6 +783,12 @@ export async function getReport(name: string): Promise<Report | null> {
       isObj(raw.lengths) && isObj(raw.lengths.baseline) && isObj(raw.lengths.candidate)
         ? { baseline: toReplyLengths(raw.lengths.baseline), candidate: toReplyLengths(raw.lengths.candidate) }
         : null,
+    costPer1000: isObj(raw.cost_per_1000)
+      ? {
+          baseline: isObj(raw.cost_per_1000.baseline) ? numOrNull(raw.cost_per_1000.baseline.total) : null,
+          candidate: isObj(raw.cost_per_1000.candidate) ? numOrNull(raw.cost_per_1000.candidate.total) : null,
+        }
+      : null,
   };
 }
 
@@ -915,6 +925,7 @@ export interface Attribution {
   chanceDown: string[];
   errored: string[]; // left out: one side had only errored runs
   decision: Decision;
+  tested: boolean | null; // the paired test backs the decision; false makes it a lead; null in older reports
 }
 
 function toAttribution(value: unknown): Attribution | null {
@@ -928,6 +939,7 @@ function toAttribution(value: unknown): Attribution | null {
     chanceDown: strList(value.chance_down),
     errored: strList(value.errored),
     decision: (["ship", "tradeoff", "do not ship", "no effect"].includes(decision) ? decision : "no effect") as Decision,
+    tested: typeof value.tested === "boolean" ? value.tested : null,
   };
 }
 
@@ -1226,6 +1238,9 @@ export interface BeforeAfterData {
   comparison: Comparison | null;
   overall: CaseGroup | null;
   byDomains: CaseGroup[]; // cases whose labeled skills need one Before domain vs more than one
+  // The multi-domain cases written so a Before agent cannot pass them, the other multi-domain cases, and
+  // the one-domain cases: the designed group shows the mechanism, the others how big the gap is elsewhere.
+  byConstruction: CaseGroup[];
   crossByQuestions: CaseGroup[]; // the cases that need a second domain, split by number of questions
   byQuestions: CaseGroup[];
   byDataset: CaseGroup[];
@@ -1308,6 +1323,26 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
         cases.filter((c) => !cross.has(c.id)).map((c) => c.id),
       ),
     ],
+    byConstruction: [
+      group(
+        "designed",
+        "Needs a second domain, written for it",
+        "each extra question hinges on a fact only another domain's skill holds",
+        cases.filter((c) => cross.has(c.id) && c.designed).map((c) => c.id),
+      ),
+      group(
+        "organic",
+        "Needs a second domain, other cases",
+        "not written around the Before domains",
+        cases.filter((c) => cross.has(c.id) && !c.designed).map((c) => c.id),
+      ),
+      group(
+        "single",
+        "One domain is enough",
+        "a correctly routed Before agent holds every labeled skill",
+        cases.filter((c) => !cross.has(c.id)).map((c) => c.id),
+      ),
+    ].filter(hasCases),
     crossByQuestions,
     byQuestions,
     byDataset,
@@ -1409,7 +1444,6 @@ export interface ModelRow {
   byGroup: { cross: { runs: number; passed: number }; single: { runs: number; passed: number } };
   facts: { present: number; graded: number };
   lengths: ReplyLengths;
-  passedIfOver300Fails: number;
   flipRate: number | null; // chance that two single runs of a case disagree; null with one run per case
   unstableCases: number;
   costPer1000: { answer: number; router: number; total: number; estimatedSplit: boolean };
@@ -1452,7 +1486,8 @@ export interface ModelsData {
   regradedRuns: string[]; // the results files the judge regrades graded
   models: ModelRow[];
   paired: PairedFlip[];
-  pairedIfOver300Fails: PairedFlip[];
+  // Passing runs per model (by source) if replies over each cutoff counted as failures.
+  lengthSensitivity: { cutoff: number; passed: Record<string, number> }[];
   judges: JudgeRow[];
   human: { labeledItems: number; items: number; judges: HumanJudgeRow[] } | null; // null until labels exist
 }
@@ -1508,7 +1543,6 @@ export async function getModelsData(): Promise<ModelsData> {
         byGroup: { cross: group(groups.cross), single: group(groups.single) },
         facts: { present: num(facts.present), graded: num(facts.graded) },
         lengths: toReplyLengths(isObj(m.lengths) ? m.lengths : {}),
-        passedIfOver300Fails: num(m.passed_if_over_300_fails),
         flipRate: numOrNull(m.flip_rate),
         unstableCases: num(m.unstable_cases),
         costPer1000: {
@@ -1520,7 +1554,12 @@ export async function getModelsData(): Promise<ModelsData> {
       };
     }),
     paired: objList(report.paired).map(toPaired),
-    pairedIfOver300Fails: objList(report.paired_if_over_300_fails).map(toPaired),
+    lengthSensitivity: objList(report.length_sensitivity).map((row) => ({
+      cutoff: num(row.cutoff),
+      passed: isObj(row.passed)
+        ? Object.fromEntries(Object.entries(row.passed).map(([k, v]) => [k, num(v)]))
+        : {},
+    })),
     judges: objList(report.judges).map((j) => ({
       label: str(j.label),
       model: str(j.model),

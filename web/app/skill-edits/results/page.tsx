@@ -46,8 +46,8 @@ export default async function SkillEditsResultsPage() {
       <PageHero eyebrow="Skill edits · Results" title="What each skill edit did">
         <p>
           Each edit changed one skill (or the skill cap) on the After bot and reran the cases it could affect. A case
-          counts as fixed or broken by the edit only when the edit could reach its prompt. The rest flipped by chance:
-          the same prompt can pass once and fail the next time.
+          counts as fixed or broken by the edit only when the edit could reach its prompt. The rest count as chance:
+          the same prompt can pass once and fail the next time, and the router now and then changes its picks.
         </p>
       </PageHero>
 
@@ -59,7 +59,10 @@ export default async function SkillEditsResultsPage() {
         <SectionHeader id="scorecard" eyebrow="All edits" title="Fixed, broken, or chance">
           <p>
             Ship means the edit fixed cases and broke none. Tradeoff means it broke some but fixed at least as many. Do
-            not ship means it broke more than it fixed. No effect means no case it could reach flipped.
+            not ship means it broke more than it fixed. No effect means no case it could reach flipped. A decision the
+            paired test of the net change does not back (a significant gain for Ship, a significant loss for Do not
+            ship) is shown as a lead, such as &ldquo;Lead: ship&rdquo;: a case the edit could reach may still have
+            flipped by chance. With one run per case, few edits flip enough cases for the test to back them.
           </p>
         </SectionHeader>
         {ran.length ? (

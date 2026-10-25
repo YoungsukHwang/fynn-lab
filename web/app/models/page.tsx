@@ -31,9 +31,9 @@ function PassBar({ passed, of }: { passed: number; of: number }) {
   );
 }
 
-function FlipLine({ rows, flip, would = false }: { rows: ModelRow[]; flip: PairedFlip; would?: boolean }) {
+function FlipLine({ rows, flip }: { rows: ModelRow[]; flip: PairedFlip }) {
   // One run per case: cases that pass on only one model. More runs: cases one model passes more often.
-  const verb = flip.method === "mcnemar_exact" ? (would ? "would pass only" : "pass only") : would ? "would pass more often" : "pass more often";
+  const verb = flip.method === "mcnemar_exact" ? "pass only" : "pass more often";
   const rest = flip.method === "mcnemar_exact" ? "only" : "more often";
   return (
     <li>
@@ -101,7 +101,7 @@ export default async function ModelsPage() {
             <>
               {modelName(middle.model)} passed {middle.passed} of {middle.runs} {repeats > 1 ? "runs" : "cases"} and{" "}
               {modelName(priciest.model)} {priciest.passed}, at {dollars(middle.costPer1000.total)} against{" "}
-              {dollars(priciest.costPer1000.total)} per 1,000 conversations.{" "}
+              {dollars(priciest.costPer1000.total)} per 1,000 replies.{" "}
             </>
           )}
           {cheapest && (
@@ -119,10 +119,10 @@ export default async function ModelsPage() {
         <SectionHeader
           id="cost"
           eyebrow="Cost and quality"
-          title={`${repeats > 1 ? "Passing runs" : "Cases passed"}, and what 1,000 conversations cost`}
+          title={`${repeats > 1 ? "Passing runs" : "Cases passed"}, and what 1,000 replies cost`}
         >
           <p>
-            Cost is the answering model plus the Haiku router at list prices, per 1,000 single-message conversations. The
+            Cost is the answering model plus the Haiku router at list prices, per 1,000 replies with a warm cache. The
             eval&apos;s own judge is not included.
           </p>
         </SectionHeader>
@@ -196,8 +196,9 @@ export default async function ModelsPage() {
         <SectionHeader id="length" eyebrow="Reply length" title="The rule nothing grades">
           <p>
             The response rules ask for replies under about {rows[0]?.lengths.limit ?? 250} words, but neither the code checks
-            nor the judge look at length, and the judge rewards complete answers. Counting words shows whether the ranking
-            depends on that ungraded rule.
+            nor the judge look at length, and the judge rewards complete answers. If replies over a cutoff counted as
+            failures, which model comes out ahead would depend on where the line is drawn, so length is a caveat on the
+            ranking, not a way to settle it.
           </p>
         </SectionHeader>
         <div className="overflow-x-auto rounded-2xl border border-line bg-white">
@@ -208,7 +209,6 @@ export default async function ModelsPage() {
                 <th className="px-4 py-3 text-right">Median words</th>
                 <th className="px-4 py-3 text-right">Over {rows[0]?.lengths.limit ?? 250} words</th>
                 <th className="px-4 py-3 text-right">{repeats > 1 ? "Passing runs" : "Passed"}</th>
-                <th className="px-4 py-3 text-right">{repeats > 1 ? "Passing runs" : "Passed"} if over 300 words fails</th>
               </tr>
             </thead>
             <tbody>
@@ -220,20 +220,48 @@ export default async function ModelsPage() {
                     {r.lengths.overLimit} of {r.lengths.replies}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.passed}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.passedIfOver300Fails}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {data.pairedIfOver300Fails.length > 0 && (
-          <div className="text-sm leading-6 text-slate">
-            <p>If replies over 300 words counted as failures, the same paired test would give:</p>
-            <ul className="mt-1 list-disc space-y-1 pl-5">
-              {data.pairedIfOver300Fails.map((flip) => (
-                <FlipLine key={`cap-${flip.a}-${flip.b}`} rows={rows} flip={flip} would />
-              ))}
-            </ul>
+        {data.lengthSensitivity.length > 0 && (
+          <div className="overflow-x-auto rounded-2xl border border-line bg-white">
+            <table className="w-full min-w-[30rem] text-sm">
+              <caption className="px-4 pt-3 text-left text-sm font-semibold text-ink">
+                {repeats > 1 ? "Passing runs" : "Cases passed"} if replies over the cutoff counted as failures
+              </caption>
+              <thead>
+                <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate">
+                  <th className="px-4 py-3">Cutoff</th>
+                  {rows.map((r) => (
+                    <th key={r.source} className="px-4 py-3 text-right">
+                      {modelName(r.model)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.lengthSensitivity.map((row) => {
+                  const best = Math.max(...rows.map((r) => row.passed[r.source] ?? 0));
+                  return (
+                    <tr key={row.cutoff} className="border-b border-line last:border-0">
+                      <td className="px-4 py-3 font-medium text-ink">
+                        {row.cutoff} words{row.cutoff === (rows[0]?.lengths.limit ?? 250) ? " (the rule)" : ""}
+                      </td>
+                      {rows.map((r) => (
+                        <td
+                          key={r.source}
+                          className={`px-4 py-3 text-right tabular-nums ${row.passed[r.source] === best ? "font-semibold text-ink" : ""}`}
+                        >
+                          {row.passed[r.source] ?? "n/a"}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
         <p className="text-sm leading-6 text-slate">
@@ -336,7 +364,10 @@ export default async function ModelsPage() {
       </section>
 
       <p className="text-xs leading-5 text-slate">
-        Answer-model runs from {runDate}, {runsPhrase(repeats)}, with the skills in place then. The judge regrades are of
+        Answer-model runs from {runDate}, {runsPhrase(repeats)}, with the skills in place then, every model at low
+        effort, so the comparison holds for that setting only. Cost assumes a warm cache: the eval reuses six members, so
+        their profiles are read from the cache; a reply to a member seen for the first time costs roughly a fifth more
+        with Sonnet or Opus. The judge regrades are of
         earlier single runs ({data.regradedRuns.join(", ")}). List prices; the router&apos;s share is{" "}
         {rows.some((r) => r.costPer1000.estimatedSplit)
           ? `estimated from the router tokens recorded per case in the After run of ${
