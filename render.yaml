@@ -1,0 +1,29 @@
+# Render Blueprint for the Fynn Lab API, the backend of the public demo. In Render, choose New > Blueprint,
+# connect this repo and enter ANTHROPIC_API_KEY when asked; Render then redeploys on pushes to main that
+# touch the API. The free instance sleeps after 15 idle minutes and takes about a minute to wake.
+services:
+  - type: web
+    name: fynn-lab-api
+    runtime: python
+    plan: free
+    # Installs the dependencies; the app runs from backend/ (--app-dir), so it finds skills/ and personas/.
+    buildCommand: pip install ./backend
+    startCommand: uvicorn api.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    buildFilter:
+      paths: [backend/**, skills/**, personas/**, render.yaml]
+      ignoredPaths: [backend/tests/**, backend/evals/**]
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # entered in the Render dashboard, never in the repo
+      - key: FYNN_CORS_ORIGINS
+        value: https://youngsukhwang.github.io
+      # The limits count requests, and one question to both bots is two: 10 questions per visitor per
+      # hour, 200 a day for everyone. Counts live in memory and start over each time the instance wakes,
+      # so the API key's spend limit (set in the Anthropic Console) is the only hard cap.
+      - key: FYNN_CHAT_LIMIT_PER_VISITOR_PER_HOUR
+        value: "20"
+      - key: FYNN_CHAT_LIMIT_PER_DAY
+        value: "400"
+      - key: FYNN_TRUST_FORWARDED
+        value: "1"
