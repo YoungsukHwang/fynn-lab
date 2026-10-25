@@ -124,6 +124,16 @@ export function getArchitecture(): Promise<Architecture> {
   return request<Architecture>("/architecture", { signal: AbortSignal.timeout(LOAD_TIMEOUT_MS) }, LOAD_TIMEOUT);
 }
 
+/** Whether the backend answers its health check now; never throws. A sleeping server starts waking on the call. */
+export async function checkHealth(timeoutMs = LOAD_TIMEOUT_MS): Promise<boolean> {
+  try {
+    const body = await request<{ status?: unknown }>("/health", { signal: AbortSignal.timeout(timeoutMs) });
+    return body.status === "ok";
+  } catch {
+    return false;
+  }
+}
+
 function combineSignals(signal: AbortSignal | undefined, timeout: AbortSignal): AbortSignal {
   if (!signal) return timeout;
   // AbortSignal.any is missing in older browsers; fall back to the caller's signal (no timeout).

@@ -7,6 +7,7 @@ import {
   type Architecture,
   type BotName,
   type ChatMessage,
+  checkHealth,
   getArchitecture,
   DEFAULT_LIMITS,
   getPersonas,
@@ -24,6 +25,13 @@ import { type ColumnState, EMPTY_COLUMN } from "./types";
 
 const BOTS: BotName[] = ["before", "after"];
 const DEFAULT_PERSONA = "rebuilder";
+// After the backend failed to answer, how often and how many times to check whether it has woken up.
+// Each check gives up before the next starts, so the last one's answer still counts.
+const WAKE_CHECK_MS = 10_000;
+const WAKE_CHECK_TIMEOUT_MS = 9_000;
+const WAKE_CHECKS = 18;
+// The free instance sleeps again after 15 idle minutes, so an "awake" notice goes back to checking before that.
+const AWAKE_FOR_MS = 10 * 60_000;
 
 type Columns = Record<BotName, ColumnState>;
 const EMPTY_COLUMNS: Columns = { before: EMPTY_COLUMN, after: EMPTY_COLUMN };
@@ -37,11 +45,47 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
   // Bumped to retry the live demo from scratch after the backend did not answer.
   const [attempt, setAttempt] = useState(0);
   const [down, setDown] = useState(false);
+  // While down: "waking" until a health check answers ("awake") or the checks run out ("gave up").
+  const [wake, setWake] = useState<"waking" | "awake" | "gave up">("waking");
+  const liveToggle = useRef<HTMLButtonElement>(null);
   // Stable, so the live demo's loading effect does not run again when this component re-renders.
-  const unavailable = useCallback(() => {
+  // An unreachable or timed-out backend may be waking up; one that answers with an error is not.
+  const unavailable = useCallback((waking: boolean) => {
     setDown(true);
+    setWake(waking ? "waking" : "gave up");
     setMode("recorded");
   }, []);
+
+  useEffect(() => {
+    if (!down || wake !== "waking") return;
+    let checks = 0;
+    let stopped = false;
+    const timer = setInterval(() => {
+      checks += 1;
+      if (checks > WAKE_CHECKS) {
+        clearInterval(timer);
+        setWake("gave up");
+        return;
+      }
+      void checkHealth(WAKE_CHECK_TIMEOUT_MS).then((ok) => {
+        if (ok && !stopped) {
+          clearInterval(timer);
+          setWake("awake");
+        }
+      });
+    }, WAKE_CHECK_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [down, wake]);
+
+  useEffect(() => {
+    if (wake !== "awake") return;
+    const timer = setTimeout(() => setWake("waking"), AWAKE_FOR_MS);
+    return () => clearTimeout(timer);
+  }, [wake]);
+
   if (!recorded) return <LiveDemo />;
 
   function choose(next: "live" | "recorded") {
@@ -58,6 +102,7 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
         {(["live", "recorded"] as const).map((m) => (
           <button
             key={m}
+            ref={m === "live" ? liveToggle : undefined}
             type="button"
             aria-pressed={mode === m}
             className={`rounded-full px-4 py-2 text-sm font-semibold ${
@@ -76,11 +121,35 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
       {mode === "recorded" && (
         <>
           {down && (
-            <p role="status" className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-slate">
-              <span className="font-semibold text-ink">The live demo&apos;s server is not answering.</span> It sleeps
-              after a long quiet spell and can take a minute or two to wake up, so try Live chat again shortly. Until
-              then, here are recorded replies.
-            </p>
+            <div role="status" className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-slate">
+              {wake === "awake" ? (
+                <p className="flex flex-wrap items-center gap-3">
+                  <span className="font-semibold text-ink">The live demo is awake now.</span>
+                  <button
+                    type="button"
+                    className="rounded-full bg-lime px-4 py-1.5 text-sm font-semibold text-ink hover:bg-forest hover:text-lime"
+                    onClick={() => {
+                      choose("live");
+                      // This button disappears with the notice, so keep keyboard focus in the demo.
+                      requestAnimationFrame(() => liveToggle.current?.focus());
+                    }}
+                  >
+                    Switch to Live chat
+                  </button>
+                </p>
+              ) : wake === "waking" ? (
+                <p>
+                  <span className="font-semibold text-ink">The live demo&apos;s server is waking up.</span> It sleeps
+                  when nobody has used it for a while and takes about a minute to start; this page checks again every{" "}
+                  {WAKE_CHECK_MS / 1000} seconds. Until then, here are recorded replies.
+                </p>
+              ) : (
+                <p>
+                  <span className="font-semibold text-ink">The live demo&apos;s server is not answering properly.</span>{" "}
+                  Try Live chat again later; until then, here are recorded replies.
+                </p>
+              )}
+            </div>
           )}
           <RecordedDemo data={recorded} live />
         </>
@@ -89,7 +158,7 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
   );
 }
 
-function LiveDemo({ onUnavailable }: { onUnavailable?: () => void }) {
+function LiveDemo({ onUnavailable }: { onUnavailable?: (waking: boolean) => void }) {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [architecture, setArchitecture] = useState<Architecture | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
@@ -119,7 +188,7 @@ function LiveDemo({ onUnavailable }: { onUnavailable?: () => void }) {
         loadStarted.current = false;
         // Status -1: an unexpected client-side failure, not "backend unreachable" (status 0).
         setLoadError(error instanceof ApiError ? error : new ApiError("Could not load the demo data.", -1, false));
-        onUnavailable?.();
+        onUnavailable?.(error instanceof ApiError && error.status === 0);
       });
   }, [onUnavailable]);
 
@@ -223,7 +292,11 @@ function LiveDemo({ onUnavailable }: { onUnavailable?: () => void }) {
   }
 
   if (!architecture || !persona) {
-    return <p className="text-sm text-slate">Loading personas and architecture...</p>;
+    return (
+      <p className="text-sm text-slate" role="status">
+        Loading personas and architecture...
+      </p>
+    );
   }
 
   const failed = BOTS.filter((bot) => columns[bot].error !== null);
