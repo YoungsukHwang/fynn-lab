@@ -33,6 +33,9 @@ jobs:
         env:
           FYNN_STATIC_SITE: "1"
           FYNN_BASE_PATH: /${{ github.event.repository.name }}
+          # The hosted backend (repository variable, e.g. https://<user>-fynn-lab-api.hf.space). Without it the
+          # Demo page shows only recorded replies.
+          NEXT_PUBLIC_API_URL: ${{ vars.FYNN_API_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/out

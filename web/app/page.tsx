@@ -8,8 +8,10 @@ import { getRecordedDemo } from "@/lib/evalData";
 export const metadata: Metadata = { title: { absolute: "Demo | Fynn Lab" } };
 
 const SAME = ["Same skill files", "Same member profile", "Same answer model"];
-// The static site (FYNN_STATIC_SITE=1, see next.config.ts) has no backend, so it shows recorded replies.
+// The static site (FYNN_STATIC_SITE=1, see next.config.ts) shows recorded replies: alone when it was built
+// without a backend URL, or next to the live chat, as the fallback when the hosted backend does not answer.
 const STATIC_SITE = process.env.FYNN_STATIC_SITE === "1";
+const LIVE = !STATIC_SITE || Boolean(process.env.NEXT_PUBLIC_API_URL);
 
 export default async function DemoPage() {
   const recorded = STATIC_SITE ? await getRecordedDemo() : null;
@@ -21,7 +23,7 @@ export default async function DemoPage() {
           Single agent vs composable skills
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-white/80 sm:text-base">
-          {STATIC_SITE ? "Compare both bots' replies to the same question" : "Ask both bots the same question"} and
+          {LIVE ? "Ask both bots the same question" : "Compare both bots' replies to the same question"} and
           watch which guidance each one loads. They differ in how each message is
           routed and how the prompt is put together. The After bot also keeps some of the previous turn&apos;s skills
           for one more turn, which is a Fynn Lab addition.
@@ -39,14 +41,12 @@ export default async function DemoPage() {
           </p>
         </div>
       </section>
-      {STATIC_SITE ? (
-        recorded ? (
-          <RecordedDemo data={recorded} />
-        ) : (
-          <p className="text-sm text-slate">The recorded demo (results/demo/recorded.json) is missing from this build.</p>
-        )
+      {LIVE ? (
+        <Demo recorded={recorded} />
+      ) : recorded ? (
+        <RecordedDemo data={recorded} />
       ) : (
-        <Demo />
+        <p className="text-sm text-slate">The recorded demo (results/demo/recorded.json) is missing from this build.</p>
       )}
     </div>
   );

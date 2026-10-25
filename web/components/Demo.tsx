@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ApiError,
@@ -14,10 +14,12 @@ import {
   RequestCancelled,
   sendChat,
 } from "@/lib/api";
+import type { RecordedDemo as RecordedDemoData } from "@/lib/evalData";
 import { EXAMPLE_QUESTIONS } from "@/lib/examples";
 
 import { ChatColumn } from "./ChatColumn";
 import { PersonaCard } from "./PersonaCard";
+import { RecordedDemo } from "./RecordedDemo";
 import { type ColumnState, EMPTY_COLUMN } from "./types";
 
 const BOTS: BotName[] = ["before", "after"];
@@ -26,7 +28,68 @@ const DEFAULT_PERSONA = "rebuilder";
 type Columns = Record<BotName, ColumnState>;
 const EMPTY_COLUMNS: Columns = { before: EMPTY_COLUMN, after: EMPTY_COLUMN };
 
-export function Demo() {
+/**
+ * The live demo. Given recorded replies (the public site, whose backend sleeps when idle), it also offers
+ * them, and switches to them when the backend does not answer.
+ */
+export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }) {
+  const [mode, setMode] = useState<"live" | "recorded">("live");
+  // Bumped to retry the live demo from scratch after the backend did not answer.
+  const [attempt, setAttempt] = useState(0);
+  const [down, setDown] = useState(false);
+  // Stable, so the live demo's loading effect does not run again when this component re-renders.
+  const unavailable = useCallback(() => {
+    setDown(true);
+    setMode("recorded");
+  }, []);
+  if (!recorded) return <LiveDemo />;
+
+  function choose(next: "live" | "recorded") {
+    if (next === "live" && down) {
+      setDown(false);
+      setAttempt((a) => a + 1);
+    }
+    setMode(next);
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Demo mode">
+        {(["live", "recorded"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={mode === m}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              mode === m ? "bg-ink text-white" : "border border-line bg-white text-ink hover:bg-mist"
+            }`}
+            onClick={() => choose(m)}
+          >
+            {m === "live" ? "Live chat" : "Recorded replies"}
+          </button>
+        ))}
+      </div>
+      {/* Hidden rather than unmounted, so switching back keeps the live conversation. */}
+      <div hidden={mode !== "live"}>
+        <LiveDemo key={attempt} onUnavailable={unavailable} />
+      </div>
+      {mode === "recorded" && (
+        <>
+          {down && (
+            <p role="status" className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-slate">
+              <span className="font-semibold text-ink">The live demo&apos;s server is not answering.</span> It sleeps
+              after a long quiet spell and can take a minute or two to wake up, so try Live chat again shortly. Until
+              then, here are recorded replies.
+            </p>
+          )}
+          <RecordedDemo data={recorded} live />
+        </>
+      )}
+    </div>
+  );
+}
+
+function LiveDemo({ onUnavailable }: { onUnavailable?: () => void }) {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [architecture, setArchitecture] = useState<Architecture | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
@@ -56,8 +119,9 @@ export function Demo() {
         loadStarted.current = false;
         // Status -1: an unexpected client-side failure, not "backend unreachable" (status 0).
         setLoadError(error instanceof ApiError ? error : new ApiError("Could not load the demo data.", -1, false));
+        onUnavailable?.();
       });
-  }, []);
+  }, [onUnavailable]);
 
   const persona = personas.find((p) => p.id === personaId) ?? null;
   const limits = architecture?.limits ?? DEFAULT_LIMITS;

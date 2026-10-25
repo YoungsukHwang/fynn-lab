@@ -59,7 +59,7 @@ function Verdict({ side }: { side: RecordedSide }) {
 }
 
 /** The Demo page on the static site: recorded replies from a committed eval run instead of a live chat. */
-export function RecordedDemo({ data }: { data: RecordedDemoData }) {
+export function RecordedDemo({ data, live = false }: { data: RecordedDemoData; live?: boolean }) {
   const [index, setIndex] = useState(0);
   const exchange = data.exchanges[index];
   const persona = exchange ? data.personas.find((p) => p.id === exchange.persona) : undefined;
@@ -68,17 +68,25 @@ export function RecordedDemo({ data }: { data: RecordedDemoData }) {
   return (
     <div className="flex flex-col gap-6">
       <section aria-label="About this demo" className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-slate">
-        <p>
-          <span className="font-semibold text-ink">Recorded replies, not a live chat.</span> This site has no backend, so
-          each question below shows both bots&apos; replies from the committed eval run{day ? ` of ${day}` : ""}. Each
-          case ran three times per bot; the reply shown comes from a run with the case&apos;s usual result, with the
-          router&apos;s pick and the judge&apos;s verdict on each expected fact. To ask your own questions, run the
-          backend and the site locally (
-          <a href={`${REPO_URL}#backend`} className="font-medium text-ink underline underline-offset-2">
-            see the README
-          </a>
-          ).
-        </p>
+        {live ? (
+          <p>
+            <span className="font-semibold text-ink">Recorded replies</span> from the committed eval run
+            {day ? ` of ${day}` : ""}. Each case ran three times per bot; the reply shown comes from a run with the
+            case&apos;s usual result, with the router&apos;s pick and the judge&apos;s verdict on each expected fact.
+          </p>
+        ) : (
+          <p>
+            <span className="font-semibold text-ink">Recorded replies, not a live chat.</span> This site has no
+            backend, so each question below shows both bots&apos; replies from the committed eval run
+            {day ? ` of ${day}` : ""}. Each case ran three times per bot; the reply shown comes from a run with the
+            case&apos;s usual result, with the router&apos;s pick and the judge&apos;s verdict on each expected fact. To
+            ask your own questions, run the backend and the site locally (
+            <a href={`${REPO_URL}#backend`} className="font-medium text-ink underline underline-offset-2">
+              see the README
+            </a>
+            ).
+          </p>
+        )}
       </section>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Recorded questions">

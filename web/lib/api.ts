@@ -8,6 +8,8 @@ export const DEFAULT_LIMITS = { max_messages: 20, max_user_message_chars: 2000 }
 // call at 90 s with no SDK retries (backend/fynn/config.py), so past 120 s the request is abandoned
 // as retryable.
 const CHAT_TIMEOUT_MS = 120_000;
+// Personas and architecture are small; a backend that has not answered by then is down or still waking up.
+const LOAD_TIMEOUT_MS = 15_000;
 
 export type BotName = "before" | "after";
 
@@ -81,13 +83,13 @@ export class ApiError extends Error {
 /** Thrown when the caller aborted the request on purpose (e.g. a reset); callers ignore it. */
 export class RequestCancelled extends Error {}
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, timeoutMessage = "The bot took too long to answer."): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, init);
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
-      throw new ApiError("The bot took too long to answer.", 0, true);
+      throw new ApiError(timeoutMessage, 0, true);
     }
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new RequestCancelled();
@@ -112,12 +114,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
+const LOAD_TIMEOUT = `The API at ${API_URL} did not answer within ${LOAD_TIMEOUT_MS / 1000} seconds.`;
+
 export function getPersonas(): Promise<Persona[]> {
-  return request<Persona[]>("/personas");
+  return request<Persona[]>("/personas", { signal: AbortSignal.timeout(LOAD_TIMEOUT_MS) }, LOAD_TIMEOUT);
 }
 
 export function getArchitecture(): Promise<Architecture> {
-  return request<Architecture>("/architecture");
+  return request<Architecture>("/architecture", { signal: AbortSignal.timeout(LOAD_TIMEOUT_MS) }, LOAD_TIMEOUT);
 }
 
 function combineSignals(signal: AbortSignal | undefined, timeout: AbortSignal): AbortSignal {
