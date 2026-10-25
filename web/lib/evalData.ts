@@ -2,10 +2,10 @@
 //
 // Everything here reads files from the repo with Node fs: the eval cases, personas, skills and
 // scenarios, plus the results and regression reports written by backend/evals/run.py and
-// backend/evals/report.py. Each loader is a `"use cache"` function with cacheLife("max"), so the
-// pages are prerendered once at build time (see node_modules/next/dist/docs: Caching). A missing
-// or unreadable file never throws: loaders return null or an empty list, and the pages show a
-// "not generated yet" state instead.
+// backend/evals/report.py. No page reads request data, so every page is prerendered at build time
+// (and the static site exports them as plain files); `next dev` reads the files again on each
+// request. A missing or unreadable file never throws: loaders return null or an empty list, and the
+// pages show a "not generated yet" state instead.
 //
 // Results are read from ../results by default. Set FYNN_RESULTS_DIR (absolute, or relative to
 // web/) to read them from another directory, for example a copy of fake results during development.
@@ -15,8 +15,9 @@ import "server-only";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { cacheLife } from "next/cache";
 import { parse as parseYaml } from "yaml";
+
+import type { Architecture, Persona, Routing, Usage } from "@/lib/api";
 
 /* ----------------------------------------------------------------------------------------------
  * Paths
@@ -63,7 +64,7 @@ export interface EvalCase {
   expectedFacts: string[];
   mustNotRegex: string[];
   mustIncludeRegex: string[];
-  designed: boolean; // written so a Before agent cannot pass it (backend/evals/cases.py)
+  designed: boolean; // written for the comparison, around facts a Before agent lacks (backend/evals/cases.py)
 }
 
 export interface PersonaInfo {
@@ -533,9 +534,6 @@ function toNoiseFloor(value: unknown): NoiseFloor | null {
 
 /** All eval cases from backend/evals/cases/<dataset>.yaml, in dataset order. */
 export async function getCases(): Promise<EvalCase[]> {
-  "use cache";
-  cacheLife("max");
-
   const cases: EvalCase[] = [];
   for (const dataset of DATASETS) {
     const file = path.join(CASES_DIR, `${dataset}.yaml`);
@@ -565,9 +563,6 @@ export async function getCases(): Promise<EvalCase[]> {
 
 /** Persona id, name and one-line summary from personas/*.json, sorted by id. */
 export async function getPersonas(): Promise<PersonaInfo[]> {
-  "use cache";
-  cacheLife("max");
-
   const personas: PersonaInfo[] = [];
   for (const name of await listDir(PERSONAS_DIR)) {
     if (!name.endsWith(".json")) continue;
@@ -582,9 +577,6 @@ const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
 /** Frontmatter of skills/*.md (name, description, type, domain), sorted by name. */
 export async function getSkills(): Promise<SkillInfo[]> {
-  "use cache";
-  cacheLife("max");
-
   const skills: SkillInfo[] = [];
   for (const name of await listDir(SKILLS_DIR)) {
     if (!name.endsWith(".md")) continue;
@@ -612,9 +604,6 @@ export async function getSkills(): Promise<SkillInfo[]> {
 
 /** Skill-edit scenarios from scenarios/<id>/scenario.yaml, sorted by id. */
 export async function getScenarios(): Promise<Scenario[]> {
-  "use cache";
-  cacheLife("max");
-
   const scenarios: Scenario[] = [];
   for (const id of await listDir(SCENARIOS_DIR)) {
     const raw = await readYaml(path.join(SCENARIOS_DIR, id, "scenario.yaml"));
@@ -637,9 +626,6 @@ export async function getScenarios(): Promise<Scenario[]> {
 
 /** The judge's system prompt, extracted from backend/evals/judge.py (null if it can't be found). */
 export async function getJudgeInstructions(): Promise<string | null> {
-  "use cache";
-  cacheLife("max");
-
   const source = await readText(JUDGE_FILE);
   const match = source?.match(/JUDGE_SYSTEM = """\\?\r?\n([\s\S]*?)"""/);
   // A backslash at the end of a line inside a Python string joins it with the next line.
@@ -648,9 +634,6 @@ export async function getJudgeInstructions(): Promise<string | null> {
 
 /** The After bot's cap on new topic skills per message, from backend/fynn/config.py (null if not found). */
 export async function getSkillCap(): Promise<number | null> {
-  "use cache";
-  cacheLife("max");
-
   const source = (await readText(CONFIG_FILE)) ?? "";
   const match = source.match(/^MAX_NEW_SKILLS_PER_TURN\s*=\s*(\d+)/m);
   return match?.[1] ? Number(match[1]) : null;
@@ -658,9 +641,6 @@ export async function getSkillCap(): Promise<number | null> {
 
 /** Default model ids from backend/fynn/config.py, used when no results file names them. */
 export async function getConfiguredModels(): Promise<Partial<Models>> {
-  "use cache";
-  cacheLife("max");
-
   const source = (await readText(CONFIG_FILE)) ?? "";
   const models: Partial<Models> = {};
   for (const [role, key] of [
@@ -680,9 +660,6 @@ export async function getConfiguredModels(): Promise<Partial<Models>> {
 
 /** A results JSON from backend/evals/run.py, by path relative to the results dir (e.g. "after.json"). */
 export async function getRun(relativePath: string): Promise<Run | null> {
-  "use cache";
-  cacheLife("max");
-
   const file = path.join(resultsDir(), relativePath);
   const raw = await readJson(file);
   if (raw === undefined) return null;
@@ -711,9 +688,6 @@ export async function getRun(relativePath: string): Promise<Run | null> {
 
 /** reports/<name>/report.json from backend/evals/report.py (e.g. "before-vs-after", "s1"). */
 export async function getReport(name: string): Promise<Report | null> {
-  "use cache";
-  cacheLife("max");
-
   const file = path.join(resultsDir(), "reports", name, "report.json");
   const raw = await readJson(file);
   if (raw === undefined) return null;
@@ -1140,9 +1114,6 @@ async function buildComparison(report: Report, cases: EvalCase[]): Promise<Compa
 
 /** Everything the /results page shows. */
 export async function getResultsData(): Promise<ResultsData> {
-  "use cache";
-  cacheLife("max");
-
   const [cases, scenarios, before, after, beforeVsAfterReport] = await Promise.all([
     getCases(),
     getScenarios(),
@@ -1188,9 +1159,6 @@ export interface FrameworkData {
 
 /** Everything the /framework page shows. */
 export async function getFrameworkData(): Promise<FrameworkData> {
-  "use cache";
-  cacheLife("max");
-
   const [cases, personas, skills, scenarios, judgeInstructions, configured, after, before] = await Promise.all([
     getCases(),
     getPersonas(),
@@ -1271,9 +1239,6 @@ export function caseDomains(evalCase: EvalCase, skillDomain: Map<string, string>
 
 /** Everything the Before vs After pages show. */
 export async function getBeforeAfterData(): Promise<BeforeAfterData> {
-  "use cache";
-  cacheLife("max");
-
   const [cases, skills, before, after, report] = await Promise.all([
     getCases(),
     getSkills(),
@@ -1397,9 +1362,6 @@ function capSide(run: Run | null, evalCase: EvalCase): CapCaseSide | null {
 /** Everything the skill-cap section shows. The baseline is the run the cap report compared against (found in
  * results/archive/ once after.json is replaced), else after.json, else config.py. */
 export async function getCapData(): Promise<CapData> {
-  "use cache";
-  cacheLife("max");
-
   const [cases, after, capRun, report, configured] = await Promise.all([
     getCases(),
     getRun("after.json"),
@@ -1507,9 +1469,6 @@ function toPaired(raw: Obj): PairedFlip {
 
 /** The answer-model comparison and the judge regrades, plus human agreement once labels exist. */
 export async function getModelsData(): Promise<ModelsData> {
-  "use cache";
-  cacheLife("max");
-
   const [raw, agreement] = await Promise.all([
     readJson(path.join(resultsDir(), "reports", "models", "report.json")),
     readJson(path.join(resultsDir(), "validation", "agreement", "agreement.json")),
@@ -1590,5 +1549,99 @@ export async function getModelsData(): Promise<ModelsData> {
               }),
           }
         : null,
+  };
+}
+
+/* ----------------------------------------------------------------------------------------------
+ * Recorded demo (results/demo/recorded.json, from backend/evals/demo_snapshot.py)
+ * -------------------------------------------------------------------------------------------- */
+
+export interface RecordedSide {
+  reply: string;
+  model: string;
+  routing: Routing;
+  usage: Usage;
+  passed: boolean;
+  passes: number;
+  repeats: number;
+  facts: { fact: string; status: string }[];
+  checkFailures: string[];
+}
+
+export interface RecordedExchange {
+  id: string;
+  label: string;
+  dataset: string;
+  persona: string;
+  message: string;
+  before: RecordedSide;
+  after: RecordedSide;
+}
+
+export interface RecordedDemo {
+  recordedAt: string | null; // when the After run was made
+  architecture: Architecture;
+  personas: Persona[];
+  exchanges: RecordedExchange[];
+}
+
+function recordedSide(value: unknown): RecordedSide | null {
+  if (!isObj(value) || !isObj(value.routing) || !isObj(value.usage)) return null;
+  const routing = value.routing;
+  const usage = value.usage;
+  return {
+    reply: str(value.reply),
+    model: str(value.model),
+    routing: {
+      strategy: routing.strategy === "single_agent" ? "single_agent" : "skills",
+      selected: strList(routing.selected),
+      carried: strList(routing.carried),
+      reason: str(routing.reason),
+      error: strOrNull(routing.error),
+    },
+    usage: {
+      input_tokens: num(usage.input_tokens),
+      output_tokens: num(usage.output_tokens),
+      cache_read_input_tokens: num(usage.cache_read_input_tokens),
+      cache_creation_input_tokens: num(usage.cache_creation_input_tokens),
+    },
+    passed: value.passed === true,
+    passes: num(value.passes),
+    repeats: repeatsOf(value.repeats),
+    facts: objList(value.facts).map((f) => ({ fact: str(f.fact), status: str(f.status) })),
+    checkFailures: strList(value.check_failures),
+  };
+}
+
+/** The recorded exchanges the static site's Demo page shows in place of a live chat; null when missing. */
+export async function getRecordedDemo(): Promise<RecordedDemo | null> {
+  const file = path.join(resultsDir(), "demo", "recorded.json");
+  const raw = await readJson(file);
+  if (!isObj(raw) || !isObj(raw.architecture) || !Array.isArray(raw.personas)) return null;
+  const exchanges: RecordedExchange[] = [];
+  for (const e of objList(raw.exchanges)) {
+    const before = recordedSide(e.before);
+    const after = recordedSide(e.after);
+    if (!before || !after) {
+      warn(file, `exchange ${str(e.id, "?")} is missing a side`);
+      continue;
+    }
+    exchanges.push({
+      id: str(e.id),
+      label: str(e.label, str(e.id)),
+      dataset: str(e.dataset),
+      persona: str(e.persona),
+      message: str(e.message),
+      before,
+      after,
+    });
+  }
+  const sources = isObj(raw.sources) ? raw.sources : {};
+  return {
+    recordedAt: isObj(sources.after) ? strOrNull(sources.after.created_at) : null,
+    // Written by the backend's own describe_architecture and persona dump, the shapes the API serves.
+    architecture: raw.architecture as unknown as Architecture,
+    personas: objList(raw.personas) as unknown as Persona[],
+    exchanges,
   };
 }

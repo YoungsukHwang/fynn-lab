@@ -89,12 +89,13 @@ interface ChatColumnProps {
   architecture: Architecture;
   onRetry: (bot: BotName, text: string) => void;
   retryDisabled: boolean;
+  footer?: React.ReactNode; // below the transcript, e.g. the judge's verdict on a recorded reply
 }
 
-export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled }: ChatColumnProps) {
+export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled, footer }: ChatColumnProps) {
   const copy = COPY[bot];
   const transcript = useRef<HTMLDivElement>(null);
-  // Refs survive the route being hidden and re-shown, so re-showing does not scroll again.
+  // The turns already shown, so only a new turn scrolls the transcript.
   const seenTurns = useRef(state.turns.length);
   const lastAssistant = state.turns.findLast((t): t is AssistantTurn => t.role === "assistant");
   // After a failed turn the last reply's routing is stale, so show it only when the column is idle.
@@ -190,6 +191,7 @@ export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled }:
           </div>
         )}
       </div>
+      {footer}
     </section>
   );
 }

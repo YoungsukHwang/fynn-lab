@@ -37,8 +37,7 @@ export function Demo() {
   // Bumped on reset; replies that arrive for an older conversation are dropped.
   const conversation = useRef(0);
   const inFlight = useRef<AbortController | null>(null);
-  // Refs survive the route being hidden and shown again (cacheComponents Activity), so the
-  // static demo data is fetched once per page load, not on every return to this page.
+  // Guards against a second fetch of the demo data while the first is still in flight.
   const loadStarted = useRef(false);
 
   useEffect(() => {
