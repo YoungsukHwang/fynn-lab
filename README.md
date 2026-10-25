@@ -4,6 +4,8 @@ An independent re-implementation of the architecture change described in Kikoff'
 
 It is a study project and is not affiliated with Kikoff. The products the bots talk about are fictional; see [docs/products.md](docs/products.md).
 
+**Site:** [youngsukhwang.github.io/fynn-lab](https://youngsukhwang.github.io/fynn-lab/). It has the eval framework and results pages. The site has no backend, so its Demo page shows recorded replies from the committed eval run; to chat with both bots, run them locally (below).
+
 - **Before:** the earlier design in the post, which the post calls its beta. A small model routes each message to exactly one domain expert agent, so a question that spans several domains gets only one domain's expertise.
 - **After:** the skill design the post moved to. A small model selects the topic skills the message needs. One agent answers with those skills plus always-on skills (tone, response rules, guardrails).
 
@@ -42,7 +44,7 @@ Skill-edit results are from one run per case. A decision is backed when the pair
 - **Single-turn only.** Every case is one message, so carrying skills between turns is not evaluated.
 - **No held-out set.** The cases, the expected facts and the skill fixes were all written by one person looking at the same eval set, so the gap includes tuning. Before the shipped edits, a single run on 2026-10-22 gave After 42 and Before 31 of 64 (p = 0.019); a single run after them gave 54 and 29.
 - **The judge is not yet checked against people.** One LLM judge (Opus) grades every reply; the human labels on a blind sample are not finished.
-- **Synthetic setting.** Six fictional members, fictional products, and a Before domain split that is this project's own; a different split would change which cases need a second domain. Nothing is deployed, so the Online evaluation page is a plan with no data.
+- **Synthetic setting.** Six fictional members, fictional products, and a Before domain split that is this project's own; a different split would change which cases need a second domain. The bots are not deployed (only the static site is), so the Online evaluation page is a plan with no data.
 
 ## How it works
 
@@ -198,5 +200,6 @@ npm run dev                 # http://localhost:3000
 - **Before vs After** and **Skill edits**: each has a Framework tab (how it is measured) and a Results tab (what was found), built from the committed results and reports.
 - **Models**: the answer-model comparison (cost against cases passed, reply length) and the judge check.
 - **Online evaluation**: a framework page for evaluating the bots on real traffic.
-- `NEXT_PUBLIC_API_URL` points the site at another backend (read at build time); `FYNN_CORS_ORIGINS` in `backend/.env` allows other origins. In `npm run dev`, hard-reload a page to pick up new results files.
+- `NEXT_PUBLIC_API_URL` points the site at another backend (read at build time); `FYNN_CORS_ORIGINS` in `backend/.env` allows other origins. In `npm run dev`, reload a page to pick up new results files.
+- **Static site.** `FYNN_STATIC_SITE=1 FYNN_BASE_PATH=/fynn-lab npm run build` writes plain files to `web/out/`; `.github/workflows/pages.yml` does this on every push to `main` and publishes to GitHub Pages. With no backend, its Demo page shows `results/demo/recorded.json`, which `.venv/bin/python -m evals.demo_snapshot --before ../results/before.json --after ../results/after.json --out ../results/demo/recorded.json` (from `backend/`, no API) rebuilds from the committed runs.
 - **Checks.** `npm run typecheck` and `npm run lint`.
