@@ -6,6 +6,7 @@ import httpx2
 import pytest
 from fastapi.testclient import TestClient
 
+from api.limits import ChatLimits, Refusal, client_address
 from api.main import MAX_ASSISTANT_MESSAGE_CHARS, MAX_USER_MESSAGE_CHARS, Runtime, app, get_runtime
 from fynn import config
 from fynn.bots import build_bots
@@ -230,3 +231,63 @@ def test_runtime_without_credentials_still_serves_static_data() -> None:
         assert runtime.personas and runtime.library.topics
     finally:
         get_runtime.cache_clear()
+
+
+# ---- Public demo limits -------------------------------------------------------------------------
+
+
+def _limited_client(mini_library: SkillLibrary, persona_dir: Path, limits: ChatLimits, routes: int) -> TestClient:
+    runtime = Runtime(
+        library=mini_library,
+        personas=load_personas(persona_dir),
+        bots=build_bots(FakeLLM([TWO_SKILLS] * routes), mini_library),
+        limits=limits,
+    )
+    app.dependency_overrides[get_runtime] = lambda: runtime
+    return TestClient(app)
+
+
+def test_chat_refuses_a_visitor_over_the_hourly_limit(mini_library: SkillLibrary, persona_dir: Path) -> None:
+    try:
+        client = _limited_client(mini_library, persona_dir, ChatLimits(per_visitor_per_hour=2), routes=2)
+        assert [_chat(client, USER).status_code for _ in range(2)] == [200, 200]
+        refused = _chat(client, USER)
+        assert refused.status_code == 429
+        assert refused.json() == {"detail": "You have reached this demo's hourly limit. Try again later.", "retryable": False}
+        assert 0 < int(refused.headers["Retry-After"]) <= 3600
+        assert refused.headers["access-control-allow-origin"] == ORIGIN["Origin"]  # the site can read it
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_chat_refuses_everyone_over_the_daily_cap(mini_library: SkillLibrary, persona_dir: Path) -> None:
+    try:
+        client = _limited_client(mini_library, persona_dir, ChatLimits(per_day=1), routes=1)
+        assert _chat(client, USER).status_code == 200
+        refused = _chat(client, USER)
+        assert refused.status_code == 429 and "limit for today" in refused.json()["detail"]
+        # A request the API rejects before answering does not use up the cap.
+        assert _chat(client, USER, persona_id="nobody").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_limits_slide_by_the_hour_and_reset_each_utc_day() -> None:
+    now = [86400 * 100 + 10.0]
+    limits = ChatLimits(per_visitor_per_hour=2, per_day=3, clock=lambda: now[0])
+    assert limits.take("a") is None and limits.take("a") is None
+    refused = limits.take("a")
+    assert refused is not None and refused.scope == "hour" and refused.retry_after == 3600
+    assert limits.take("b") is None  # another visitor still has room
+    day = limits.take("c")
+    assert day is not None and day.scope == "day" and day.retry_after == 86400 - 10
+    now[0] += 3600  # a's first requests leave the window, but the day's cap still holds
+    assert limits.take("a") == Refusal("day", 86400 - 10 - 3600)
+    now[0] = 86400 * 101  # midnight UTC
+    assert limits.take("a") is None
+
+
+def test_client_address_trusts_x_forwarded_for_only_when_told() -> None:
+    assert client_address("10.0.0.1", "203.0.113.5, 10.0.0.1", trust_forwarded=False) == "10.0.0.1"
+    assert client_address("10.0.0.1", "203.0.113.5, 10.0.0.1", trust_forwarded=True) == "203.0.113.5"
+    assert client_address(None, None, trust_forwarded=True) == "unknown"

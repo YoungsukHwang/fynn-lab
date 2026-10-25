@@ -50,6 +50,12 @@ CORS_ORIGINS = [
     if origin.strip()
 ]
 
+# Limits on /chat requests for a public demo (api/limits.py); unset means no limit. One question to both
+# bots is two requests. FYNN_TRUST_FORWARDED=1 counts visitors by X-Forwarded-For, for use behind a proxy.
+CHAT_LIMIT_PER_VISITOR_PER_HOUR = int(os.environ.get("FYNN_CHAT_LIMIT_PER_VISITOR_PER_HOUR") or 0) or None
+CHAT_LIMIT_PER_DAY = int(os.environ.get("FYNN_CHAT_LIMIT_PER_DAY") or 0) or None
+TRUST_FORWARDED = os.environ.get("FYNN_TRUST_FORWARDED") == "1"
+
 # Before bot: one expert agent per domain. Each topic skill declares its domain,
 # so both bots draw on exactly the same skill text.
 DOMAINS: dict[str, str] = {

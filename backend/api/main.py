@@ -9,7 +9,7 @@ the After bot also the skills it picked on the previous turn (`carry_skills`).
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Annotated, Any, Literal
 
@@ -23,6 +23,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
+from api.limits import ChatLimits, client_address
 from fynn import config
 from fynn.bots import Bot, BotName, build_bots
 from fynn.llm import AnthropicLLM, LLMError, has_credentials
@@ -31,7 +32,7 @@ from fynn.skills import SkillLibrary
 
 logger = logging.getLogger("fynn.api")
 
-# Cheap guards for a public demo; real rate limiting comes with deployment.
+# Cheap guards for a public demo; the request limits are in api/limits.py.
 MAX_MESSAGES = 20
 MAX_USER_MESSAGE_CHARS = 2000
 # Assistant turns are text this server generated and the client sends back, so their cap
@@ -48,6 +49,7 @@ class Runtime:
     bots: dict[BotName, Bot]
     # Checked once at startup so a missing key gives a clear error instead of a generic 500.
     credentials_ok: bool = True
+    limits: ChatLimits = field(default_factory=ChatLimits)
 
 
 @lru_cache(maxsize=1)
@@ -74,6 +76,7 @@ def get_runtime() -> Runtime:
         personas=load_personas(),
         bots=build_bots(llm, library),
         credentials_ok=credentials_ok,
+        limits=ChatLimits(per_visitor_per_hour=config.CHAT_LIMIT_PER_VISITOR_PER_HOUR, per_day=config.CHAT_LIMIT_PER_DAY),
     )
 
 
@@ -260,12 +263,21 @@ def describe_architecture(library: SkillLibrary) -> dict[str, Any]:
 
 
 @app.post("/chat")
-def chat(request: ChatRequest, runtime: RuntimeDep) -> ChatResponse:
+def chat(request: ChatRequest, http: Request, runtime: RuntimeDep) -> ChatResponse:
     if not runtime.credentials_ok:
         raise MissingCredentials()
     persona = runtime.personas.get(request.persona_id)
     if persona is None:
         raise HTTPException(status_code=404, detail=f"unknown persona {request.persona_id!r}")
+    visitor = client_address(http.client.host if http.client else None, http.headers.get("x-forwarded-for"), config.TRUST_FORWARDED)
+    refused = runtime.limits.take(visitor)
+    if refused is not None:
+        detail = (
+            "This demo has reached its limit for today. It resets at midnight UTC."
+            if refused.scope == "day"
+            else "You have reached this demo's hourly limit. Try again later."
+        )
+        raise HTTPException(status_code=429, detail=detail, headers={"Retry-After": str(refused.retry_after)})
 
     messages = [m.model_dump() for m in request.messages]
     reply = runtime.bots[request.bot].reply(persona, messages, carry_skills=request.carry_skills)
