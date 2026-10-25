@@ -1440,6 +1440,9 @@ export interface HumanJudgeRow {
   interval: [number, number] | null;
   stricter: number;
   lenient: number;
+  repliesJudgeFailed: number | null; // whole replies the judge failed, and of those the ones the person passed
+  repliesPersonPassed: number | null;
+  repliesJudgePassedPersonFailed: number | null;
 }
 
 export interface ModelsData {
@@ -1545,6 +1548,9 @@ export async function getModelsData(): Promise<ModelsData> {
                   interval: ci && ci.length === 2 ? [num(ci[0]), num(ci[1])] : null,
                   stricter: num(j.stricter),
                   lenient: num(j.lenient),
+                  repliesJudgeFailed: numOrNull(j.replies_judge_fail),
+                  repliesPersonPassed: numOrNull(j.replies_judge_fail_human_pass),
+                  repliesJudgePassedPersonFailed: numOrNull(j.replies_judge_pass_human_fail),
                 };
               }),
           }

@@ -18,6 +18,13 @@ const NAMES: Record<string, string> = {
   "claude-opus-5-5": "Opus 5.5",
 };
 const modelName = (id: string) => NAMES[id] ?? id;
+// Judge names in results/validation/agreement: "original (<model>)", "<model> (again)" or "<model>".
+const judgeName = (name: string) => {
+  const original = /^original \((.+)\)$/.exec(name);
+  if (original?.[1]) return `${modelName(original[1])} (the eval's judge)`;
+  const again = /^(.+) \(again\)$/.exec(name);
+  return again?.[1] ? `${modelName(again[1])}, graded again` : modelName(name);
+};
 const sourceName = (rows: ModelRow[], source: string) => modelName(rows.find((r) => r.source === source)?.model ?? source);
 const dollars = (value: number) => `$${value.toFixed(2)}`;
 const percent = (value: number | null) => (value === null ? "n/a" : `${(value * 100).toFixed(value > 0.99 ? 1 : 0)}%`);
@@ -66,6 +73,16 @@ export default async function ModelsPage() {
   const middle = rows.length > 2 ? rows[rows.length - 2] : null;
   const topPair = data.paired.find((f) => middle && f.a === middle.source && f.b === priciest?.source) ?? null;
   const opusAgain = data.judges.find((j) => j.label.includes("(again)"));
+  const humanOriginal = data.human?.judges.find((j) => j.name.startsWith("original")) ?? null;
+  // A regrading judge that agreed with the person more often than the eval's own judge, on the same facts.
+  const closerJudge =
+    humanOriginal?.rate != null
+      ? (data.human?.judges
+          .filter((j) => j !== humanOriginal && j.facts === humanOriginal.facts && (j.rate ?? 0) > (humanOriginal.rate ?? 0))
+          .sort((a, b) => (b.rate ?? 0) - (a.rate ?? 0))[0] ?? null)
+      : null;
+  const closerFacts =
+    closerJudge && humanOriginal ? Math.round(((closerJudge.rate ?? 0) - (humanOriginal.rate ?? 0)) * humanOriginal.facts) : 0;
   const flipRates = rows.map((r) => r.flipRate).filter((f): f is number => f !== null);
   const flipRange = flipRates.length
     ? Math.min(...flipRates) === Math.max(...flipRates)
@@ -320,8 +337,41 @@ export default async function ModelsPage() {
           </table>
         </div>
         <p className="text-sm leading-6 text-slate">
-          Agreeing with Opus is not the same as being right. Which judge is closest to a person is the next check.
+          Agreeing with Opus is not the same as being right.{" "}
+          {data.human
+            ? "So a person also graded a blind sample of the replies, fact by fact, without seeing the judge's verdict or the answering model."
+            : "Which judge is closest to a person is the next check."}
         </p>
+        {humanOriginal && (
+          <div className="rounded-2xl border border-lime-soft bg-lime-soft p-4 text-sm leading-6 text-forest sm:p-5">
+            <p className="font-semibold">
+              On {humanOriginal.replies} replies drawn at random ({humanOriginal.facts} facts), the eval&apos;s judge
+              agreed with the person on {percent(humanOriginal.rate)} of facts
+              {humanOriginal.interval ? ` (${percent(humanOriginal.interval[0])} to ${percent(humanOriginal.interval[1])})` : ""}
+              {humanOriginal.lenient === 0 && humanOriginal.stricter > 0
+                ? `, and it was never the more lenient one: in all ${humanOriginal.stricter} disagreements it failed a fact the person passed.`
+                : "."}
+            </p>
+            {humanOriginal.repliesJudgeFailed !== null &&
+              humanOriginal.repliesPersonPassed !== null &&
+              humanOriginal.repliesJudgePassedPersonFailed === 0 && (
+                <p className="mt-1">
+                  The person passed every reply the judge passed, and would also have passed{" "}
+                  {humanOriginal.repliesPersonPassed} of the {humanOriginal.repliesJudgeFailed} it failed. In those, the
+                  reply left out one detail of a fact, such as how often free reports are available or that the effect
+                  depends on the scoring model, that the person let pass and the judge did not. So the pass rates on this site are strict; both bots
+                  are graded by the same judge against the same facts.
+                </p>
+              )}
+            {closerJudge && (
+              <p className="mt-1">
+                {judgeName(closerJudge.name)} agreed with the person on {closerFacts} more{" "}
+                {closerFacts === 1 ? "fact" : "facts"}, by letting some of the same details pass: too few replies to
+                choose a judge by.
+              </p>
+            )}
+          </div>
+        )}
         {data.human ? (
           <div className="overflow-x-auto rounded-2xl border border-line bg-white">
             <table className="w-full min-w-[30rem] text-sm">
@@ -337,7 +387,7 @@ export default async function ModelsPage() {
               <tbody>
                 {data.human.judges.map((j) => (
                   <tr key={j.name} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-medium text-ink">{j.name}</td>
+                    <td className="px-4 py-3 font-medium text-ink">{judgeName(j.name)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{j.facts}</td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       {percent(j.rate)}
