@@ -208,7 +208,7 @@ domain: credit-products     # Before 버전에서 어느 에이전트에 들어�
 - **단일 턴만.** 케이스는 모두 메시지 하나라서 직전 턴 이월은 평가하지 않습니다.
 - **보류 세트 없음.** 케이스, 기대 사실, 스킬 수정을 모두 같은 사람이 같은 평가셋을 보면서 썼습니다. 그래서 격차에는 튜닝의 몫이 들어 있습니다. 수정 전 10-22 1회 실행은 42 대 31, 수정 후 10-23 1회 실행은 54 대 29였습니다.
 - **judge를 사람과 아직 비교하지 않음.** judge는 Opus 하나이고, 블라인드 표본의 사람 라벨은 아직 끝나지 않았습니다.
-- **가상 설정.** 가상 회원 6명, 가상 상품, 이 프로젝트가 정한 Before 도메인 구분입니다. 도메인을 다르게 나누면 두 번째 도메인이 필요한 케이스도 달라집니다. 봇은 배포하지 않았으므로(사이트만 정적 페이지로 공개) Online evaluation 페이지는 데이터 없는 계획입니다.
+- **가상 설정.** 가상 회원 6명, 가상 상품, 이 프로젝트가 정한 Before 도메인 구분입니다. 도메인을 다르게 나누면 두 번째 도메인이 필요한 케이스도 달라집니다. 실제 회원이 봇을 쓰지 않으므로(공개 데모는 익명이고 한도가 있음) Online evaluation 페이지는 데이터 없는 계획입니다.
 
 ### 테스트 케이스 형식 (YAML)
 
@@ -391,7 +391,8 @@ fynn report results/a.json results/b.json
   - Framework 탭도 같은 방식으로 `skills/`, `personas/`, `evals/cases/`를 읽습니다.
 - **실행**
   - 로컬: 백엔드 `uvicorn` (포트 8000), 프론트 `npm run dev` (포트 3000)
-  - 배포: 사이트는 GitHub Pages에 정적 파일로 올립니다. `main`에 push하면 `.github/workflows/pages.yml`이 `FYNN_STATIC_SITE=1`로 빌드합니다(`output: "export"`, 저장소 이름을 basePath로). 봇 백엔드는 배포하지 않으므로, 정적 사이트의 Demo는 `results/demo/recorded.json`(`evals/demo_snapshot.py`가 커밋된 3회 실행에서 뽑은 네 질문)의 녹화된 답변을 보여 줍니다.
+  - 배포: 사이트는 GitHub Pages에 정적 파일로 올립니다. `main`에 push하면 `.github/workflows/pages.yml`이 `FYNN_STATIC_SITE=1`로 빌드합니다(`output: "export"`, 저장소 이름을 basePath로). Demo는 녹화된 답변(`results/demo/recorded.json`, `evals/demo_snapshot.py`가 커밋된 3회 실행에서 뽑은 네 질문)도 함께 보여 주고, 백엔드가 15초 안에 답하지 않으면 그쪽으로 바꿉니다.
+  - 백엔드는 Hugging Face Docker Space에서 돌립니다. `.github/workflows/space.yml`이 `space/`(Dockerfile, Space README), `backend/`, `skills/`, `personas/`를 모아 `main`에 push될 때마다 Space로 보냅니다. 공개 데모라서 `/chat`에 한도를 둡니다(`api/limits.py`): 방문자당 시간당 20회, 전체 하루 400회 요청이고, 두 봇에 묻는 질문 하나가 요청 두 번이므로 질문으로는 10개와 200개입니다(Sonnet 답변 기준 하루 최대 약 $4~5). 한도는 메모리에 있어 서버가 다시 시작되면 초기화되므로, 이 데모 전용 API 키에 Anthropic Console의 월 지출 한도를 거는 것이 최종 안전장치입니다. 방문자는 `X-Forwarded-For`의 첫 주소로 구분하는데 클라이언트가 이 헤더를 꾸밀 수 있어서, 방문자 한도는 공정성 장치이고 지출은 하루 한도가 막습니다.
 
 ### 백엔드 API (v1)
 
@@ -532,7 +533,7 @@ fynn-lab/
 | M4 | 회귀 리포트, 의존 테스트 선택, 스킬 개선 시나리오 3개 (S1~S3) | 시나리오별 리포트 Markdown + 가설 대비 결과 |
 | M5 | 평가 페이지: Before vs After, Skill edits (각각 Framework / Results 탭), Online evaluation 프레임워크 | 사이트의 평가 섹션 완성 |
 | 통계 | 짝지은 검정, 고침·망가뜨림·우연 구분 (반복 실행, A/A 노이즈 기준선, 플래그 규칙, Holm 보정은 코드에만 남김) | 리포트 첫머리와 사이트의 결정 |
-| M6 | 결과 사이트를 GitHub Pages에 정적 배포 (봇 백엔드는 배포하지 않고, Demo는 녹화된 답변) | 공개 URL |
+| M6 | 결과 사이트를 GitHub Pages에 정적 배포, 백엔드는 한도를 둔 Hugging Face Space (응답이 없으면 Demo는 녹화된 답변) | 공개 URL |
 
 ## 7. 결정 사항
 
@@ -544,4 +545,4 @@ fynn-lab/
 | 데모 입력 | 입력창 하나로 양쪽에 동시 전송 |
 | UI 언어 | 영어 (문서는 한국어 병행) |
 | 스킬 예산 | 새로 고르는 스킬 4개(상한 실험 전에는 3개) + 직전 턴 이월 2개 (설정값) |
-| 남은 것 | 봇 백엔드를 공개할지 (공개하면 사용량 제한과 배포 환경 인증 방식이 필요) |
+| 남은 것 | 없음 (백엔드 공개는 Space 설정을 마치면 켜짐) |

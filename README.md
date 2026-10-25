@@ -4,7 +4,7 @@ An independent re-implementation of the architecture change described in Kikoff'
 
 It is a study project and is not affiliated with Kikoff. The products the bots talk about are fictional; see [docs/products.md](docs/products.md).
 
-**Site:** [youngsukhwang.github.io/fynn-lab](https://youngsukhwang.github.io/fynn-lab/). It has the eval framework and results pages. The site has no backend, so its Demo page shows recorded replies from the committed eval run; to chat with both bots, run them locally (below).
+**Site:** [youngsukhwang.github.io/fynn-lab](https://youngsukhwang.github.io/fynn-lab/). It has the eval framework and results pages. Its Demo page chats with both bots through a hosted backend with a small daily allowance (see "Hosted backend" below). Recorded replies from the committed eval run are one click away, and the page switches to them when that backend is asleep or not set up.
 
 - **Before:** the earlier design in the post, which the post calls its beta. A small model routes each message to exactly one domain expert agent, so a question that spans several domains gets only one domain's expertise.
 - **After:** the skill design the post moved to. A small model selects the topic skills the message needs. One agent answers with those skills plus always-on skills (tone, response rules, guardrails).
@@ -44,7 +44,7 @@ Skill-edit results are from one run per case. A decision is backed when the pair
 - **Single-turn only.** Every case is one message, so carrying skills between turns is not evaluated.
 - **No held-out set.** The cases, the expected facts and the skill fixes were all written by one person looking at the same eval set, so the gap includes tuning. Before the shipped edits, a single run on 2026-10-22 gave After 42 and Before 31 of 64 (p = 0.019); a single run after them gave 54 and 29.
 - **The judge is not yet checked against people.** One LLM judge (Opus) grades every reply; the human labels on a blind sample are not finished.
-- **Synthetic setting.** Six fictional members, fictional products, and a Before domain split that is this project's own; a different split would change which cases need a second domain. The bots are not deployed (only the static site is), so the Online evaluation page is a plan with no data.
+- **Synthetic setting.** Six fictional members, fictional products, and a Before domain split that is this project's own; a different split would change which cases need a second domain. No real members use the bots (the hosted demo is anonymous and rate-limited), so the Online evaluation page is a plan with no data.
 
 ## How it works
 
@@ -186,6 +186,20 @@ You can override each model with an environment variable; see `backend/.env.exam
 | `GET /personas` | Synthetic member profiles |
 | `GET /architecture` | Domains, skills, models, skill budgets and request limits, for the site's diagrams |
 
+`FYNN_CHAT_LIMIT_PER_VISITOR_PER_HOUR` and `FYNN_CHAT_LIMIT_PER_DAY` cap `/chat` requests for a public demo (`api/limits.py`); they are unset locally, so there is no limit. A refused request gets a 429 with `Retry-After`. The counts live in memory and reset when the server restarts.
+
+### Hosted backend
+
+The public demo's backend runs as a Hugging Face Docker Space. `.github/workflows/space.yml` assembles it from `space/` (Dockerfile and Space README), `backend/`, `skills/` and `personas/`, and pushes it to the Space on every push to `main` that touches them. The Space allows 20 chat requests per visitor per hour and 400 a day in all (10 and 200 questions to both bots, at most about $4 to $5 a day with Sonnet answering), and only the GitHub Pages origin. The free Space sleeps after two days without visitors; the site then shows recorded replies until it wakes.
+
+One-time setup:
+
+1. Create a Docker Space on Hugging Face (blank template, free CPU, public), for example `fynn-lab-api`.
+2. In the Space's settings, add the secret `ANTHROPIC_API_KEY`. A key used only for this demo, with a monthly spend limit set in the Anthropic Console, is the backstop if the in-memory limits reset.
+3. Create a Hugging Face access token that can write to the Space.
+4. In this GitHub repo's Actions settings, add the secret `HF_TOKEN` (that token) and the variables `HF_SPACE` (for example `<hf-user>/fynn-lab-api`) and `FYNN_API_URL` (the Space's address, `https://<hf-user>-fynn-lab-api.hf.space`).
+5. Run the "Deploy API" workflow, then "Deploy site", so the site is rebuilt with the API address.
+
 ## Web
 
 Requires Node.js 20.9 or newer. The demo needs the backend on port 8000, and chatting needs `ANTHROPIC_API_KEY` in `backend/.env`.
@@ -201,5 +215,5 @@ npm run dev                 # http://localhost:3000
 - **Models**: the answer-model comparison (cost against cases passed, reply length) and the judge check.
 - **Online evaluation**: a framework page for evaluating the bots on real traffic.
 - `NEXT_PUBLIC_API_URL` points the site at another backend (read at build time); `FYNN_CORS_ORIGINS` in `backend/.env` allows other origins. In `npm run dev`, reload a page to pick up new results files.
-- **Static site.** `FYNN_STATIC_SITE=1 FYNN_BASE_PATH=/fynn-lab npm run build` writes plain files to `web/out/`; `.github/workflows/pages.yml` does this on every push to `main` and publishes to GitHub Pages. With no backend, its Demo page shows `results/demo/recorded.json`, which `.venv/bin/python -m evals.demo_snapshot --before ../results/before.json --after ../results/after.json --out ../results/demo/recorded.json` (from `backend/`, no API) rebuilds from the committed runs.
+- **Static site.** `FYNN_STATIC_SITE=1 FYNN_BASE_PATH=/fynn-lab npm run build` writes plain files to `web/out/`; `.github/workflows/pages.yml` does this on every push to `main` and publishes to GitHub Pages, with `NEXT_PUBLIC_API_URL` from the repository variable `FYNN_API_URL`. Its Demo page also offers recorded replies, and switches to them when the backend does not answer within 15 seconds; with no API address it shows only those. They are `results/demo/recorded.json`, which `.venv/bin/python -m evals.demo_snapshot --before ../results/before.json --after ../results/after.json --out ../results/demo/recorded.json` (from `backend/`, no API) rebuilds from the committed runs.
 - **Checks.** `npm run typecheck` and `npm run lint`.
