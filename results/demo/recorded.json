@@ -1,0 +1,983 @@
+{
+  "sources": {
+    "before": {
+      "name": "before",
+      "created_at": "2026-10-23T20:01:38+00:00"
+    },
+    "after": {
+      "name": "after",
+      "created_at": "2026-10-23T20:01:10+00:00"
+    }
+  },
+  "architecture": {
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5"
+    },
+    "max_new_skills_per_turn": 4,
+    "max_carried_skills": 2,
+    "limits": {
+      "max_messages": 20,
+      "max_user_message_chars": 2000
+    },
+    "always_on": [
+      "guardrails",
+      "response-rules",
+      "tone"
+    ],
+    "domains": [
+      {
+        "id": "score-and-reports",
+        "title": "Credit score & reports",
+        "skills": [
+          "payment-history",
+          "score-changes",
+          "utilization"
+        ]
+      },
+      {
+        "id": "credit-products",
+        "title": "Credit-building products",
+        "skills": [
+          "credit-builder-account",
+          "marketplace-offers",
+          "secured-card"
+        ]
+      },
+      {
+        "id": "rent-and-bills",
+        "title": "Rent & bill reporting",
+        "skills": [
+          "bill-reporting",
+          "rent-reporting"
+        ]
+      },
+      {
+        "id": "debt-and-collections",
+        "title": "Debt & collections",
+        "skills": [
+          "collections",
+          "debt-settlement"
+        ]
+      }
+    ],
+    "topics": [
+      {
+        "name": "bill-reporting",
+        "domain": "rent-and-bills",
+        "description": "Covers the free Bill Reporting feature: on-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax only. Use when the user asks whether paying electricity, gas, water, cell phone, or internet bills builds credit, why those bills do not show on an Experian or TransUnion report, whether bill reporting costs anything, or what happens if a bill is paid late. Not for rent (rent-reporting) or for bills already sent to a collection agency (collections)."
+      },
+      {
+        "name": "collections",
+        "domain": "debt-and-collections",
+        "description": "Covers collection accounts on credit reports: how long they stay, what paying does and does not change, medical collection rules, how scoring models treat paid collections, disputing a collection entry that is wrong or not theirs, requesting debt validation from a collector, and state statutes of limitations for lawsuits. Use when the user mentions a collection, a collection agency or debt collector contacting them, an old or unrecognized debt, a medical bill on their report, whether to pay a collection, \"pay for delete\", when a collection will fall off, or being sued or threatened with a lawsuit over a debt. Not for negotiating to pay less through the app's service (debt-settlement)."
+      },
+      {
+        "name": "credit-builder-account",
+        "domain": "credit-products",
+        "description": "Covers the Credit Builder plan: the $6 a month, 24-month installment account whose payments build a savings balance, how it differs from a credit card, when its payments are reported, what a late payment does, the $144 payout at the end, and what cancelling early does. Use when the user asks about the credit builder, the \"$6 plan\", builder loan or savings, when a payment will show on their report, whether paying the Credit Builder plan a few days late hurts, getting their money back, or cancelling the plan. Also use when someone with little or no credit history asks how to start building credit or how long until they have a score. Not for the Secured Card (secured-card) or third-party offers (marketplace-offers)."
+      },
+      {
+        "name": "debt-settlement",
+        "domain": "debt-and-collections",
+        "description": "Covers the Debt Settlement service: which accounts qualify (charged off or in collections only), the fee of 20% of the amount saved and when it is charged, how a settled account is reported, free alternatives to the service, and taxes on forgiven debt including the Form 1099-C. Use when the user asks about settling, negotiating, or paying less than they owe, a lump-sum or settlement offer, what the service costs, whether settling hurts or helps their credit, or whether forgiven debt is taxed. Not for whether to pay a collection at all, how long collections stay, disputes, debt validation, or lawsuit deadlines (collections)."
+      },
+      {
+        "name": "marketplace-offers",
+        "domain": "credit-products",
+        "description": "Covers the Marketplace of third-party credit card and loan offers: who makes and approves them, how the app may be paid by partners, why Coach cannot give approval odds, the hard inquiry from applying, and whether a new card or loan fits the user's situation now. Use when the user asks about an offer seen in the app (travel, rewards or balance transfer card, personal loan), \"should I apply for\" or \"should I get\" a new card or loan, \"will I be approved\" or \"what are my odds\", whether applying hurts their score, whether to open more cards, or why the app shows certain offers. Not for the app's own Secured Card (secured-card) or Credit Builder plan (credit-builder-account)."
+      },
+      {
+        "name": "payment-history",
+        "domain": "score-and-reports",
+        "description": "Explains payment history: when late payments get reported, how long they stay, how their impact fades, and honest options for dealing with them (goodwill letters for accurate lates, disputes for inaccurate ones). Use when the user mentions a late or missed payment, \"30 days late\", \"I paid a few days late, will it hurt\", \"can you remove my late payment\", \"how long does a late stay on my report\", goodwill letters, disputing a late payment or other account error on a report, or building an on-time streak. Also use when the user asks how to see or get their credit reports for free, or whether or when a score will recover or reach a target, since a recent late and how it fades often set that pace. Accounts already in collections or charged off belong to collections."
+      },
+      {
+        "name": "rent-reporting",
+        "domain": "rent-and-bills",
+        "description": "Covers the Rent Reporting add-on: its $4 monthly price, which bureaus receive rent (TransUnion and Experian, not Equifax), adding up to 12 months of past rent, what happens when rent is late or missed, and which scoring models count rent. Use when the user asks whether paying rent builds credit, why rent is not showing on a report or not moving a score, about backdating or adding past rent, what rent reporting costs, or whether reported rent will help them qualify for a mortgage or home loan. Not for utility, phone, or internet bills (bill-reporting)."
+      },
+      {
+        "name": "score-changes",
+        "domain": "score-and-reports",
+        "description": "Explains why a credit score goes up or down from month to month, why scores differ between Equifax, Experian and TransUnion and between scoring models (FICO vs VantageScore), and how long changes take to show. Use for \"why did my score drop\", \"why did my score go up\", \"I lost 20 points\", \"my score is different on another site or at my lender\", \"when will my score update\", how a past hard inquiry, a newly opened account, or a closed account changed a score, or whether and how long a closed account stays on a report. When the user asks only how utilization or late payments work, use utilization or payment-history instead; questions about whether applying for a card or loan offer will hurt belong to marketplace-offers."
+      },
+      {
+        "name": "secured-card",
+        "domain": "credit-products",
+        "description": "Covers the Secured Card: the refundable $50 to $2,000 deposit that sets the limit, APR and fees, the shipping and delivery timeline, what to do when the card has not arrived, activation, how the statement balance is reported, and the upgrade review after 8 on-time payments. Use when the user asks where their card is, when it will arrive, about a card that never came, activating it, a card not working at checkout, the deposit or limit, interest or fees, when the card balance gets reported, or getting the deposit back or moving to an unsecured card. Not for third-party card offers (marketplace-offers) or the Credit Builder plan (credit-builder-account)."
+      },
+      {
+        "name": "utilization",
+        "domain": "score-and-reports",
+        "description": "Explains revolving credit utilization: card balances divided by credit limits, overall and per card, which balance gets reported, and how to lower it. Use when the user asks about utilization or \"credit usage\", how much of a limit to use, high card balances, whether to pay off a card, paying before the statement date, why a balance shows even though they pay in full, or whether a loan balance counts. Also use when the user asks how to raise a score quickly by paying down cards, or asks why their score dropped (\"why did my score drop\", \"my score went down\", \"I lost 20 points\"), since a higher reported balance is a common cause of a drop."
+      }
+    ]
+  },
+  "personas": [
+    {
+      "id": "collections",
+      "name": "Dana",
+      "summary": "Dana has an unpaid $1,200 non-medical collection from a phone company (original delinquency March 2022) and a $2,800 charged-off credit card enrolled in Debt Settlement, still in negotiation; she has no medical collections.",
+      "as_of": "2026-10-15",
+      "credit": {
+        "score": {
+          "model": "VantageScore 3.0",
+          "current": 560,
+          "previous": 555,
+          "previous_as_of": "2026-09-15"
+        },
+        "utilization": {
+          "overall": 0.35,
+          "total_revolving_balance": 280,
+          "total_revolving_limit": 800
+        },
+        "accounts": [
+          {
+            "name": "Store card",
+            "type": "revolving",
+            "limit": 800,
+            "balance": 280,
+            "opened": "2021-11-03",
+            "status": "open, current"
+          },
+          {
+            "name": "Bank credit card",
+            "type": "revolving",
+            "limit": 2500,
+            "balance": 2800,
+            "opened": "2019-05-20",
+            "status": "closed, charged off (2024-12-18)"
+          }
+        ],
+        "negative_items": [
+          {
+            "type": "collection",
+            "account": "Mobile phone carrier (placed with a collection agency)",
+            "detail": "Non-medical collection, $1,200 unpaid",
+            "reported": "2022-09-20",
+            "original_delinquency": "2022-03-14",
+            "balance": 1200,
+            "medical": false,
+            "paid": false
+          },
+          {
+            "type": "charge_off",
+            "account": "Bank credit card",
+            "detail": "Charged off with a $2,800 balance",
+            "reported": "2024-12-18",
+            "original_delinquency": "2024-06-12",
+            "balance": 2800,
+            "paid": false
+          }
+        ],
+        "hard_inquiries_last_12_months": 0,
+        "oldest_account_opened": "2019-05-20"
+      },
+      "products": {
+        "credit_builder": null,
+        "secured_card": null,
+        "rent_reporting": null,
+        "bill_reporting": null,
+        "debt_settlement": {
+          "status": "active",
+          "enrolled": "2026-08-18",
+          "fees_charged": 0,
+          "accounts": [
+            {
+              "account": "Bank credit card",
+              "balance": 2800,
+              "stage": "negotiating"
+            }
+          ]
+        }
+      },
+      "recent_events": [
+        "2026-10-08: Debt Settlement update: still negotiating with the Bank credit card creditor; no settlement agreed yet",
+        "2026-10-01: Paid the Store card on time",
+        "2026-09-22: Got a letter from the collection agency about the $1,200 phone bill",
+        "2026-08-18: Enrolled the charged-off Bank credit card ($2,800) in Debt Settlement; no upfront fee"
+      ]
+    },
+    {
+      "id": "high-util",
+      "name": "Priya",
+      "summary": "Priya pays every bill on time but carries high card balances: $2,550 against $3,000 in limits (85%), with one card at 95% of its limit.",
+      "as_of": "2026-10-15",
+      "credit": {
+        "score": {
+          "model": "VantageScore 3.0",
+          "current": 655,
+          "previous": 668,
+          "previous_as_of": "2026-09-15"
+        },
+        "utilization": {
+          "overall": 0.85,
+          "total_revolving_balance": 2550,
+          "total_revolving_limit": 3000
+        },
+        "accounts": [
+          {
+            "name": "Rewards credit card",
+            "type": "revolving",
+            "limit": 2000,
+            "balance": 1900,
+            "opened": "2021-09-10",
+            "status": "open, current"
+          },
+          {
+            "name": "Bank credit card",
+            "type": "revolving",
+            "limit": 1000,
+            "balance": 650,
+            "opened": "2023-02-15",
+            "status": "open, current"
+          },
+          {
+            "name": "Credit Builder plan",
+            "type": "installment",
+            "limit": null,
+            "balance": 102,
+            "opened": "2026-03-01",
+            "status": "open, current"
+          }
+        ],
+        "negative_items": [],
+        "hard_inquiries_last_12_months": 0,
+        "oldest_account_opened": "2021-09-10"
+      },
+      "products": {
+        "credit_builder": {
+          "status": "active",
+          "enrolled": "2026-03-01",
+          "on_time_payments": 7,
+          "late_payments": 0,
+          "payments_remaining": 17,
+          "savings_balance": 42,
+          "next_payment_due": "2026-11-01"
+        },
+        "secured_card": null,
+        "rent_reporting": null,
+        "bill_reporting": null,
+        "debt_settlement": null
+      },
+      "recent_events": [
+        "2026-10-05: Card balances reported at $2,550 of $3,000 in limits (85%), up from $2,100 (70%) the month before",
+        "2026-10-01: Made the 7th Credit Builder payment on time",
+        "2026-09-27: Paid the minimum due on both credit cards on time",
+        "2026-09-20: Charged a car repair to the Rewards credit card"
+      ]
+    },
+    {
+      "id": "multi-product",
+      "name": "Sam",
+      "summary": "Sam uses every building product: Credit Builder has 2 payments left, the Secured Card ($500 deposit) has 9 on-time payments and is eligible for upgrade review, Rent Reporting (15 months reported since enrolling, plus 12 past months added, 27 in total) and Bill Reporting are both active, and utilization is 12%.",
+      "as_of": "2026-10-15",
+      "credit": {
+        "score": {
+          "model": "VantageScore 3.0",
+          "current": 702,
+          "previous": 695,
+          "previous_as_of": "2026-09-15"
+        },
+        "utilization": {
+          "overall": 0.12,
+          "total_revolving_balance": 300,
+          "total_revolving_limit": 2500
+        },
+        "accounts": [
+          {
+            "name": "Bank credit card",
+            "type": "revolving",
+            "limit": 2000,
+            "balance": 240,
+            "opened": "2020-08-03",
+            "status": "open, current"
+          },
+          {
+            "name": "Secured Card",
+            "type": "revolving",
+            "limit": 500,
+            "balance": 60,
+            "opened": "2025-12-08",
+            "status": "open, current"
+          },
+          {
+            "name": "Credit Builder plan",
+            "type": "installment",
+            "limit": null,
+            "balance": 12,
+            "opened": "2024-12-01",
+            "status": "open, current"
+          }
+        ],
+        "negative_items": [],
+        "hard_inquiries_last_12_months": 0,
+        "oldest_account_opened": "2020-08-03"
+      },
+      "products": {
+        "credit_builder": {
+          "status": "active",
+          "enrolled": "2024-12-01",
+          "on_time_payments": 22,
+          "late_payments": 0,
+          "payments_remaining": 2,
+          "savings_balance": 132,
+          "next_payment_due": "2026-11-01"
+        },
+        "secured_card": {
+          "status": "active",
+          "deposit": 500,
+          "credit_limit": 500,
+          "approved": "2025-12-08",
+          "shipped_on": "2025-12-09",
+          "expected_delivery_window": {
+            "start": "2025-12-18",
+            "end": "2025-12-23"
+          },
+          "delivered_on": "2025-12-18",
+          "activated": true,
+          "on_time_payments": 9,
+          "late_payments": 0,
+          "statement_closing_day": 10,
+          "next_payment_due": "2026-11-05",
+          "upgrade_review": "eligible"
+        },
+        "rent_reporting": {
+          "status": "active",
+          "enrolled": "2025-07-01",
+          "monthly_rent": 1650,
+          "months_reported_since_enrollment": 15,
+          "past_rent_added": true,
+          "past_months_added": 12,
+          "lease_start": "2023-05-01"
+        },
+        "bill_reporting": {
+          "status": "active",
+          "enrolled": "2026-02-01",
+          "bills": [
+            {
+              "name": "Mobile phone",
+              "category": "phone",
+              "monthly_amount": 65,
+              "months_reported": 8
+            },
+            {
+              "name": "Electric utility",
+              "category": "utility",
+              "monthly_amount": 90,
+              "months_reported": 8
+            },
+            {
+              "name": "Home internet",
+              "category": "internet",
+              "monthly_amount": 60,
+              "months_reported": 8
+            }
+          ]
+        },
+        "debt_settlement": null
+      },
+      "recent_events": [
+        "2026-10-10: Secured Card statement closed with a $60 balance",
+        "2026-10-05: Made the 9th consecutive on-time Secured Card payment",
+        "2026-10-01: Made the 22nd Credit Builder payment on time; 2 payments left",
+        "2026-10-01: Paid October rent ($1,650) on time from the linked bank account",
+        "2026-09-05: Made the 8th consecutive on-time Secured Card payment; the account became eligible for upgrade review"
+      ]
+    },
+    {
+      "id": "new-to-credit",
+      "name": "Maya",
+      "summary": "Maya is 22 with a thin file: her only account is a Credit Builder plan opened 4 months ago, so she has a VantageScore 3.0 but no FICO score yet, and she has never had a credit card.",
+      "as_of": "2026-10-15",
+      "credit": {
+        "score": {
+          "model": "VantageScore 3.0",
+          "current": 612,
+          "previous": 603,
+          "previous_as_of": "2026-09-15"
+        },
+        "utilization": {
+          "overall": null,
+          "total_revolving_balance": 0,
+          "total_revolving_limit": 0
+        },
+        "accounts": [
+          {
+            "name": "Credit Builder plan",
+            "type": "installment",
+            "limit": null,
+            "balance": 120,
+            "opened": "2026-06-01",
+            "status": "open, current"
+          }
+        ],
+        "negative_items": [],
+        "hard_inquiries_last_12_months": 0,
+        "oldest_account_opened": "2026-06-01"
+      },
+      "products": {
+        "credit_builder": {
+          "status": "active",
+          "enrolled": "2026-06-01",
+          "on_time_payments": 4,
+          "late_payments": 0,
+          "payments_remaining": 20,
+          "savings_balance": 24,
+          "next_payment_due": "2026-11-01"
+        },
+        "secured_card": null,
+        "rent_reporting": null,
+        "bill_reporting": null,
+        "debt_settlement": null
+      },
+      "recent_events": [
+        "2026-10-09: Browsed credit card offers in the Marketplace but did not apply",
+        "2026-10-01: Made her 4th Credit Builder payment on time",
+        "2026-09-02: A lender's prequalification check found no FICO score for her",
+        "2026-06-01: Opened the Credit Builder plan (no credit check, no hard inquiry)"
+      ]
+    },
+    {
+      "id": "rebuilder",
+      "name": "Jordan",
+      "summary": "Jordan is rebuilding after a 30-day late payment on a retail store card was reported in September; utilization is 47%, Credit Builder has 10 on-time payments, and a Secured Card shipped on 2026-10-06 has not arrived yet.",
+      "as_of": "2026-10-15",
+      "credit": {
+        "score": {
+          "model": "VantageScore 3.0",
+          "current": 588,
+          "previous": 611,
+          "previous_as_of": "2026-09-15"
+        },
+        "utilization": {
+          "overall": 0.47,
+          "total_revolving_balance": 1410,
+          "total_revolving_limit": 3000
+        },
+        "accounts": [
+          {
+            "name": "Bank credit card",
+            "type": "revolving",
+            "limit": 1500,
+            "balance": 510,
+            "opened": "2022-05-01",
+            "status": "open, current"
+          },
+          {
+            "name": "Retail store card",
+            "type": "revolving",
+            "limit": 1500,
+            "balance": 900,
+            "opened": "2023-08-01",
+            "status": "open, current (reported 30 days late on 2026-09-28)"
+          },
+          {
+            "name": "Credit Builder plan",
+            "type": "installment",
+            "limit": null,
+            "balance": 84,
+            "opened": "2025-12-01",
+            "status": "open, current"
+          }
+        ],
+        "negative_items": [
+          {
+            "type": "late_payment",
+            "account": "Retail store card",
+            "detail": "30 days late",
+            "reported": "2026-09-28",
+            "original_delinquency": "2026-08-25"
+          }
+        ],
+        "hard_inquiries_last_12_months": 1,
+        "oldest_account_opened": "2022-05-01"
+      },
+      "products": {
+        "credit_builder": {
+          "status": "active",
+          "enrolled": "2025-12-01",
+          "on_time_payments": 10,
+          "late_payments": 0,
+          "payments_remaining": 14,
+          "savings_balance": 60,
+          "next_payment_due": "2026-11-01"
+        },
+        "secured_card": {
+          "status": "shipped",
+          "deposit": 300,
+          "credit_limit": 300,
+          "approved": "2026-10-02",
+          "shipped_on": "2026-10-06",
+          "expected_delivery_window": {
+            "start": "2026-10-16",
+            "end": "2026-10-21"
+          },
+          "delivered_on": null,
+          "activated": false,
+          "on_time_payments": 0,
+          "late_payments": 0,
+          "statement_closing_day": null,
+          "next_payment_due": null,
+          "upgrade_review": "not_eligible"
+        },
+        "rent_reporting": null,
+        "bill_reporting": null,
+        "debt_settlement": null
+      },
+      "recent_events": [
+        "2026-10-14: Viewed a travel credit card offer in the Marketplace",
+        "2026-10-06: Secured Card shipped; not delivered yet",
+        "2026-10-05: Card balances reported at $1,410 of $3,000 in limits (47%), up from $900 (30%) the month before",
+        "2026-10-02: Approved for the Secured Card with a $300 deposit (no hard inquiry)",
+        "2026-10-02: Paid the past-due amount on the Retail store card; the account is current again",
+        "2026-10-01: Made the 10th Credit Builder payment on time",
+        "2026-09-28: Retail store card reported 30 days late (the payment due 2026-08-25 was missed)",
+        "2026-04-14: Applied for a personal loan with another lender (hard inquiry; declined)"
+      ]
+    },
+    {
+      "id": "renter",
+      "name": "Luis",
+      "summary": "Luis has 4 months of on-time rent ($1,400 a month) reported through Rent Reporting, has not added past rent, and plans to apply for a mortgage in 2027.",
+      "as_of": "2026-10-15",
+      "credit": {
+        "score": {
+          "model": "VantageScore 3.0",
+          "current": 641,
+          "previous": 634,
+          "previous_as_of": "2026-09-15"
+        },
+        "utilization": {
+          "overall": 0.22,
+          "total_revolving_balance": 550,
+          "total_revolving_limit": 2500
+        },
+        "accounts": [
+          {
+            "name": "Bank credit card",
+            "type": "revolving",
+            "limit": 2500,
+            "balance": 550,
+            "opened": "2022-01-12",
+            "status": "open, current (reported 30 days late on 2024-12-16)"
+          },
+          {
+            "name": "Auto loan",
+            "type": "installment",
+            "limit": null,
+            "balance": 9800,
+            "opened": "2024-04-15",
+            "status": "open, current"
+          }
+        ],
+        "negative_items": [
+          {
+            "type": "late_payment",
+            "account": "Bank credit card",
+            "detail": "30 days late",
+            "reported": "2024-12-16",
+            "original_delinquency": "2024-11-12"
+          }
+        ],
+        "hard_inquiries_last_12_months": 0,
+        "oldest_account_opened": "2022-01-12"
+      },
+      "products": {
+        "credit_builder": null,
+        "secured_card": null,
+        "rent_reporting": {
+          "status": "active",
+          "enrolled": "2026-06-01",
+          "monthly_rent": 1400,
+          "months_reported_since_enrollment": 4,
+          "past_rent_added": false,
+          "past_months_added": 0,
+          "lease_start": "2024-09-01"
+        },
+        "bill_reporting": null,
+        "debt_settlement": null
+      },
+      "recent_events": [
+        "2026-10-12: Told Coach he wants to apply for a mortgage in 2027",
+        "2026-10-01: Paid October rent ($1,400) on time from his linked bank account; not reported yet",
+        "2026-09-01: Paid September rent ($1,400) on time; it is his 4th reported month (June to September)",
+        "2026-06-01: Enrolled in Rent Reporting and chose not to add past rent"
+      ]
+    }
+  ],
+  "exchanges": [
+    {
+      "id": "mi-001",
+      "label": "Blog's example question",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "message": "Why did my score drop last month? And why hasn't my secured card arrived? Should I get the travel card from your marketplace?",
+      "before": {
+        "reply": "**1. Why your score dropped**\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n- **A 30-day late payment.** Your retail store card was reported late on 2026-09-28 for the payment due 2026-08-25. Paying it on 2026-10-02 made the account current, but it does not erase the late mark already reported.\n- **Higher utilization (how much of your card limits you're using).** Reported balances rose from $900 (30%) to $1,410 of $3,000 (47%). That is above the common 30% guideline.\n\nI can't say how many points each one cost.\n\n**2. Your Secured Card**\nIt shipped on 2026-10-06 and hasn't been delivered. Your expected delivery window is 2026-10-16 to 2026-10-21, so it is not late yet. If it hasn't come by 2026-10-21, contact support in the app at Help > Chat with support, or at support@example.com.\n\n**3. The travel card**\nI can't tell you to apply. Your profile doesn't show the offer's terms, and I don't have details on it. Some points to weigh:\n- Applying usually means a hard inquiry (a lender check that can lower your score a little). Your profile shows one in the last 12 months, a declined loan application in April.\n- Your recent late payment and 47% utilization may make approval harder.\n- A new account also lowers the average age of your accounts.\n- Applying through the Marketplace can be reasonable if the terms fit you, but Marketplace partners may pay the app when a user is approved.\n\nIt may be wiser to wait for your Secured Card and lower your card balances first.\n\nNext step: Pay down your card balances before their statement closing dates, so a lower balance gets reported.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "single_agent",
+          "selected": [
+            "score-and-reports"
+          ],
+          "carried": [],
+          "reason": "The member asks three things, but the first question, why their score dropped last month, is the most important part and is squarely covered by score-and-reports, which explains month-to-month score changes and differences between models and bureaus.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 4637,
+          "output_tokens": 666,
+          "cache_read_input_tokens": 4218,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": true,
+        "passes": 3,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Names the 30-day late payment on the Retail store card and the rise in utilization to 47% as the likely causes of the drop",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says the Secured Card shipped on 2026-10-06 and is expected between October 16 and October 21, 2026, so it is not late yet",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says applying for the travel card usually triggers a hard inquiry from the issuer, and does not promise or estimate approval",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Notes that with a recent late payment, applying now risks a denial plus a hard inquiry",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+            "status": "PRESENT"
+          }
+        ],
+        "check_failures": []
+      },
+      "after": {
+        "reply": "**1. Why your score dropped**\n\nYour VantageScore 3.0 went from 611 on 2026-09-15 to 588 now. Two things in your profile likely explain it, biggest first:\n\n- **The late payment.** Your retail store card was reported 30 days late on 2026-09-28. A new late payment usually weighs more than other changes. You paid the past-due amount on 2026-10-02, so the account is current. The late mark can still stay on your report.\n- **Higher utilization (how much of your card limits you're using).** It is now 47% ($1,410 of $3,000), up from 30% the month before. Under 30% is the common guidance.\n\nI can't say how many points either one cost you.\n\n**2. Your secured card**\n\nIt shipped on 2026-10-06. The expected delivery window is 2026-10-16 to 2026-10-21, so it is not late yet. If it hasn't arrived by 2026-10-21, you can go to Card > Report not received. Once it arrives, activate it in the app before first use.\n\n**3. The travel card**\n\nI'd wait. Your late payment was reported recently, and applying now risks a denial plus a hard inquiry (a lender check that can lower scores a little). Paying down balances costs nothing and needs no inquiry. If you do apply later, compare the APR, fees, and terms on the offer page. Marketplace partners may pay the app when a user is approved. I also can't tell you your approval odds.\n\nNext step: Pay down your retail store card ($900 balance on a $1,500 limit) before its statement closing date, so a lower balance gets reported.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "skills",
+          "selected": [
+            "score-changes",
+            "secured-card",
+            "marketplace-offers",
+            "utilization"
+          ],
+          "carried": [],
+          "reason": "The member asks three things: why their score dropped (score-changes, with utilization as a common cause), where their secured card is (secured-card), and whether to apply for a marketplace travel card (marketplace-offers). Four skills max, most important first.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 5602,
+          "output_tokens": 629,
+          "cache_read_input_tokens": 4219,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": true,
+        "passes": 3,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Names the 30-day late payment on the Retail store card and the rise in utilization to 47% as the likely causes of the drop",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says the Secured Card shipped on 2026-10-06 and is expected between October 16 and October 21, 2026, so it is not late yet",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says applying for the travel card usually triggers a hard inquiry from the issuer, and does not promise or estimate approval",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Notes that with a recent late payment, applying now risks a denial plus a hard inquiry",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+            "status": "PRESENT"
+          }
+        ],
+        "check_failures": []
+      }
+    },
+    {
+      "id": "mi-010",
+      "label": "Needs a second domain",
+      "dataset": "multi_intent",
+      "persona": "renter",
+      "message": "My score went up 7 points this month. Why? Should I pay to add my past rent? And should I open a new card from the Marketplace before I apply for a mortgage next year?",
+      "before": {
+        "reply": "**1. Why your score went up**\nYour score moved from 634 to 641 (VantageScore 3.0) between Sept 15 and Oct 15. Your profile doesn't show one clear cause, so I can't say for sure. Likely contributors:\n- Your 4th on-time rent month was reported in September.\n- Your utilization (how much of your card limits you use) is 22%, under the 30% guidance.\n- Your 30-day late from 2024 is getting older, so it weighs less over time.\n\nSmall swings with no new negative item are also normal.\n\n**2. Paying to add past rent**\nI can't confirm the cost or how past rent is handled, because I don't have those details. Your profile shows you chose not to add past rent, and your lease started 2024-09-01. Check the Rent Reporting screen or ask support for the fee and what would be reported. No one can promise it would raise your score, and a mortgage lender may use a different score model than the one you see here.\n\n**3. Opening a card from the Marketplace**\nYou don't need a new card to prepare for a mortgage. A new card usually means a hard inquiry (a lender's check of your credit), which FICO says takes fewer than 5 points off for most people. It also lowers the average age of your accounts. Your oldest account dates to 2022-01-12, and you have had no hard inquiries in the last 12 months.\n\nIf you decide you want a card anyway, applying can be reasonable. Marketplace partners may pay the app when a user is approved. It's best to avoid new applications close to your mortgage application.\n\nNext step: Open the Rent Reporting screen and look up the cost and details for adding past rent before deciding.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "single_agent",
+          "selected": [
+            "score-and-reports"
+          ],
+          "carried": [],
+          "reason": "The member's main question is why their score rose 7 points this month, which falls under score-and-reports, the agent that explains month-to-month score changes; the rent-reporting and Marketplace card questions are secondary.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 4665,
+          "output_tokens": 1191,
+          "cache_read_input_tokens": 3875,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": false,
+        "passes": 0,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Gives the rise from 634 to 641 and points only to causes found in his profile (such as on-time rent being reported and no new negative items), without claiming certainty",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says he can add up to 12 months of past rent for a one-time $25 fee, as added positive history rather than a guaranteed score change",
+            "status": "ABSENT"
+          },
+          {
+            "fact": "Says applying for a new card usually brings a hard inquiry, and a new account lowers the average age of accounts",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+            "status": "PRESENT"
+          }
+        ],
+        "check_failures": []
+      },
+      "after": {
+        "reply": "**1. Why your score went up**\nYour VantageScore 3.0 moved from 634 on 2026-09-15 to 641 today. I can't point to one sure cause. Here is what fits your profile:\n- Your utilization (how much of your card limit you're using) is 22%, with $550 owed on $2,500. A lower reported balance can help.\n- You have no hard inquiries in the last 12 months and no new late payments.\n- Your 30-day late payment from 2024 is aging. It stays on your report for its full reporting period, though.\n- Your on-time rent is reported to TransUnion and Experian, and VantageScore 3.0 can count rent.\n\nSmall swings are normal, and I can't predict future changes.\n\n**2. Adding past rent**\nIt costs a one-time $25 fee, and you can add up to 12 months. Your lease started 2024-09-01, so all 12 months could be eligible. It adds more on-time history to TransUnion and Experian. It can't promise a score change. It also doesn't remove your late payment.\n\nFor a mortgage, the lender chooses the score model and bureaus. Some models ignore rent, and the app doesn't report to Equifax. Ask your lender which ones it uses before you decide.\n\n**3. A Marketplace card before your mortgage**\nIt can be reasonable, but there is a tradeoff. Applying usually causes a hard inquiry (a lender check that can lower scores a little). A new account also lowers the average age of your accounts. A new limit could lower your utilization if your balances stay low. Marketplace partners may pay the app when a user is approved, and I can't tell you your approval odds.\n\nYour profile shows no need to rush. Keeping your balance low and paying on time helps without an inquiry.\n\nNext step: Ask a mortgage lender which score models and bureaus they use, then decide on past rent and a new card.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "skills",
+          "selected": [
+            "score-changes",
+            "rent-reporting",
+            "marketplace-offers"
+          ],
+          "carried": [],
+          "reason": "The member asks why their score rose 7 points (score-changes), whether to add past rent via Rent Reporting (rent-reporting), and whether to open a Marketplace card before a mortgage (marketplace-offers); these three cover all questions, with at most four allowed.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 5004,
+          "output_tokens": 722,
+          "cache_read_input_tokens": 3876,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": true,
+        "passes": 3,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Gives the rise from 634 to 641 and points only to causes found in his profile (such as on-time rent being reported and no new negative items), without claiming certainty",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says he can add up to 12 months of past rent for a one-time $25 fee, as added positive history rather than a guaranteed score change",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says applying for a new card usually brings a hard inquiry, and a new account lowers the average age of accounts",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+            "status": "PRESENT"
+          }
+        ],
+        "check_failures": []
+      }
+    },
+    {
+      "id": "mi-015",
+      "label": "Written for the comparison",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "message": "Few questions:\n1. Would rent reporting actually do anything for my score?\n2. If I'm ever short on rent and it ends up with a collection agency, would paying it off later make it go away?\n3. Once my secured card shows up, how long until I get my $300 deposit back?",
+      "before": {
+        "reply": "**1. Would rent reporting do anything for your score?**\nIt might, but it depends. Rent Reporting is not on your profile, so you aren't enrolled. Two things must be true for it to count: the score uses TransUnion or Experian data, and the scoring model counts rent. Your score of 588 is VantageScore 3.0, which can count rent. Lenders choose their own model and bureaus, though, and FICO 8 ignores rent. It costs $4 per month, plus a one-time $25 if you add up to 12 months of past rent. No one can promise a change in your score. Rent reporting also does not offset the 30-day late payment on your retail store card.\n\n**2. If rent goes to collections, does paying it make it go away?**\nNot necessarily. Unpaid rent sent to a collection agency can show on your reports through the collector. Paying it does not promise removal. Some bureaus have their own rules, and a creditor may sometimes remove an item as a courtesy, but that can't be promised. If you ever fall short, call your landlord early and ask about a payment plan, and consider a nonprofit credit counselor. The app does not report a missed rent month, but a collector can.\n\n**3. When do you get your $300 deposit back?**\nI don't have that information. My guidance doesn't cover when or how the deposit is returned. Your profile shows the card shipped on 2026-10-06, with delivery expected 2026-10-16 to 2026-10-21. It also shows your upgrade review as \"not eligible\" for now. Human support can confirm the deposit terms: Help > Chat with support, or support@example.com.\n\nNext step: Ask human support in the app how and when the $300 deposit is returned, so you know before you activate the card.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "single_agent",
+          "selected": [
+            "rent-and-bills"
+          ],
+          "carried": [],
+          "reason": "The member asks three questions, and the first one, whether rent reporting would affect their score, is the first and most substantive part, which falls under the Rent Reporting add-on in rent-and-bills; the other two (collections and secured card deposit) belong to other agents.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 4159,
+          "output_tokens": 660,
+          "cache_read_input_tokens": 4218,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": false,
+        "passes": 0,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Says VantageScore 3.0, the model behind Jordan's score, can count reported rent",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says paying a collection would not make it go away; it would stay on the report marked as paid",
+            "status": "ABSENT"
+          },
+          {
+            "fact": "Says VantageScore 3.0, the model behind Jordan's score, ignores paid collections",
+            "status": "ABSENT"
+          },
+          {
+            "fact": "Says the $300 deposit is returned if the card is upgraded to an unsecured card after a review at 8 consecutive on-time payments, without promising the upgrade or a return date",
+            "status": "ABSENT"
+          },
+          {
+            "fact": "Says Jordan has made 0 of the 8 on-time Secured Card payments so far, since the card has not arrived yet",
+            "status": "ABSENT"
+          }
+        ],
+        "check_failures": []
+      },
+      "after": {
+        "reply": "**1. Would rent reporting help your score?**\nIt might, but it depends. Rent Reporting costs $4 per month. Past rent (up to 12 months) can be added for a one-time $25 fee. Your profile shows no Rent Reporting, so nothing is being reported now.\n\nTwo things must be true for it to count. The data goes to TransUnion and Experian only, not Equifax. And the score model must count rent. Your score of 588 uses VantageScore 3.0, which can count rent. FICO 8 ignores it, and each lender picks its own model. No one can promise a change, and it does not offset the late payment from September.\n\n**2. Would paying a rent collection make it go away?**\nNo. Paying a non-medical collection does not remove it. It shows as paid. A collection can stay on your report up to 7 years from the original date of first delinquency. Paying does not restart that clock. Newer models, including VantageScore 3.0, ignore paid collections. FICO 8 still counts them in most cases. If money gets tight, ask your landlord about a payment plan before the rent goes to a collector.\n\n**3. When do you get the $300 deposit back?**\nI can't give a date. The deposit is refundable, but the guidance I have gives no return timeline. One path is the upgrade review. After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. If upgraded, the deposit is returned. Your profile shows 0 on-time payments so far, so 8 remain. An upgrade is not promised. Your card is expected to arrive between 2026-10-16 and 2026-10-21. You must activate it in the app before first use. For deposit return questions, such as closing the card, contact human support at Help > Chat with support.\n\nNext step: When the card arrives, activate it in the app so your on-time payment count can start.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "skills",
+          "selected": [
+            "rent-reporting",
+            "collections",
+            "secured-card"
+          ],
+          "carried": [],
+          "reason": "Three questions: whether rent reporting affects score (rent-reporting), whether paying a rent collection makes it disappear (collections), and when the secured card deposit is returned (secured-card).",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 5105,
+          "output_tokens": 688,
+          "cache_read_input_tokens": 4219,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": true,
+        "passes": 3,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Says VantageScore 3.0, the model behind Jordan's score, can count reported rent",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says paying a collection would not make it go away; it would stay on the report marked as paid",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says VantageScore 3.0, the model behind Jordan's score, ignores paid collections",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says the $300 deposit is returned if the card is upgraded to an unsecured card after a review at 8 consecutive on-time payments, without promising the upgrade or a return date",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says Jordan has made 0 of the 8 on-time Secured Card payments so far, since the card has not arrived yet",
+            "status": "PRESENT"
+          }
+        ],
+        "check_failures": []
+      }
+    },
+    {
+      "id": "st-011",
+      "label": "Where After lost",
+      "dataset": "single_topic",
+      "persona": "multi-product",
+      "message": "My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?",
+      "before": {
+        "reply": "Bill Reporting is probably not broken. Your bills are not supposed to show up on Experian.\n\nBill Reporting sends on-time phone, electric and internet payments to Equifax only. It does not send them to Experian or TransUnion. Your profile shows Bill Reporting is active, with 8 months reported for each of your three bills (phone, electric and internet). Those should appear on your Equifax report.\n\nTwo things to keep in mind:\n- Rent is different. The app reports your rent to Experian and TransUnion, not Equifax. So your rent may show on Experian, while your bills will not.\n- A score or report built only on Experian data will not reflect your bill payments. Which score a lender uses is the lender's choice, and no one can promise how much these payments will count.\n\nIf your Equifax report does not show the bills after 8 months of reporting, or if the app is not picking up payments from your linked bank account, human support can check that. You can reach them in the app at Help > Chat with support, or email support@example.com.\n\nNext step: Pull your free Equifax report and look for your phone, electric and internet accounts there.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "single_agent",
+          "selected": [
+            "rent-and-bills"
+          ],
+          "carried": [],
+          "reason": "The member asks why phone, electric, and internet bills don't appear on Experian, and the rent-and-bills agent covers Bill Reporting, which sends on-time bill payments only to Equifax, so the question is answered there rather than as a broken feature.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 4053,
+          "output_tokens": 456,
+          "cache_read_input_tokens": 4284,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": true,
+        "passes": 2,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Says Bill Reporting sends bill payments only to Equifax, not to Experian or TransUnion, so not seeing them on Experian is expected",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Uses the profile: the mobile phone, electric utility and home internet bills have each been reported for 8 months",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says the effect on a score depends on the scoring model and on whether a lender pulls Equifax",
+            "status": "PRESENT"
+          }
+        ],
+        "check_failures": []
+      },
+      "after": {
+        "reply": "No, this is expected. Bill Reporting sends your on-time payments to Equifax only. It does not send them to Experian or TransUnion, so they won't appear on your Experian report.\n\nYour profile shows Bill Reporting is active, with 8 months reported for each of your three bills: mobile phone, electric utility, and home internet. Only on-time payments are reported. Late bills are never reported through the app.\n\nTwo other things may help:\n- **Check Equifax.** Your bill history should be on your Equifax report, not Experian.\n- **Rent is different.** The app reports rent to Experian and TransUnion, not Equifax.\n\nAlso, a score based only on Experian or TransUnion data won't reflect these bill payments. Your profile doesn't say which bureau your VantageScore 3.0 of 702 comes from, so I can't tell you whether bill data is part of it.\n\nIf the bills are missing from your Equifax report too, contact human support. They can check whether the payments are being detected in your linked bank account. You can reach them in the app at Help > Chat with support, or at support@example.com.\n\nNext step: Look at your Equifax report and confirm the phone, electric and internet bills appear there.",
+        "model": "claude-sonnet-5-5",
+        "routing": {
+          "strategy": "skills",
+          "selected": [
+            "bill-reporting"
+          ],
+          "carried": [],
+          "reason": "The member asks why utility, phone, and internet bills are missing from their Experian report, which is exactly what the bill-reporting skill covers since those payments are reported only to Equifax.",
+          "error": null
+        },
+        "usage": {
+          "input_tokens": 3327,
+          "output_tokens": 464,
+          "cache_read_input_tokens": 4285,
+          "cache_creation_input_tokens": 0
+        },
+        "passed": false,
+        "passes": 0,
+        "repeats": 3,
+        "facts": [
+          {
+            "fact": "Says Bill Reporting sends bill payments only to Equifax, not to Experian or TransUnion, so not seeing them on Experian is expected",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Uses the profile: the mobile phone, electric utility and home internet bills have each been reported for 8 months",
+            "status": "PRESENT"
+          },
+          {
+            "fact": "Says the effect on a score depends on the scoring model and on whether a lender pulls Equifax",
+            "status": "ABSENT"
+          }
+        ],
+        "check_failures": []
+      }
+    }
+  ]
+}

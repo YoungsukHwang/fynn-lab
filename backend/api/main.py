@@ -238,7 +238,12 @@ def personas(runtime: RuntimeDep) -> list[dict[str, Any]]:
 
 @app.get("/architecture")
 def architecture(runtime: RuntimeDep) -> dict[str, Any]:
-    library = runtime.library
+    return describe_architecture(runtime.library)
+
+
+def describe_architecture(library: SkillLibrary) -> dict[str, Any]:
+    """Domains, skills, models, skill budgets and request limits, for the site's diagrams. Also written
+    into the recorded demo (evals.demo_snapshot), so the static site renders the same diagrams."""
     return {
         "models": {"router": config.ROUTER_MODEL, "agent": config.AGENT_MODEL},
         "max_new_skills_per_turn": config.MAX_NEW_SKILLS_PER_TURN,
