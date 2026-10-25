@@ -1,10 +1,11 @@
 """Answer model and judge report: the After bot answering with different models, and other judge
 models regrading the same replies. Reads results files only.
 
-    python -m evals.models_report --runs ../results/models/after-*.json --router-from ../results/after.json \
+    python -m evals.models_report --runs ../results/models/k3/after-haiku.json ../results/after.json \
+        ../results/models/k3/after-opus.json --regraded-runs ../results/models/after-*.json \
         --regrades ../results/validation/regrades --out ../results/reports/models
 
-Cost is per 1,000 single-message conversations at list prices. Results files written before
+Cost is per 1,000 replies at list prices. Results files written before
 routing.usage existed add the router's tokens to the answer's; for those, --router-from gives a run
 that records the router's tokens per case, and they are taken off the answer and priced at the
 router's model. That split is an estimate (the router prompt changes a little with the skills).
@@ -20,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from evals.judge_validation import judge_vs_judge, load_regrades, source_name
-from evals.quality import LONG, reply_lengths
+from evals.quality import reply_lengths
 from evals.run import write_results
 from evals.stats import case_runs, expected_flips, mcnemar_exact, ok_runs, permutation_test, valid_counts
 from fynn.skills import SkillLibrary
@@ -32,6 +33,9 @@ PRICES: dict[str, tuple[float, float, float]] = {
     "claude-opus-5-5": (4.00, 20.00, 0.20),
 }
 TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
+# Word cutoffs for the length sensitivity. The response rules say "under about 250 words"; nothing grades it,
+# and which model comes out ahead depends on where the line is drawn, so the report shows several.
+LENGTH_CUTOFFS = (200, 250, 300, 350)
 
 
 def cost(usage: Mapping[str, int], model: str) -> float | None:
@@ -61,20 +65,36 @@ def _split(
     return answer, {k: other.get(k, 0) for k in TOKEN_FIELDS}, True
 
 
+def cost_per_1000(results: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Answer and router cost per 1,000 replies at list prices, averaged over the runs that replied, with a
+    warm cache as in the eval. None when a run records no router tokens apart (files written before
+    routing.usage) or a model has no price."""
+    models = results.get("models") or {}
+    runs = [run for case in results.get("cases", []) for run in case_runs(case) if run.get("status") != "error"]
+    if not runs or any((run.get("routing") or {}).get("usage") is None for run in runs):
+        return None
+    if models.get("agent") not in PRICES or models.get("router") not in PRICES:
+        return None
+    answer = sum(cost(run.get("usage") or {}, models["agent"]) or 0.0 for run in runs)
+    router = sum(cost((run.get("routing") or {}).get("usage") or {}, models["router"]) or 0.0 for run in runs)
+    scale = 1000 / len(runs)
+    return {"answer": round(answer * scale, 2), "router": round(router * scale, 2), "total": round((answer + router) * scale, 2)}
+
+
 def _words(run: Mapping[str, Any]) -> int:
     return len((run.get("reply") or "").split())
 
 
 def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapping[str, int]], library: SkillLibrary) -> dict[str, Any]:
     """One answer model's results. Every run of every case counts: with K runs per case, passes are
-    out of K times the cases, and cost is the mean over all runs."""
+    out of K times the cases, and cost is the mean over the runs that replied."""
     domains = {s.name: s.domain for s in library.topics}
     cases = results["cases"]
     models = results.get("models") or {}
     groups = {"cross": {"runs": 0, "passed": 0}, "single": {"runs": 0, "passed": 0}}
     answer_cost = router_cost = 0.0
     estimated = False
-    runs = passed = errors = capped = 0
+    runs = passed = errors = 0
     facts_present = facts_graded = 0
     served: set[str] = set()
     flips: list[float] = []
@@ -85,7 +105,6 @@ def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapp
             runs += 1
             passed += ok
             errors += run.get("status") == "error"
-            capped += ok and _words(run) <= LONG
             groups[group]["runs"] += 1
             groups[group]["passed"] += ok
             facts = (run.get("judge") or {}).get("facts", [])
@@ -93,6 +112,8 @@ def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapp
             facts_present += sum(1 for f in facts if f.get("status") == "PRESENT")
             if run.get("agent_model"):
                 served.add(run["agent_model"])
+            if run.get("status") == "error":
+                continue  # no reply to price: cost is per reply, as in cost_per_1000
             answer, routed, guessed = _split(run, case["id"], router)
             estimated |= guessed
             answer_cost += cost(answer, models.get("agent", "")) or 0.0
@@ -101,7 +122,8 @@ def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapp
         flip = expected_flips(*valid_counts(case)) if ok_runs(case) >= 2 else None
         if flip is not None:
             flips.append(flip)
-    per_1000 = 1000 / runs if runs else 0
+    # Per reply: errored runs are left out of both the cost and the count, though some record tokens.
+    per_1000 = 1000 / (runs - errors) if runs > errors else 0
     return {
         "source": source,
         "model": models.get("agent"),
@@ -115,8 +137,6 @@ def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapp
         "by_group": groups,
         "facts": {"present": facts_present, "graded": facts_graded},
         "lengths": reply_lengths(results),
-        # Sensitivity: the response rules ask for about 250 words and nothing grades it.
-        "passed_if_over_300_fails": capped,
         # With K >= 2: the chance that two single runs of a case disagree, averaged over cases.
         "flip_rate": round(sum(flips) / len(flips), 4) if flips else None,
         "unstable_cases": sum(1 for c in cases if ok_runs(c) and 0 < valid_counts(c)[0] < valid_counts(c)[1]),
@@ -129,17 +149,17 @@ def model_row(source: str, results: Mapping[str, Any], router: Mapping[str, Mapp
     }
 
 
-def _counts(case: Mapping[str, Any], cap: bool) -> tuple[int, int]:
-    """(runs passed, runs that did not error); with `cap`, a reply over 300 words fails."""
+def _counts(case: Mapping[str, Any], cutoff: int | None) -> tuple[int, int]:
+    """(runs passed, runs that did not error); with a cutoff, a reply longer than it fails."""
     runs = [r for r in case_runs(case) if r.get("status") != "error"]
-    return sum(1 for r in runs if r.get("passed") and (not cap or _words(r) <= LONG)), len(runs)
+    return sum(1 for r in runs if r.get("passed") and (cutoff is None or _words(r) <= cutoff)), len(runs)
 
 
-def paired(a: Mapping[str, Any], b: Mapping[str, Any], *, cap: bool = False) -> dict[str, Any]:
+def paired(a: Mapping[str, Any], b: Mapping[str, Any], *, cutoff: int | None = None) -> dict[str, Any]:
     """Cases where `b` passes more often than `a` (up) and less often (down). One run per case on
     both sides gives the exact McNemar test; more runs give the run-permutation test, as in report.py."""
-    ca = {c["id"]: _counts(c, cap) for c in a["cases"]}
-    cb = {c["id"]: _counts(c, cap) for c in b["cases"]}
+    ca = {c["id"]: _counts(c, cutoff) for c in a["cases"]}
+    cb = {c["id"]: _counts(c, cutoff) for c in b["cases"]}
     # A case with no run that did not error on one side says nothing about either model (stats.testable).
     ids = sorted(i for i in set(ca) & set(cb) if ca[i][1] and cb[i][1])
     share = {i: (ca[i][0] / ca[i][1], cb[i][0] / cb[i][1]) for i in ids}
@@ -236,7 +256,17 @@ def build_report(
         "prices": {m: {"input": p[0], "output": p[1], "cache_read": p[2], "cache_write": round(p[0] * 1.25, 4)} for m, p in PRICES.items()},
         "models": rows,
         "paired": [{"a": a, "b": b, **paired(runs[a], runs[b])} for a, b in comparisons],
-        "paired_if_over_300_fails": [{"a": a, "b": b, **paired(runs[a], runs[b], cap=True)} for a, b in comparisons],
+        # If replies over a cutoff counted as failures: passing runs per model and the same paired tests.
+        "length_sensitivity": [
+            {
+                "cutoff": cutoff,
+                "passed": {
+                    name: sum(_counts(c, cutoff)[0] for c in runs[name]["cases"]) for name in names
+                },
+                "paired": [{"a": a, "b": b, **paired(runs[a], runs[b], cutoff=cutoff)} for a, b in comparisons],
+            }
+            for cutoff in LENGTH_CUTOFFS
+        ],
         "judges": judge_rows(regraded_runs if regraded_runs is not None else runs, regrades, cases),
         "regraded_runs": sorted(regraded_runs if regraded_runs is not None else runs),
     }
@@ -246,7 +276,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     lines = ["# Answer model and judge", "", "## Answer models", ""]
     lines += [
         "| Answer model | Passing runs | Needs a second domain | One domain | Facts present | Same-prompt flip rate | "
-        "Median words | Over 250 | Cost per 1,000 (answer + router) |",
+        "Median words | Over 250 | Cost per 1,000 replies, warm cache (answer + router) |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in report["models"]:
@@ -261,11 +291,18 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         return "p < 0.001" if p < 0.001 else f"p = {p}"
 
     lines += ["", "Paired by case (up: the second passes more often):", ""]
-    for p, q in zip(report["paired"], report["paired_if_over_300_fails"], strict=True):
-        lines.append(
-            f"- {p['a']} to {p['b']} ({p['method']}): {p['up']} up, {p['down']} down, {pval(p['p'])}; "
-            f"if replies over 300 words fail: {q['up']} up, {q['down']} down, {pval(q['p'])}"
-        )
+    for p in report["paired"]:
+        lines.append(f"- {p['a']} to {p['b']} ({p['method']}): {p['up']} up, {p['down']} down, {pval(p['p'])}")
+    names = [r["source"] for r in report["models"]]
+    lines += [
+        "",
+        "Passing runs if replies over a cutoff counted as failures (the rules say about 250 words; nothing grades it):",
+        "",
+        "| Cutoff | " + " | ".join(names) + " |",
+        "|---|" + "---|" * len(names),
+    ]
+    for row in report["length_sensitivity"]:
+        lines.append(f"| {row['cutoff']} words | " + " | ".join(str(row["passed"][n]) for n in names) + " |")
     if report["judges"]:
         lines += ["", "## Judges regrading the same replies", ""]
         lines += ["| Judge | Replies | Fact agreement with the run's judge | Verdicts changed | Cost per 64-reply run |", "|---|---|---|---|---|"]

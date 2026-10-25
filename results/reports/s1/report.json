@@ -456,7 +456,7 @@
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.375): the flagged regressions could be run-to-run noise, or be offset by improvements.",
   "attribution": {
-    "rule": "a body edit can reach a case only when the edited skill is loaded for it",
+    "rule": "a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides",
     "fixed": [
       "st-001",
       "mi-003",
@@ -469,7 +469,8 @@
     "chance_up": [],
     "chance_down": [],
     "errored": [],
-    "decision": "tradeoff"
+    "decision": "tradeoff",
+    "tested": false
   },
   "flag_rule": {
     "min_fails": 1,
@@ -542,5 +543,149 @@
     "observed": "tradeoff",
     "matches": false
   },
-  "warnings": []
+  "warnings": [],
+  "routing": {
+    "baseline": {
+      "strategy": "skills",
+      "cases": 11,
+      "runs": 11,
+      "all_available": 11,
+      "by_group": {
+        "cross": {
+          "runs": 5,
+          "all_available": 5
+        },
+        "single": {
+          "runs": 6,
+          "all_available": 6
+        }
+      },
+      "skills": {
+        "collections": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "credit-builder-account": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 4,
+          "available": 4,
+          "picked": 4,
+          "picked_unlabeled": 0
+        },
+        "rent-reporting": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 10,
+          "available": 10,
+          "picked": 11,
+          "picked_unlabeled": 1
+        },
+        "secured-card": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        }
+      }
+    },
+    "candidate": {
+      "strategy": "skills",
+      "cases": 11,
+      "runs": 11,
+      "all_available": 11,
+      "by_group": {
+        "cross": {
+          "runs": 5,
+          "all_available": 5
+        },
+        "single": {
+          "runs": 6,
+          "all_available": 6
+        }
+      },
+      "skills": {
+        "collections": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "credit-builder-account": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 4,
+          "available": 4,
+          "picked": 4,
+          "picked_unlabeled": 0
+        },
+        "rent-reporting": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 10,
+          "available": 10,
+          "picked": 10,
+          "picked_unlabeled": 0
+        },
+        "secured-card": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 4,
+          "picked_unlabeled": 1
+        }
+      }
+    }
+  },
+  "lengths": {
+    "baseline": {
+      "replies": 11,
+      "median_words": 283,
+      "mean_words": 282.5,
+      "limit": 250,
+      "over_limit": 8,
+      "over_300": 3
+    },
+    "candidate": {
+      "replies": 11,
+      "median_words": 284,
+      "mean_words": 280.6,
+      "limit": 250,
+      "over_limit": 8,
+      "over_300": 4
+    }
+  },
+  "cost_per_1000": {
+    "baseline": null,
+    "candidate": null
+  }
 }

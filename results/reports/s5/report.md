@@ -1,14 +1,14 @@
 # Regression report: s5 (Route free-report and recovery questions to payment history)
 
-**Decision: Ship.** The change fixed 3 cases and broke none; 7 other cases flipped where it could not reach them, so by chance.
+**Decision: Ship, as a lead.** The change fixed 2 cases and broke none; 8 other cases flipped outside its reach and count as chance. The paired test of the net change does not back it, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 10 cases that flipped): p = 0.344, not significant at 0.05.
 
 ## What changed
 
-- Fixed by the change (3): mi-022, mi-024, sb-001
+- Fixed by the change (2): mi-024, sb-001
 - Broken by the change (0): none
-- Flipped by chance (4 up, 3 down): mi-008, mi-010, mi-012, mi-015, st-011, mi-003, mi-030
-- How: a description edit or a different skill cap can reach a case only by changing its routing. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- Flipped by chance (5 up, 3 down): mi-008, mi-010, mi-012, mi-015, mi-022, st-011, mi-003, mi-030
+- How: a description edit can reach a case only when the edited skill (for the Before bot, its domain) enters or leaves its routing. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Scenario
 
@@ -29,7 +29,7 @@ Paired test of the net change (exact McNemar on the 10 cases that flipped): p = 
 
 ## Failures overview
 
-### st-011 (single_topic, multi-product) (chance: the change could not reach it)
+### st-011 (single_topic, multi-product) (chance: outside the change's reach)
 
 **Message.** My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?
 
@@ -77,7 +77,7 @@ Expected skills: bill-reporting. Routed: baseline ['bill-reporting'], candidate 
 
 **Judge reason.** F1 and F2 are present. F3 is absent because the reply mentions lender bureau pulls but not that the score effect depends on the scoring model.
 
-### mi-003 (multi_intent, high-util) (chance: the change could not reach it)
+### mi-003 (multi_intent, high-util) (chance: outside the change's reach)
 
 **Message.** Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?
 
@@ -132,7 +132,7 @@ Expected skills: score-changes, marketplace-offers, utilization. Routed: baselin
 
 **Judge reason.** F2 is absent because the reply gives only the Rewards card's utilization and omits the Bank card's. F1, F3 and F4 are present.
 
-### mi-030 (multi_intent, collections) (chance: the change could not reach it)
+### mi-030 (multi_intent, collections) (chance: outside the change's reach)
 
 **Message.** The collection agency's letter from September says I owe $1,200 on the old phone account, but I think part of that is fees I never agreed to. How do I push back on the amount? Also, I've kept my store card paid on time and I really don't want to slip on it now. What's the best way to make sure that never happens?
 
@@ -231,6 +231,11 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 | context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
 | safety_basic | 8 | 1 | 0 | 1.000 | 1.000 | n/a |
 | **overall** | 62 | 7 | 3 | 0.344 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 48 of 62 cases (20 of 31 that need a second domain, 28 of 31 that do not). Replies: median 274.0 words, 42 of 62 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 50 of 62 cases (22 of 31 that need a second domain, 28 of 31 that do not). Replies: median 268.0 words, 42 of 62 over the 250-word limit.
 
 ## Transitions
 

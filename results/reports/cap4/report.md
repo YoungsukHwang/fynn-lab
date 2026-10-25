@@ -1,14 +1,14 @@
 # Regression report
 
-**Decision: Ship.** The change fixed 4 cases and broke none; 7 other cases flipped where it could not reach them, so by chance.
+**Decision: Ship, as a lead.** The change fixed 3 cases and broke none; 8 other cases flipped outside its reach and count as chance. The paired test of the net change does not back it, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 11 cases that flipped): p = 0.065, not significant at 0.05.
 
 ## What changed
 
-- Fixed by the change (4): mi-020, mi-022, mi-028, mi-036
+- Fixed by the change (3): mi-020, mi-028, mi-036
 - Broken by the change (0): none
-- Flipped by chance (5 up, 2 down): st-002, mi-006, mi-008, mi-010, mi-015, st-011, mi-014
-- How: a description edit or a different skill cap can reach a case only by changing its routing. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- Flipped by chance (6 up, 2 down): st-002, mi-006, mi-008, mi-010, mi-015, mi-022, st-011, mi-014
+- How: a skill cap change can reach a case only when the routing changed and the cap mattered: the run with the lower cap filled it, or the run with the higher cap went past it. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Pass rates
 
@@ -22,7 +22,7 @@ Paired test of the net change (exact McNemar on the 11 cases that flipped): p = 
 
 ## Failures overview
 
-### st-011 (single_topic, multi-product) (chance: the change could not reach it)
+### st-011 (single_topic, multi-product) (chance: outside the change's reach)
 
 **Message.** My phone, electric and internet bills don't show up on my Experian report. Is Bill Reporting broken?
 
@@ -70,7 +70,7 @@ Expected skills: bill-reporting. Routed: baseline ['bill-reporting'], candidate 
 
 **Judge reason.** F1 and F2 are present. F3 is absent because the reply does not explain that the score effect depends on the scoring model and on whether a lender pulls Equifax.
 
-### mi-014 (multi_intent, rebuilder) (chance: the change could not reach it)
+### mi-014 (multi_intent, rebuilder) (chance: outside the change's reach)
 
 **Message.** The store card is the real problem, I've got $900 sitting on it. How much do I have to pay down to get my overall usage under 30%? Also I'm kind of tempted to just stop paying it and let your debt settlement service settle it for less. Would that be cleaner than paying the whole thing?
 
@@ -162,6 +162,11 @@ A/A noise floor: not measured (the baseline ran each case once and no A/A run wa
 | context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
 | safety_basic | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
 | **overall** | 62 | 9 | 2 | 0.065 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 48 of 62 cases (20 of 31 that need a second domain, 28 of 31 that do not). Replies: median 274.0 words, 42 of 62 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 52 of 62 cases (24 of 31 that need a second domain, 28 of 31 that do not). Replies: median 276.5 words, 43 of 62 over the 250-word limit.
 
 ## Transitions
 

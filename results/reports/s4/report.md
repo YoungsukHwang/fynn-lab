@@ -1,14 +1,14 @@
 # Regression report: s4 (Closed-account reporting time in the Credit Builder skill)
 
-**Decision: Ship.** The change fixed 6 cases and broke none.
+**Decision: Ship.** The change fixed 5 cases and broke none; 1 other case flipped outside its reach and counts as chance.
 Paired test of the net change (exact McNemar on the 6 cases that flipped): p = 0.031, significant (improvement) at 0.05.
 
 ## What changed
 
-- Fixed by the change (6): mi-008, mi-012, mi-016, mi-019, mi-022, mi-034
+- Fixed by the change (5): mi-008, mi-012, mi-016, mi-019, mi-034
 - Broken by the change (0): none
-- Flipped by chance (0 up, 0 down): none
-- How: a body edit can reach a case only when the edited skill is loaded for it. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- Flipped by chance (1 up, 0 down): mi-022
+- How: a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Scenario
 
@@ -60,6 +60,11 @@ Hypothesis: expected improve, observed improve (matches; from the flagged counts
 | multi_intent | 13 | 6 | 0 | 0.031 | 0.094 | n/a |
 | context_use | 2 | 0 | 0 | 1.000 | 1.000 | n/a |
 | **overall** | 17 | 6 | 0 | 0.031 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 11 of 17 cases (5 of 11 that need a second domain, 6 of 6 that do not). Replies: median 269 words, 10 of 17 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 12 of 17 cases (6 of 11 that need a second domain, 6 of 6 that do not). Replies: median 254 words, 9 of 17 over the 250-word limit.
 
 ## Transitions
 

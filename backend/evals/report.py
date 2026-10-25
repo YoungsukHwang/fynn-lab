@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from evals.cases import DATASETS
+from evals.models_report import cost_per_1000
 from evals.quality import reply_lengths, routing_quality
 from evals.scenarios import Scenario, load_scenario
 from evals.setup import PART_LABELS
@@ -249,11 +250,44 @@ def _route(run: Mapping[str, Any]) -> tuple[str, ...]:
 
 
 ATTRIBUTION_RULES = {
-    "body": "a body edit can reach a case only when the edited skill is loaded for it",
+    "body": "a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides",
     "always_on": "an always-on edit reaches every case",
-    "routing": "a description edit or a different skill cap can reach a case only by changing its routing",
-    "everything": "the runs differ in more than one skill text, or in code, settings or models, so every case counts as reached",
+    "description": (
+        "a description edit can reach a case only when the edited skill (for the Before bot, its domain) "
+        "enters or leaves its routing"
+    ),
+    "cap": (
+        "a skill cap change can reach a case only when the routing changed and the cap mattered: the run with "
+        "the lower cap filled it, or the run with the higher cap went past it"
+    ),
+    "everything": (
+        "the runs differ in more than a single body edit or description-only edits, or in code, settings or "
+        "models, or the files do not say what changed, so every case counts as reached"
+    ),
 }
+
+
+def scenario_baseline_problems(
+    baseline: Mapping[str, Any], candidate: Mapping[str, Any], scenario: Scenario | None
+) -> list[str]:
+    """Why a scenario report would blame the wrong change: the two runs differ in a skill other than the
+    edited one, or the baseline already has the edit. Empty when the files lack skill fingerprints."""
+    if scenario is None:
+        return []
+    fa, fb = baseline.get("skill_fingerprint"), candidate.get("skill_fingerprint")
+    if not isinstance(fa, Mapping) or not isinstance(fb, Mapping):
+        return []
+    problems = []
+    others = sorted(name for name in set(fa) | set(fb) if name != scenario.skill and fa.get(name) != fb.get(name))
+    if others:
+        problems.append(
+            f"the baseline and candidate also differ in {', '.join(others)}, so flips cannot be put on "
+            f"{scenario.id}'s edit; use the baseline the scenario ran against"
+        )
+    part = "description" if scenario.kind == "description" else "body"
+    if (fa.get(scenario.skill) or {}).get(part) == (fb.get(scenario.skill) or {}).get(part):
+        problems.append(f"the baseline already has {scenario.id}'s edit to {scenario.skill}, so there is nothing to compare")
+    return problems
 
 
 def _changed_parts(a: Mapping[str, Any], b: Mapping[str, Any]) -> dict[str, list[str]]:
@@ -266,25 +300,28 @@ def _changed_parts(a: Mapping[str, Any], b: Mapping[str, Any]) -> dict[str, list
     }
 
 
-def _change(baseline: Mapping[str, Any], candidate: Mapping[str, Any], scenario: Scenario | None) -> tuple[str, str | None]:
-    """How the change could reach a case (a key of ATTRIBUTION_RULES) and the edited skill, if one.
+def _change(
+    baseline: Mapping[str, Any], candidate: Mapping[str, Any], scenario: Scenario | None
+) -> tuple[str, tuple[str, ...]]:
+    """How the change could reach a case (a key of ATTRIBUTION_RULES) and the edited skills, if any.
     A scenario says it outright; without one it is read from what differs between the two runs."""
     if scenario is not None:
-        return ("routing" if scenario.kind == "description" else scenario.kind), scenario.skill
+        return scenario.kind, (scenario.skill,)
     setup_a, setup_b = baseline.get("setup_fingerprint"), candidate.get("setup_fingerprint")
     if baseline.get("models") != candidate.get("models") or (setup_a and setup_b and setup_a != setup_b):
-        return "everything", None
+        return "everything", ()
     parts = _changed_parts(baseline, candidate)
     if not parts:
-        return "routing", None  # only the skill cap can differ here
+        # Only the skill cap is left; with the same cap nothing the files record explains the change.
+        return ("cap", ()) if run_skill_cap(baseline) != run_skill_cap(candidate) else ("everything", ())
     if len(parts) == 1:
         (skill, changed), = parts.items()
         if changed == ["body"]:
             topic = _topic_skill(skill)
-            return ("body", skill) if topic else ("always_on", skill)
+            return ("body", (skill,)) if topic else ("always_on", (skill,))
     if all(changed == ["description"] for changed in parts.values()):
-        return "routing", None
-    return "everything", None
+        return "description", tuple(parts)
+    return "everything", ()
 
 
 def _topic_skill(name: str) -> bool:
@@ -304,22 +341,56 @@ def _skill_domain(name: str | None) -> str | None:
 
 
 def _reaches(
-    base: Mapping[str, Any], cand: Mapping[str, Any], how: str, target: str | None, also_routing: bool
+    base: Mapping[str, Any],
+    cand: Mapping[str, Any],
+    how: str,
+    targets: tuple[str, ...],
+    caps: tuple[int | None, int | None],
 ) -> bool | None:
     """Whether the change could have reached this case's prompt, from the runs that did not error.
     None when one side has only errored runs. The answering agent sees only the bodies of the skills
     it loads, so a case the change cannot reach did not get the edit in its prompt, and any flip there
-    is chance. A flip it can reach may still be chance."""
+    is chance. A flip it can reach may still be chance.
+
+    Routes compare as sets: the router reorders the same picks between identical runs, and that is not
+    the edit. For a description edit only the edited skill entering or leaving counts. A cap change counts
+    where the routing changed and the cap mattered: the run with the lower cap filled it, or the run with
+    the higher cap went past it. (The cap is also in the router's instructions, so this assumes it acts
+    only where it binds.) A body edit never changes routing, so it reaches a case only when the edited
+    skill was loaded on both sides; when only one side loaded it, the router changed the prompt too, and
+    the flip is not put on the edit. With the Before bot the targets are domains."""
     base_runs = [run for run in case_runs(base) if run.get("status") != "error"]
     cand_runs = [run for run in case_runs(cand) if run.get("status") != "error"]
     if not base_runs or not cand_runs:
         return None
-    if how in ("always_on", "everything") or (how == "body" and target is None):
+    if how in ("always_on", "everything") or (how == "body" and not targets):
         return True
-    routed = len({_route(run) for run in base_runs + cand_runs}) > 1
-    if how == "routing":
-        return routed
-    return any(target in _route(run) for run in cand_runs) or (also_routing and routed)
+    routes = {frozenset(_route(run)) for run in base_runs + cand_runs}
+    routed = len(routes) > 1
+    capped = routed and _cap_mattered(base_runs, cand_runs, caps)
+    if how == "description":
+        if not targets:
+            return routed
+        return any(len({skill in r for r in routes}) > 1 for skill in targets) or capped
+    if how == "cap":
+        return capped
+    loaded = lambda runs: any(t in _route(run) for run in runs for t in targets)  # noqa: E731
+    return (loaded(base_runs) and loaded(cand_runs)) or capped
+
+
+def _cap_mattered(
+    base_runs: Sequence[Mapping[str, Any]], cand_runs: Sequence[Mapping[str, Any]], caps: tuple[int | None, int | None]
+) -> bool:
+    """Whether a difference in skill cap could matter for a case: the run with the lower cap filled it, or
+    the run with the higher cap went past it. False when the caps are the same or a side has none."""
+    base_cap, cand_cap = caps
+    if base_cap is None or cand_cap is None or base_cap == cand_cap:
+        return False
+    low = min(base_cap, cand_cap)
+    # The cap limits new picks only, so carried skills do not count toward it.
+    picks = lambda run: len(set((run.get("routing") or {}).get("selected") or []))  # noqa: E731
+    binds = lambda runs, cap: any(picks(run) >= low + (cap != low) for run in runs)  # noqa: E731
+    return binds(base_runs, base_cap) or binds(cand_runs, cand_cap)
 
 
 def attribute(
@@ -332,11 +403,14 @@ def attribute(
     """Splits the improved and regressed cases into those the change could reach (fixed, broken), those
     it could not (chance) and those with only errored runs on a side (errored, left out), and turns the
     fixed and broken counts into a decision."""
-    how, skill = _change(baseline, candidate, scenario)
-    # A Before run loads a whole domain, so a body edit reaches it through the edited skill's domain.
-    target = _skill_domain(skill) if how == "body" and candidate.get("bot") == "before" else skill
-    also_routing = run_skill_cap(baseline) != run_skill_cap(candidate)
-    reach = {cand["id"]: _reaches(base, cand, how, target, also_routing) for base, cand in compared}
+    how, skills = _change(baseline, candidate, scenario)
+    # A Before run routes to a whole domain, so an edit reaches it through the edited skill's domain.
+    if how in ("body", "description") and candidate.get("bot") == "before":
+        targets = tuple(d for d in (_skill_domain(s) for s in skills) if d)
+    else:
+        targets = skills
+    caps = (run_skill_cap(baseline), run_skill_cap(candidate))
+    reach = {cand["id"]: _reaches(base, cand, how, targets, caps) for base, cand in compared}
     pick = lambda name, value: [i for i in transitions[name] if reach.get(i) is value]  # noqa: E731
     fixed, broken = pick("improved", True), pick("regressed", True)
     decision = (
@@ -356,16 +430,33 @@ def attribute(
     }
 
 
+def backed(decision: str, test: Mapping[str, Any] | None) -> bool | None:
+    """Whether the paired test of the net change backs a decision: Ship needs a significant gain and Do not
+    ship a significant loss. A net test cannot back a tradeoff, and No effect has nothing to back (None).
+    The test counts every flip, including those outside the change's reach."""
+    if decision == "no effect":
+        return None
+    overall = (test or {}).get("overall") or {}
+    if not overall.get("significant"):
+        return False
+    gain = (overall.get("mean_diff") or 0) > 0
+    return gain if decision == "ship" else (not gain) if decision == "do not ship" else False
+
+
 def decision_line(attribution: Mapping[str, Any]) -> str:
-    """'**Decision: Ship.** The change fixed 3 cases and broke none; 7 other cases flipped by chance.'"""
+    """'**Decision: Ship.** The change fixed 3 cases and broke none; 7 other cases flipped by chance.'
+    When the paired test does not back it, the decision is called a lead."""
     chance = len(attribution["chance_up"]) + len(attribution["chance_down"])
     errored = len(attribution.get("errored") or [])
+    lead = attribution.get("tested") is False
+    label = f"{attribution['decision'].capitalize()}, as a lead" if lead else attribution["decision"].capitalize()
     return (
-        f"**Decision: {attribution['decision'].capitalize()}.** The change fixed {_n(len(attribution['fixed']), 'case')} "
+        f"**Decision: {label}.** The change fixed {_n(len(attribution['fixed']), 'case')} "
         f"and broke {len(attribution['broken']) or 'none'}"
-        + (f"; {_n(chance, 'other case')} flipped where it could not reach them, so by chance" if chance else "")
+        + (f"; {_n(chance, 'other case')} flipped outside its reach and {'counts' if chance == 1 else 'count'} as chance" if chance else "")
         + (f"; {_n(errored, 'case')} errored on one side and {'is' if errored == 1 else 'are'} left out" if errored else "")
         + "."
+        + (" The paired test of the net change does not back it, so a reached flip may still be chance." if lead else "")
     )
 
 
@@ -414,6 +505,7 @@ def compare(
             warnings.append(f"the {side} is a partial run that stopped on a fatal error; complete it with --rerun-errors")
     if run_skill_cap(baseline) != run_skill_cap(candidate):
         warnings.append(f"skill caps differ: baseline {run_skill_cap(baseline)}, candidate {run_skill_cap(candidate)}")
+    warnings.extend(scenario_baseline_problems(baseline, candidate, scenario))
     base_setup, cand_setup = baseline.get("setup_fingerprint"), candidate.get("setup_fingerprint")
     if isinstance(base_setup, Mapping) and isinstance(cand_setup, Mapping):
         differ = [PART_LABELS.get(part, part) for part in sorted(set(base_setup) | set(cand_setup)) if base_setup.get(part) != cand_setup.get(part)]
@@ -499,6 +591,12 @@ def compare(
     noise_floor, noise_note = _noise_floor(baseline, compared, aa, min_fails, cand_repeats, warnings)
     test = paired_tests(compared, DATASETS)
     verdict = NO_CASES if total == 0 else "Passed" if regressed == 0 else "Not passed"
+    # For two runs of one bot with something changed: which flips the change could have caused, and
+    # whether the paired test backs the decision (if not, the decision is a lead to check).
+    attribution = None
+    if baseline.get("bot") == candidate.get("bot") and kind != "aa":
+        attribution = attribute(baseline, candidate, compared, transitions, scenario)
+        attribution["tested"] = backed(attribution["decision"], test)
     return {
         "scenario": scenario.model_dump(mode="json") if scenario else ({"id": scenario_id} if scenario_id else None),
         "baseline": _run_info(baseline),
@@ -522,12 +620,7 @@ def compare(
         "improvements": improvements,
         "verdict": verdict,
         "verdict_note": verdict_note(verdict, test, kind, regressed),
-        # For two runs of one bot with something changed: which flips the change could have caused.
-        "attribution": (
-            attribute(baseline, candidate, compared, transitions, scenario)
-            if baseline.get("bot") == candidate.get("bot") and kind != "aa"
-            else None
-        ),
+        "attribution": attribution,
         "flag_rule": {
             "min_fails": min_fails,
             "baseline_repeats": base_repeats,
@@ -549,6 +642,11 @@ def compare(
         "lengths": {
             "baseline": reply_lengths({"cases": [b for b, _ in compared]}),
             "candidate": reply_lengths({"cases": [c for _, c in compared]}),
+        },
+        # Answer plus router per 1,000 replies, warm cache; None for files that do not record router tokens apart.
+        "cost_per_1000": {
+            "baseline": cost_per_1000({**baseline, "cases": [b for b, _ in compared]}),
+            "candidate": cost_per_1000({**candidate, "cases": [c for _, c in compared]}),
         },
     }
 
@@ -841,8 +939,8 @@ def render_markdown(report: Mapping[str, Any]) -> str:
                 if attribution.get("errored")
                 else []
             ),
-            f"- How: {attribution['rule']}. A case the change cannot reach did not get the edit in its prompt, so its "
-            "flip is chance; a case it can reach may still have flipped by chance.",
+            f"- How: {attribution['rule']}. A flip outside that counts as chance: the edit was not in that case's "
+            "answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.",
             "",
         ]
     if scenario and scenario.get("title"):
@@ -907,7 +1005,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
             label = (
                 " (broken by the change)" if failure["id"] in attribution["broken"]
                 else " (errored on one side)" if failure["id"] in (attribution.get("errored") or [])
-                else " (chance: the change could not reach it)"
+                else " (chance: outside the change's reach)"
             )
         lines += [
             f"### {failure['id']} ({failure['dataset']}, {failure['persona']}){label}",
@@ -1000,6 +1098,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=int,
         help="m in the flag rule: a case regresses when it fails at least m of its K runs (default: a majority)",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="write even when the baseline does not fit the scenario, or when --out holds a report of other runs",
+    )
     return parser.parse_args(argv)
 
 
@@ -1010,6 +1113,29 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     scenario_id = args.scenario or candidate.get("scenario")
     scenario = load_scenario(scenario_id) if scenario_id else None
     aa = json.loads(args.aa.read_text(encoding="utf-8")) if args.aa else None
+    if not args.force:
+        problems = scenario_baseline_problems(baseline, candidate, scenario)
+        if problems:
+            raise SystemExit("refusing: " + "; ".join(problems) + " (pass --force to write it anyway)")
+        existing = args.out / "report.json"
+        if existing.exists():
+            try:
+                old = json.loads(existing.read_text(encoding="utf-8"))
+            except ValueError:
+                old = None
+            readable = isinstance(old, dict) and all(isinstance(old.get(side), dict) for side in ("baseline", "candidate"))
+            same = readable and all(
+                old[side].get(key) == run.get(key)
+                for side, run in (("baseline", baseline), ("candidate", candidate))
+                for key in ("name", "created_at")
+            )
+            if not same:
+                what = "compares other runs" if readable else "is not a readable report"
+                raise SystemExit(
+                    f"refusing: {existing} {what}; pass --force to replace it. A rerun of errored cases "
+                    "counts as a new run too. Move the old results to results/archive/ first if a committed "
+                    "page still needs them."
+                )
     try:
         report = compare(baseline, candidate, scenario, aa=aa, min_fails=args.min_fails)
     except ValueError as exc:

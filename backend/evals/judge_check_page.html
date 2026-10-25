@@ -75,6 +75,29 @@ details.rubric ul { margin: 10px 0 2px; padding-left: 20px; display: flex; flex-
 .reply table { border-collapse: collapse; display: block; overflow-x: auto; }
 .reply td, .reply th { border: 1px solid var(--line); padding: 4px 8px; }
 details.profile summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+details.profile.raw { margin-top: 12px; }
+details.profile.raw summary { font-size: 13px; color: var(--muted); }
+.pf { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; font-size: 14px; }
+.pf-name { font-weight: 600; }
+.pf-summary { margin: 2px 0 0; color: var(--muted); max-width: 70ch; }
+.pf-head { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 6px; }
+.pf-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.pf-tile { background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.pf-tile b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+.pf-tile span { font-size: 12px; color: var(--muted); }
+.pf-scroll { overflow-x: auto; }
+.pf table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+.pf th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
+.pf td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.pf ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.pf-product { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.pf-product + .pf-product { margin-top: 8px; }
+.pf-product p { margin: 0 0 4px; font-weight: 600; }
+.pf dl { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 2px 10px; margin: 0; }
+.pf dt { color: var(--muted); }
+.pf dd { margin: 0; font-variant-numeric: tabular-nums; }
+.pf-none { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
 details.profile pre {
   font: 12px/1.5 var(--font-mono); background: var(--bg); border-radius: 8px; padding: 10px 12px;
   overflow-x: auto; margin: 8px 0 0; max-height: 420px;
@@ -157,7 +180,11 @@ footer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: 
         <details class="profile" id="profile-box">
           <summary id="profile-summary">회원 프로필</summary>
           <p class="sub" id="profile-lead"></p>
-          <pre id="profile"></pre>
+          <div class="pf" id="profile-view"></div>
+          <details class="profile raw">
+            <summary>원본 JSON (judge가 받는 그대로)</summary>
+            <pre id="profile"></pre>
+          </details>
         </details>
       </section>
       <section class="card" aria-labelledby="r-label">
@@ -243,19 +270,123 @@ footer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: 
       el.style.whiteSpace = "pre-wrap";
     }
   }
+  // The profile the judge reads is compact JSON; this lays the same data out for a person.
+  const MONEY = /(balance|limit|deposit|amount|fees_charged|monthly_rent)$/;
+  function human(key) { const s = key.replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function money(n) { return "$" + Number(n).toLocaleString("en-US"); }
+  function value(key, v) {
+    if (v === null || v === undefined) return "none";
+    if (typeof v === "boolean") return v ? "yes" : "no";
+    if (typeof v === "number") return MONEY.test(key) ? money(v) : String(v);
+    if (Array.isArray(v)) return v.map((x) => (typeof x === "object" ? JSON.stringify(x) : String(x))).join(", ");
+    if (typeof v === "object") {
+      if ("start" in v && "end" in v) return v.start + " to " + v.end;
+      return Object.entries(v).map(([k, x]) => human(k) + ": " + value(k, x)).join("; ");
+    }
+    return String(v);
+  }
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function section(title) { const s = el("section"); s.appendChild(el("p", "pf-head", title)); return s; }
+  function table(rows, columns) {
+    const wrap = el("div", "pf-scroll");
+    const tb = el("table");
+    const head = el("tr");
+    columns.forEach((c) => head.appendChild(el("th", "", human(c))));
+    tb.appendChild(head);
+    rows.forEach((row) => {
+      const tr = el("tr");
+      columns.forEach((c) => tr.appendChild(el("td", "", value(c, row[c]))));
+      tb.appendChild(tr);
+    });
+    wrap.appendChild(tb);
+    return wrap;
+  }
+  function columnsOf(rows) {
+    const cols = [];
+    rows.forEach((r) => Object.keys(r).forEach((k) => { if (!cols.includes(k)) cols.push(k); }));
+    return cols;
+  }
+  function tile(big, small) { const d = el("div", "pf-tile"); d.appendChild(el("b", "", big)); d.appendChild(el("span", "", small)); return d; }
+
+  function profileView(p) {
+    const root = document.createDocumentFragment();
+    if (p.name || p.summary) {
+      const s = el("div");
+      if (p.name) s.appendChild(el("p", "pf-name", p.name + (p.as_of ? " · as of " + p.as_of : "")));
+      if (p.summary) s.appendChild(el("p", "pf-summary", p.summary));
+      root.appendChild(s);
+    }
+    const c = p.credit || {};
+    const tiles = el("div", "pf-tiles");
+    if (c.score) tiles.appendChild(tile(String(c.score.current), (c.score.model || "Score") + (c.score.previous != null ? ", was " + c.score.previous + " on " + c.score.previous_as_of : "")));
+    if (c.utilization) {
+      const u = c.utilization;
+      tiles.appendChild(tile(u.overall == null ? "none" : Math.round(u.overall * 100) + "%", "Utilization, " + money(u.total_revolving_balance || 0) + " of " + money(u.total_revolving_limit || 0)));
+    }
+    if (c.hard_inquiries_last_12_months != null) tiles.appendChild(tile(String(c.hard_inquiries_last_12_months), "Hard inquiries, last 12 months"));
+    if (c.oldest_account_opened) tiles.appendChild(tile(c.oldest_account_opened, "Oldest account opened"));
+    if (tiles.children.length) { const s = section("점수와 이용률"); s.appendChild(tiles); root.appendChild(s); }
+    if (Array.isArray(c.accounts) && c.accounts.length) {
+      const s = section("계좌");
+      s.appendChild(table(c.accounts, ["name", "type", "balance", "limit", "opened", "status"]));
+      root.appendChild(s);
+    }
+    const neg = section("부정 기록");
+    if (Array.isArray(c.negative_items) && c.negative_items.length) neg.appendChild(table(c.negative_items, columnsOf(c.negative_items)));
+    else neg.appendChild(el("p", "pf-none", "없음"));
+    root.appendChild(neg);
+    const products = p.products || {};
+    const prod = section("상품");
+    const off = [];
+    Object.entries(products).forEach(([name, info]) => {
+      if (!info) { off.push(human(name)); return; }
+      const box = el("div", "pf-product");
+      box.appendChild(el("p", "", human(name)));
+      const dl = el("dl");
+      const nested = [];
+      Object.entries(info).forEach(([k, v]) => {
+        if (Array.isArray(v) && v.length && typeof v[0] === "object") { nested.push([k, v]); return; }
+        dl.appendChild(el("dt", "", human(k)));
+        dl.appendChild(el("dd", "", value(k, v)));
+      });
+      box.appendChild(dl);
+      nested.forEach(([k, rows]) => { box.appendChild(el("p", "pf-head", human(k))); box.appendChild(table(rows, columnsOf(rows))); });
+      prod.appendChild(box);
+    });
+    if (off.length) prod.appendChild(el("p", "pf-none", "가입 안 함: " + off.join(", ")));
+    root.appendChild(prod);
+    if (Array.isArray(p.recent_events) && p.recent_events.length) {
+      const s = section("최근 기록");
+      const ul = el("ul");
+      p.recent_events.forEach((e) => ul.appendChild(el("li", "", e)));
+      s.appendChild(ul);
+      root.appendChild(s);
+    }
+    return root;
+  }
+
   function renderProfile(pid) {
     const raw = DATA.profiles[pid] || "";
     const open = raw.indexOf("{");
     const close = raw.lastIndexOf("}");
-    let lead = raw, body = "";
+    let lead = raw, body = "", parsed = null;
     if (open >= 0 && close > open) {
       try {
-        body = JSON.stringify(JSON.parse(raw.slice(open, close + 1)), null, 2);
+        parsed = JSON.parse(raw.slice(open, close + 1));
+        body = JSON.stringify(parsed, null, 2);
         lead = raw.slice(0, open).replace(/```json\s*$/, "").trim();
       } catch (e) { lead = ""; body = raw; }
     }
-    $("profile-summary").textContent = "회원 프로필 (" + pid + ")";
+    $("profile-summary").textContent = "회원 프로필 (" + (parsed && parsed.name ? parsed.name + ", " : "") + pid + ")";
     $("profile-lead").textContent = lead;
+    const view = $("profile-view");
+    view.textContent = "";
+    if (parsed) view.appendChild(profileView(parsed));
     $("profile").textContent = body;
   }
 
@@ -307,6 +438,9 @@ footer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: 
       p.appendChild(fid);
       p.appendChild(document.createTextNode(f.fact));
       row.appendChild(p);
+      if (/^Does not\b/.test(f.fact)) {
+        row.appendChild(el("p", "hint", "\"~하지 않는다\" 사실: 답변이 그렇게 하지 않으면 있음(1), 그렇게 하면 모순(3)."));
+      }
       if (f.ko) {
         const ko = document.createElement("p");
         ko.className = "ko"; ko.textContent = f.ko;

@@ -61,11 +61,14 @@ def test_model_row_counts_groups_facts_lengths_and_cost(mini_library: SkillLibra
     assert row["by_group"] == {"cross": {"runs": 1, "passed": 1}, "single": {"runs": 2, "passed": 1}}
     assert row["flip_rate"] is None and row["unstable_cases"] == 0  # one run per case: no flip rate
     assert row["facts"] == {"present": 2, "graded": 3}
-    assert row["passed_if_over_300_fails"] == 1
     assert row["lengths"]["over_limit"] == 1
     per_case = (1000 * 2 + 100 * 10 + 2000 * 0.2) / 1e6
     assert row["cost_per_1000"] == {"answer": round(per_case * 1000, 2), "router": 0.0, "total": round(per_case * 1000, 2),
                                     "estimated_split": True}
+    # An errored run that kept its tokens (a judge error) is left out of the cost as well as the count.
+    errored = {**_case("st-003", ["rent-reporting"], False), "status": "error"}
+    with_error = mr.model_row("after-sonnet", {**results, "cases": [*results["cases"], errored]}, {}, mini_library)
+    assert with_error["errors"] == 1 and with_error["cost_per_1000"] == row["cost_per_1000"]
 
 
 def test_paired_counts_flips_with_and_without_the_length_cap() -> None:
@@ -74,7 +77,7 @@ def test_paired_counts_flips_with_and_without_the_length_cap() -> None:
     assert mr.paired(a, b) == {
         "cases": 3, "left_out": 0, "method": "mcnemar_exact", "up": 1, "down": 0, "mean_diff": 0.3333, "p": 1.0,
     }
-    assert mr.paired(a, b, cap=True)["up"] == 2  # c3 fails on a once its 400 words count
+    assert mr.paired(a, b, cutoff=300)["up"] == 2  # c3 fails on a once its 400 words count
 
 
 def _repeated(case_id: str, outcomes: list[bool]) -> dict[str, Any]:
@@ -135,6 +138,8 @@ def test_build_report_orders_by_cost_and_compares_neighbours(mini_library: Skill
     assert [(p["a"], p["b"]) for p in report["paired"]] == [
         ("after-haiku", "after-sonnet"), ("after-sonnet", "after-opus"), ("after-haiku", "after-opus")]
     assert report["router_usage_from"] is None
+    assert [row["cutoff"] for row in report["length_sensitivity"]] == list(mr.LENGTH_CUTOFFS)
+    assert report["length_sensitivity"][0]["passed"] == {"after-haiku": 0, "after-sonnet": 1, "after-opus": 1}
     assert mr.render_markdown(report).startswith("# Answer model and judge")
 
 
@@ -164,3 +169,19 @@ def test_a_case_whose_every_run_errored_is_left_out(mini_library: SkillLibrary) 
     assert (test["cases"], test["left_out"], test["up"], test["down"]) == (1, 1, 1, 0)  # c2 is not a "down"
     row = mr.model_row("b", b, {}, mini_library)
     assert row["flip_rate"] == 0.0 and row["unstable_cases"] == 0  # only c1, which never flips, measures noise
+
+
+def test_cost_per_1000_needs_router_tokens_recorded_apart() -> None:
+    recorded = _run("claude-sonnet-5-5", [_case("c1", [], True, routing_usage=ROUTER), _case("c2", [], True, routing_usage=ROUTER)])
+    c = mr.cost_per_1000(recorded)
+    assert c == {
+        "answer": round(mr.cost(U, "claude-sonnet-5-5") * 1000, 2),
+        "router": round(mr.cost(ROUTER, "claude-haiku-5-5") * 1000, 2),
+        "total": round((mr.cost(U, "claude-sonnet-5-5") + mr.cost(ROUTER, "claude-haiku-5-5")) * 1000, 2),
+    }
+    assert mr.cost_per_1000(_run("claude-sonnet-5-5", [_case("c1", [], True)])) is None  # older file: no split
+    # An errored run returned no reply, so it is not in the per-reply average; an unpriced model gives None.
+    errored = {**_case("c3", [], False), "status": "error", "routing": {"usage": ROUTER}}  # judge error: tokens kept
+    with_error = {**recorded, "cases": [*recorded["cases"], errored]}
+    assert mr.cost_per_1000(with_error) == c
+    assert mr.cost_per_1000(_run("some-other-model", recorded["cases"])) is None

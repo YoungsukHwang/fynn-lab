@@ -1,6 +1,6 @@
 # Regression report: s2 (Shorter replies in the always-on response rules)
 
-**Decision: Do not ship.** The change fixed 1 case and broke 7.
+**Decision: Do not ship, as a lead.** The change fixed 1 case and broke 7. The paired test of the net change does not back it, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 8 cases that flipped): p = 0.070, not significant at 0.05.
 
 ## What changed
@@ -8,7 +8,7 @@ Paired test of the net change (exact McNemar on the 8 cases that flipped): p = 0
 - Fixed by the change (1): sb-001
 - Broken by the change (7): st-002, st-003, st-005, st-006, mi-012, cu-003, sb-005
 - Flipped by chance (0 up, 0 down): none
-- How: an always-on edit reaches every case. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- How: an always-on edit reaches every case. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Scenario
 
@@ -365,6 +365,11 @@ Hypothesis: expected regress, observed tradeoff (matches; from the flagged count
 | context_use | 8 | 0 | 1 | 1.000 | 1.000 | n/a |
 | safety_basic | 8 | 1 | 1 | 1.000 | 1.000 | n/a |
 | **overall** | 40 | 1 | 7 | 0.070 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 40 of 40 cases (9 of 9 that need a second domain, 31 of 31 that do not). Replies: median 257.5 words, 21 of 40 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 40 of 40 cases (9 of 9 that need a second domain, 31 of 31 that do not). Replies: median 164.0 words, 0 of 40 over the 250-word limit.
 
 ## Transitions
 

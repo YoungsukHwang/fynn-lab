@@ -1,14 +1,14 @@
 # Regression report: s6 (Route closed-account questions to score changes)
 
-**Decision: Ship.** The change fixed 3 cases and broke none; 8 other cases flipped where it could not reach them, so by chance.
+**Decision: Ship, as a lead.** The change fixed 1 case and broke none; 10 other cases flipped outside its reach and count as chance. The paired test of the net change does not back it, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 11 cases that flipped): p = 0.227, not significant at 0.05.
 
 ## What changed
 
-- Fixed by the change (3): mi-018, mi-019, mi-022
+- Fixed by the change (1): mi-019
 - Broken by the change (0): none
-- Flipped by chance (5 up, 3 down): st-002, mi-012, mi-015, mi-025, sb-001, mi-003, mi-023, mi-032
-- How: a description edit or a different skill cap can reach a case only by changing its routing. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- Flipped by chance (7 up, 3 down): st-002, mi-012, mi-015, mi-018, mi-022, mi-025, sb-001, mi-003, mi-023, mi-032
+- How: a description edit can reach a case only when the edited skill (for the Before bot, its domain) enters or leaves its routing. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Scenario
 
@@ -29,7 +29,7 @@ Paired test of the net change (exact McNemar on the 11 cases that flipped): p = 
 
 ## Failures overview
 
-### mi-003 (multi_intent, high-util) (chance: the change could not reach it)
+### mi-003 (multi_intent, high-util) (chance: outside the change's reach)
 
 **Message.** Why did my score drop this month? Also, would a balance transfer card from the Marketplace help me?
 
@@ -84,7 +84,7 @@ Expected skills: score-changes, marketplace-offers, utilization. Routed: baselin
 
 **Judge reason.** F2 is absent because the reply gives only the Rewards card's utilization, not a per-card breakdown that includes the Bank card. F1, F3 and F4 are present.
 
-### mi-023 (multi_intent, new-to-credit) (chance: the change could not reach it)
+### mi-023 (multi_intent, new-to-credit) (chance: outside the change's reach)
 
 **Message.** Hi Coach, a few questions: 1) My score went from 603 to 612, what caused that? 2) I pay rent every month, would your rent reporting thing actually count toward my score? 3) I keep looking at cards in the Marketplace. How much does one hard inquiry really hurt?
 
@@ -136,7 +136,7 @@ Expected skills: score-changes, rent-reporting, marketplace-offers. Routed: base
 
 **Judge reason.** F5 is absent because the reply never says that applying for a Marketplace card usually triggers a hard inquiry. F1 through F4 are present.
 
-### mi-032 (multi_intent, collections) (chance: the change could not reach it)
+### mi-032 (multi_intent, collections) (chance: outside the change's reach)
 
 **Message.** ok so a few things lol. the collection agency keeps bugging me about that $1,200 phone bill and i was thinking of just sending them like $50 to get them off my back, does that mess anything up? and would the credit builder plan help me rebuild, i keep seeing it in the app. oh and if my electric bill goes out a couple days late is that gonna show up on my credit
 
@@ -226,6 +226,11 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 | context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
 | safety_basic | 8 | 1 | 0 | 1.000 | 1.000 | n/a |
 | **overall** | 62 | 8 | 3 | 0.227 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 48 of 62 cases (20 of 31 that need a second domain, 28 of 31 that do not). Replies: median 274.0 words, 42 of 62 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 50 of 62 cases (22 of 31 that need a second domain, 28 of 31 that do not). Replies: median 269.5 words, 41 of 62 over the 250-word limit.
 
 ## Transitions
 

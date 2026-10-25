@@ -25,11 +25,13 @@ AGENT_EFFORT = "low"
 ROUTER_MAX_TOKENS = 2048
 AGENT_MAX_TOKENS = 16000
 
-# After bot skill budget per message. Both values are design choices to compare in M3.
-# New: skills the router picks for the latest message.
+# After bot skill budget per message. Both values are design choices, not from the post.
+# New: skills the router picks for the latest message. It was 3 until the cap-4 run
+# (results/reports/cap4) fixed three four-skill cases and broke none; evals.run --max-skills
+# overrides it for one run.
 MAX_NEW_SKILLS_PER_TURN = 4
 # Carried: skills picked on the previous turn that stay loaded, so the agent still has
-# the guidance behind its earlier answer.
+# the guidance behind its earlier answer. The evals are single-turn, so nothing measures it.
 MAX_CARRIED_SKILLS = 2
 # How many recent messages the routers read to interpret the latest one.
 ROUTER_CONTEXT_MESSAGES = 4

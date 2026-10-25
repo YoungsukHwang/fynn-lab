@@ -1860,5 +1860,17 @@
       "over_limit": 128,
       "over_300": 45
     }
+  },
+  "cost_per_1000": {
+    "baseline": {
+      "answer": 10.19,
+      "router": 0.31,
+      "total": 10.5
+    },
+    "candidate": {
+      "answer": 9.25,
+      "router": 0.32,
+      "total": 9.57
+    }
   }
 }

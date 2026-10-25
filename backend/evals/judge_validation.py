@@ -36,7 +36,7 @@ from evals.cases import EvalCase, load_cases
 from evals.judge import FACT_STATUSES, Judge, fact_ids
 from evals.run import is_fatal, write_results
 from evals.setup import setup_fingerprint
-from evals.stats import cluster_bootstrap
+from evals.stats import cluster_bootstrap, run_repeats
 from fynn import config
 from fynn.llm import LLM, LLMError
 from fynn.personas import Persona, load_personas, render_profile
@@ -665,6 +665,14 @@ def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _single_run(path: Path, results: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Sampling and regrading read one reply per case, so a file with several runs per case is refused
+    rather than read through its majority run."""
+    if run_repeats(results) > 1:
+        raise SystemExit(f"{path} has {run_repeats(results)} runs per case; judge validation reads single runs")
+    return results
+
+
 def _include(text: str) -> Key:
     source, sep, case_id = text.partition(":")
     if not sep or not source or not case_id:
@@ -724,7 +732,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     if args.command == "sample":
         if args.out.exists() and not args.force:
             raise SystemExit(f"{args.out} exists and its labels would stop matching; pass --force to draw a new sample")
-        runs = {source_name(p): _load(p) for p in args.runs}
+        runs = {source_name(p): _single_run(p, _load(p)) for p in args.runs}
         sample = build_sample(runs, cases, personas, per_stratum=args.per_stratum, include=args.include, seed=args.seed)
         write_results(args.out, sample)
         cells = Counter(i["stratum"] for i in sample["items"])
@@ -733,7 +741,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
 
     if args.command == "regrade":
         judge_code = setup_fingerprint()["judge_code"]  # before any API call, so it describes the code that runs
-        results = _load(args.results)
+        results = _single_run(args.results, _load(args.results))
         llm = make_judge_llm()
         if args.limit is not None:
             results = {**results, "cases": results["cases"][: args.limit]}
@@ -761,7 +769,9 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     regrades = load_regrades(args.regrades, warnings)
     runs = {source_name(p): _load(p) for p in args.runs}
     report: dict[str, Any] = {"kind": "judge_agreement", "created_at": _now(), "sample_id": sample["sample_id"]}
-    if args.labels:
+    if args.labels and not args.labels.exists():
+        warnings.append(f"{args.labels} does not exist yet, so there is no human comparison.")
+    if args.labels and args.labels.exists():
         labels = load_labels(args.labels, sample["sample_id"])
         report["human"] = human_agreement(sample, labels, judge_views(sample, regrades, warnings), warnings)
     report["judge_vs_judge"] = judge_vs_judge(runs, regrades, cases, warnings)

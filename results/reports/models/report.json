@@ -1,6 +1,6 @@
 {
   "kind": "models",
-  "created_at": "2026-10-23T20:18:42+00:00",
+  "created_at": "2026-10-25T01:27:48+00:00",
   "router_usage_from": null,
   "prices": {
     "claude-haiku-5-5": {
@@ -57,7 +57,6 @@
         "over_limit": 84,
         "over_300": 50
       },
-      "passed_if_over_300_fails": 102,
       "flip_rate": 0.2708,
       "unstable_cases": 26,
       "cost_per_1000": {
@@ -101,7 +100,6 @@
         "over_limit": 128,
         "over_300": 45
       },
-      "passed_if_over_300_fails": 137,
       "flip_rate": 0.1042,
       "unstable_cases": 10,
       "cost_per_1000": {
@@ -145,7 +143,6 @@
         "over_limit": 141,
         "over_300": 18
       },
-      "passed_if_over_300_fails": 161,
       "flip_rate": 0.1042,
       "unstable_cases": 10,
       "cost_per_1000": {
@@ -191,39 +188,178 @@
       "p": 0.0
     }
   ],
-  "paired_if_over_300_fails": [
+  "length_sensitivity": [
     {
-      "a": "after-haiku",
-      "b": "after",
-      "cases": 64,
-      "left_out": 0,
-      "method": "run_permutation",
-      "up": 29,
-      "down": 6,
-      "mean_diff": 0.1823,
-      "p": 0.0
+      "cutoff": 200,
+      "passed": {
+        "after-haiku": 50,
+        "after": 25,
+        "after-opus": 16
+      },
+      "paired": [
+        {
+          "a": "after-haiku",
+          "b": "after",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 3,
+          "down": 17,
+          "mean_diff": -0.1302,
+          "p": 0.0
+        },
+        {
+          "a": "after",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 1,
+          "down": 5,
+          "mean_diff": -0.0469,
+          "p": 0.0031
+        },
+        {
+          "a": "after-haiku",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 2,
+          "down": 21,
+          "mean_diff": -0.1771,
+          "p": 0.0
+        }
+      ]
     },
     {
-      "a": "after",
-      "b": "after-opus",
-      "cases": 64,
-      "left_out": 0,
-      "method": "run_permutation",
-      "up": 21,
-      "down": 5,
-      "mean_diff": 0.125,
-      "p": 0.0002
+      "cutoff": 250,
+      "passed": {
+        "after-haiku": 79,
+        "after": 58,
+        "after-opus": 50
+      },
+      "paired": [
+        {
+          "a": "after-haiku",
+          "b": "after",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 10,
+          "down": 20,
+          "mean_diff": -0.1094,
+          "p": 0.0014
+        },
+        {
+          "a": "after",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 3,
+          "down": 10,
+          "mean_diff": -0.0417,
+          "p": 0.1074
+        },
+        {
+          "a": "after-haiku",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 7,
+          "down": 20,
+          "mean_diff": -0.151,
+          "p": 0.0
+        }
+      ]
     },
     {
-      "a": "after-haiku",
-      "b": "after-opus",
-      "cases": 64,
-      "left_out": 0,
-      "method": "run_permutation",
-      "up": 33,
-      "down": 2,
-      "mean_diff": 0.3073,
-      "p": 0.0
+      "cutoff": 300,
+      "passed": {
+        "after-haiku": 102,
+        "after": 137,
+        "after-opus": 161
+      },
+      "paired": [
+        {
+          "a": "after-haiku",
+          "b": "after",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 29,
+          "down": 6,
+          "mean_diff": 0.1823,
+          "p": 0.0
+        },
+        {
+          "a": "after",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 21,
+          "down": 5,
+          "mean_diff": 0.125,
+          "p": 0.0002
+        },
+        {
+          "a": "after-haiku",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 33,
+          "down": 2,
+          "mean_diff": 0.3073,
+          "p": 0.0
+        }
+      ]
+    },
+    {
+      "cutoff": 350,
+      "passed": {
+        "after-haiku": 121,
+        "after": 164,
+        "after-opus": 173
+      },
+      "paired": [
+        {
+          "a": "after-haiku",
+          "b": "after",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 34,
+          "down": 6,
+          "mean_diff": 0.224,
+          "p": 0.0
+        },
+        {
+          "a": "after",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 8,
+          "down": 6,
+          "mean_diff": 0.0469,
+          "p": 0.1046
+        },
+        {
+          "a": "after-haiku",
+          "b": "after-opus",
+          "cases": 64,
+          "left_out": 0,
+          "method": "run_permutation",
+          "up": 32,
+          "down": 2,
+          "mean_diff": 0.2708,
+          "p": 0.0
+        }
+      ]
     }
   ],
   "judges": [

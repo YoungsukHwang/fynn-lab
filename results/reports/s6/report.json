@@ -10,7 +10,7 @@
       "expected": "improve",
       "detail": "A description edit can change routing for any message, so every case reruns. mi-019 and mi-034 should improve, since the router had a free slot in both. In mi-016 the router already needs four skills, so loading score-changes would push out another one. Messages about closing a card may now pull score-changes in next to utilization. Expected: some improvements; a regression is possible where the cap binds."
     },
-    "shipped": null
+    "shipped": "2026-10-23"
   },
   "baseline": {
     "name": "after",
@@ -882,17 +882,17 @@
   "verdict": "Not passed",
   "verdict_note": "The verdict is Not passed, but the net change is not significant (p = 0.227): the flagged regressions could be run-to-run noise, or be offset by improvements.",
   "attribution": {
-    "rule": "a description edit or a different skill cap can reach a case only by changing its routing",
+    "rule": "a description edit can reach a case only when the edited skill (for the Before bot, its domain) enters or leaves its routing",
     "fixed": [
-      "mi-018",
-      "mi-019",
-      "mi-022"
+      "mi-019"
     ],
     "broken": [],
     "chance_up": [
       "st-002",
       "mi-012",
       "mi-015",
+      "mi-018",
+      "mi-022",
       "mi-025",
       "sb-001"
     ],
@@ -902,7 +902,8 @@
       "mi-032"
     ],
     "errored": [],
-    "decision": "ship"
+    "decision": "ship",
+    "tested": false
   },
   "flag_rule": {
     "min_fails": 1,
@@ -977,5 +978,185 @@
   },
   "warnings": [
     "expected facts differ between the runs, so not compared: mi-021, mi-033; rerun the baseline to compare them"
-  ]
+  ],
+  "routing": {
+    "baseline": {
+      "strategy": "skills",
+      "cases": 62,
+      "runs": 62,
+      "all_available": 48,
+      "by_group": {
+        "cross": {
+          "runs": 31,
+          "all_available": 20
+        },
+        "single": {
+          "runs": 31,
+          "all_available": 28
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 11,
+          "available": 11,
+          "picked": 11,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 9,
+          "available": 9,
+          "picked": 12,
+          "picked_unlabeled": 3
+        },
+        "credit-builder-account": {
+          "labeled": 16,
+          "available": 15,
+          "picked": 16,
+          "picked_unlabeled": 1
+        },
+        "debt-settlement": {
+          "labeled": 11,
+          "available": 10,
+          "picked": 10,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 10,
+          "available": 10,
+          "picked": 10,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 11,
+          "available": 9,
+          "picked": 10,
+          "picked_unlabeled": 1
+        },
+        "rent-reporting": {
+          "labeled": 15,
+          "available": 13,
+          "picked": 13,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 15,
+          "available": 12,
+          "picked": 12,
+          "picked_unlabeled": 0
+        },
+        "secured-card": {
+          "labeled": 9,
+          "available": 9,
+          "picked": 9,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 19,
+          "available": 14,
+          "picked": 14,
+          "picked_unlabeled": 0
+        }
+      }
+    },
+    "candidate": {
+      "strategy": "skills",
+      "cases": 62,
+      "runs": 62,
+      "all_available": 50,
+      "by_group": {
+        "cross": {
+          "runs": 31,
+          "all_available": 22
+        },
+        "single": {
+          "runs": 31,
+          "all_available": 28
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 11,
+          "available": 11,
+          "picked": 11,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 9,
+          "available": 9,
+          "picked": 13,
+          "picked_unlabeled": 4
+        },
+        "credit-builder-account": {
+          "labeled": 16,
+          "available": 16,
+          "picked": 17,
+          "picked_unlabeled": 1
+        },
+        "debt-settlement": {
+          "labeled": 11,
+          "available": 10,
+          "picked": 10,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 10,
+          "available": 10,
+          "picked": 10,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 11,
+          "available": 8,
+          "picked": 9,
+          "picked_unlabeled": 1
+        },
+        "rent-reporting": {
+          "labeled": 15,
+          "available": 13,
+          "picked": 13,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 15,
+          "available": 14,
+          "picked": 15,
+          "picked_unlabeled": 1
+        },
+        "secured-card": {
+          "labeled": 9,
+          "available": 9,
+          "picked": 9,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 19,
+          "available": 14,
+          "picked": 14,
+          "picked_unlabeled": 0
+        }
+      }
+    }
+  },
+  "lengths": {
+    "baseline": {
+      "replies": 62,
+      "median_words": 274.0,
+      "mean_words": 262.7,
+      "limit": 250,
+      "over_limit": 42,
+      "over_300": 12
+    },
+    "candidate": {
+      "replies": 62,
+      "median_words": 269.5,
+      "mean_words": 261.1,
+      "limit": 250,
+      "over_limit": 41,
+      "over_300": 17
+    }
+  },
+  "cost_per_1000": {
+    "baseline": null,
+    "candidate": null
+  }
 }

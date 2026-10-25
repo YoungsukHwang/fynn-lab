@@ -1,6 +1,6 @@
 # Regression report: s1 (Per-card utilization in score-drop answers)
 
-**Decision: Tradeoff.** The change fixed 4 cases and broke 1.
+**Decision: Tradeoff, as a lead.** The change fixed 4 cases and broke 1. The paired test of the net change does not back it, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0.375, not significant at 0.05.
 
 ## What changed
@@ -8,7 +8,7 @@ Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0
 - Fixed by the change (4): st-001, mi-003, mi-008, mi-009
 - Broken by the change (1): mi-001
 - Flipped by chance (0 up, 0 down): none
-- How: a body edit can reach a case only when the edited skill is loaded for it. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- How: a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Scenario
 
@@ -114,6 +114,11 @@ Hypothesis: expected improve, observed tradeoff (does not match; from the flagge
 | context_use | 1 | 0 | 0 | 1.000 | 1.000 | n/a |
 | safety_basic | 2 | 0 | 0 | 1.000 | 1.000 | n/a |
 | **overall** | 11 | 4 | 1 | 0.375 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 11 of 11 cases (5 of 5 that need a second domain, 6 of 6 that do not). Replies: median 283 words, 8 of 11 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 11 of 11 cases (5 of 5 that need a second domain, 6 of 6 that do not). Replies: median 284 words, 8 of 11 over the 250-word limit.
 
 ## Transitions
 

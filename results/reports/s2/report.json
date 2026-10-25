@@ -626,7 +626,8 @@
     "chance_up": [],
     "chance_down": [],
     "errored": [],
-    "decision": "do not ship"
+    "decision": "do not ship",
+    "tested": false
   },
   "flag_rule": {
     "min_fails": 1,
@@ -699,5 +700,185 @@
     "observed": "tradeoff",
     "matches": true
   },
-  "warnings": []
+  "warnings": [],
+  "routing": {
+    "baseline": {
+      "strategy": "skills",
+      "cases": 40,
+      "runs": 40,
+      "all_available": 40,
+      "by_group": {
+        "cross": {
+          "runs": 9,
+          "all_available": 9
+        },
+        "single": {
+          "runs": 31,
+          "all_available": 31
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 4,
+          "available": 4,
+          "picked": 5,
+          "picked_unlabeled": 1
+        },
+        "credit-builder-account": {
+          "labeled": 8,
+          "available": 8,
+          "picked": 8,
+          "picked_unlabeled": 0
+        },
+        "debt-settlement": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 7,
+          "available": 7,
+          "picked": 7,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "rent-reporting": {
+          "labeled": 6,
+          "available": 6,
+          "picked": 6,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 10,
+          "available": 10,
+          "picked": 11,
+          "picked_unlabeled": 1
+        },
+        "secured-card": {
+          "labeled": 8,
+          "available": 8,
+          "picked": 8,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 8,
+          "available": 8,
+          "picked": 8,
+          "picked_unlabeled": 0
+        }
+      }
+    },
+    "candidate": {
+      "strategy": "skills",
+      "cases": 40,
+      "runs": 40,
+      "all_available": 40,
+      "by_group": {
+        "cross": {
+          "runs": 9,
+          "all_available": 9
+        },
+        "single": {
+          "runs": 31,
+          "all_available": 31
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 4,
+          "available": 4,
+          "picked": 4,
+          "picked_unlabeled": 0
+        },
+        "credit-builder-account": {
+          "labeled": 8,
+          "available": 8,
+          "picked": 8,
+          "picked_unlabeled": 0
+        },
+        "debt-settlement": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 7,
+          "available": 7,
+          "picked": 7,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 4,
+          "picked_unlabeled": 1
+        },
+        "rent-reporting": {
+          "labeled": 6,
+          "available": 6,
+          "picked": 6,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 10,
+          "available": 10,
+          "picked": 11,
+          "picked_unlabeled": 1
+        },
+        "secured-card": {
+          "labeled": 8,
+          "available": 8,
+          "picked": 8,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 8,
+          "available": 8,
+          "picked": 8,
+          "picked_unlabeled": 0
+        }
+      }
+    }
+  },
+  "lengths": {
+    "baseline": {
+      "replies": 40,
+      "median_words": 257.5,
+      "mean_words": 244.6,
+      "limit": 250,
+      "over_limit": 21,
+      "over_300": 7
+    },
+    "candidate": {
+      "replies": 40,
+      "median_words": 164.0,
+      "mean_words": 161.6,
+      "limit": 250,
+      "over_limit": 0,
+      "over_300": 0
+    }
+  },
+  "cost_per_1000": {
+    "baseline": null,
+    "candidate": null
+  }
 }

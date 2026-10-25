@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from evals.report import _p, compare, hypothesis_matches, main, observed_direction, render_markdown
+from evals.report import _p, compare, decision_line, hypothesis_matches, main, observed_direction, render_markdown
 from evals.scenarios import Scenario
 from evals.stats import permutation_test
 from fynn import config
@@ -183,6 +183,36 @@ def test_cli_writes_json_and_markdown(tmp_path: Path) -> None:
     assert saved == json.loads(json.dumps(report))
     assert saved["verdict"] == "Not passed"
     assert (tmp_path / "r" / "report.md").read_text(encoding="utf-8").startswith("# Regression report")
+
+
+def test_cli_refuses_to_replace_a_report_of_other_runs_without_force(tmp_path: Path) -> None:
+    paths = {name: tmp_path / f"{name}.json" for name in ("a", "b", "c")}
+    paths["a"].write_text(json.dumps(BASELINE), encoding="utf-8")
+    paths["b"].write_text(json.dumps({**CANDIDATE, "scenario": None}), encoding="utf-8")
+    paths["c"].write_text(json.dumps({**CANDIDATE, "scenario": None, "created_at": "2026-10-22T00:00:00+00:00"}), encoding="utf-8")
+    out = tmp_path / "r"
+    args = lambda cand: ["--baseline", str(paths["a"]), "--candidate", str(paths[cand]), "--out", str(out)]  # noqa: E731
+    main(args("b"))
+    main(args("b"))  # the same runs again: allowed
+    with pytest.raises(SystemExit, match="compares other runs"):
+        main(args("c"))
+    assert main([*args("c"), "--force"])["candidate"]["created_at"] == "2026-10-22T00:00:00+00:00"
+    for broken in ("{not json", '{"baseline": "x", "candidate": "y"}', "[]"):
+        (out / "report.json").write_text(broken, encoding="utf-8")
+        with pytest.raises(SystemExit, match="is not a readable report"):
+            main(args("c"))
+
+
+def test_cli_refuses_a_baseline_that_does_not_fit_the_scenario(tmp_path: Path) -> None:
+    fp = {"utilization": {"description": "d", "body": "b", "meta": "m"}, "tone": {"description": "t", "body": "t", "meta": "m"}}
+    edited = {**fp, "utilization": {**fp["utilization"], "description": "d2"}, "tone": {**fp["tone"], "body": "t2"}}
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    a.write_text(json.dumps({**BASELINE, "skill_fingerprint": fp}), encoding="utf-8")
+    b.write_text(json.dumps({**CANDIDATE, "skill_fingerprint": edited}), encoding="utf-8")
+    args = ["--baseline", str(a), "--candidate", str(b), "--out", str(tmp_path / "r")]
+    with pytest.raises(SystemExit, match="also differ in tone"):
+        main(args)
+    assert main([*args, "--force"])["scenario"]["id"] == "s3"
 
 
 # ---- Noise and significance ------------------------------------------------------------------
@@ -568,28 +598,33 @@ def test_flips_the_edit_cannot_reach_are_chance() -> None:
         hypothesis={"expected": "improve", "detail": "d"},
     )
     base = _results([
-        _case("st-001", False), _case("st-002", False), _case("mi-001", True, "multi_intent"),
+        _routed(_case("st-001", False), "utilization"), _case("st-002", False), _case("mi-001", True, "multi_intent"),
     ])
     cand = _results([
-        _routed(_case("st-001", True), "utilization"),  # loads the edited skill: the edit can explain it
+        _routed(_case("st-001", True), "utilization"),  # the edited skill loaded on both sides: the edit can explain it
         _case("st-002", True),  # same prompt as before: chance
         _case("mi-001", False, "multi_intent"),  # same prompt: chance
     ])
     report = compare(base, cand, body)
     assert report["attribution"] == {
-        "rule": "a body edit can reach a case only when the edited skill is loaded for it",
+        "rule": "a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides",
         "fixed": ["st-001"], "broken": [], "chance_up": ["st-002"], "chance_down": ["mi-001"], "errored": [],
-        "decision": "ship",
+        "decision": "ship", "tested": False,
     }
     text = render_markdown(report)
-    assert text.splitlines()[2].startswith("**Decision: Ship.** The change fixed 1 case and broke none")
+    assert text.splitlines()[2].startswith("**Decision: Ship, as a lead.** The change fixed 1 case and broke none")
+    # The skill loaded only on the candidate side came from the router, which never reads bodies: chance.
+    newly = compare(_results([_case("st-001", False)]), _results([_routed(_case("st-001", True), "utilization")]), body)
+    assert newly["attribution"]["chance_up"] == ["st-001"] and newly["attribution"]["fixed"] == []
     assert "- Flipped by chance (1 up, 1 down): st-002, mi-001" in text
 
-    # A description edit or a cap change reaches a case only through its routing.
-    routed = compare(base, _results([_routed(_case("st-001", True), "utilization"), _case("st-002", True),
-                                     _routed(_case("mi-001", False, "multi_intent"), "rent-reporting")]))
-    assert (routed["attribution"]["fixed"], routed["attribution"]["broken"]) == (["st-001"], ["mi-001"])
-    assert routed["attribution"]["decision"] == "tradeoff"
+    # A description edit reaches a case only when the edited skill enters or leaves its routing.
+    desc = body.model_copy(update={"kind": "description"})
+    unrouted = _results([_case("st-001", False), _case("st-002", False), _case("mi-001", True, "multi_intent")])
+    routed = compare(unrouted, _results([_routed(_case("st-001", True), "utilization"), _case("st-002", True),
+                                     _routed(_case("mi-001", False, "multi_intent"), "rent-reporting")]), desc)
+    assert (routed["attribution"]["fixed"], routed["attribution"]["broken"]) == (["st-001"], [])
+    assert routed["attribution"]["chance_down"] == ["mi-001"]  # its routing changed, but not utilization
 
     always = compare(base, cand, body.model_copy(update={"kind": "always_on", "skill": "tone"}))
     assert always["attribution"]["chance_up"] == [] and always["attribution"]["broken"] == ["mi-001"]
@@ -616,7 +651,7 @@ def test_without_a_scenario_the_change_is_read_from_the_fingerprints(monkeypatch
 
     monkeypatch.setattr(report_module, "_topic_skill", lambda name: True)
     old = {"utilization": {"description": "d", "body": "b", "meta": "m"}}
-    base = {**_results([_case("st-001", False), _case("st-002", False)]), "skill_fingerprint": old}
+    base = {**_results([_routed(_case("st-001", False), "utilization"), _case("st-002", False)]), "skill_fingerprint": old}
     cand = _results([_routed(_case("st-001", True), "utilization"), _case("st-002", True)])
     body = compare(base, {**cand, "skill_fingerprint": {"utilization": {**old["utilization"], "body": "b2"}}})
     assert body["attribution"]["rule"].startswith("a body edit") and body["attribution"]["fixed"] == ["st-001"]
@@ -627,7 +662,7 @@ def test_without_a_scenario_the_change_is_read_from_the_fingerprints(monkeypatch
 
 
 def test_errored_runs_do_not_decide_the_attribution() -> None:
-    base = _results([_case("st-001", True), _case("st-002", True)])
+    base = _results([_case("st-001", True), _routed(_case("st-002", True), "score-changes", "utilization")])
     errored = {**_case("st-001", False), "routing": None, "status": "error", "error": "bot: LLMError: down"}
     cand = _results([errored, _routed(_case("st-002", False), "rent-reporting")])
     a = compare(base, cand)["attribution"]
@@ -635,15 +670,124 @@ def test_errored_runs_do_not_decide_the_attribution() -> None:
     assert "errored on one side and is left out" in render_markdown(compare(base, cand))
 
 
-def test_a_reordered_routing_counts_as_a_routing_change() -> None:
-    base = _results([_routed(_case("st-001", False), "score-changes", "utilization")])
-    cand = _results([_routed(_case("st-001", True), "utilization", "score-changes")])
-    assert compare(base, cand)["attribution"]["fixed"] == ["st-001"]
+def test_a_reordered_routing_is_not_a_routing_change() -> None:
+    # The router reorders the same picks between identical runs; that is not the change. The baseline
+    # filled its cap of 3, so a real routing change would count for the higher cap.
+    base = _results([_routed(_case("st-001", False), "score-changes", "utilization", "secured-card")])
+    cand = {**_results([_routed(_case("st-001", True), "utilization", "secured-card", "score-changes")]), "skill_cap": 4}
+    a = compare(base, cand)["attribution"]
+    assert a["rule"].startswith("a skill cap change")
+    assert a["fixed"] == [] and a["chance_up"] == ["st-001"]
+
+
+def test_a_cap_change_reaches_only_cases_where_the_cap_mattered() -> None:
+    base = _results([
+        _routed(_case("st-001", False), "score-changes", "utilization", "secured-card"),  # filled the cap of 3
+        _routed(_case("st-002", False), "rent-reporting"),  # one skill, then two: the cap did not bind
+        _routed(_case("st-003", False), "rent-reporting"),  # one skill, then four: only the higher cap allows it
+        _routed(_case("st-004", False), "rent-reporting", "collections"),  # two, then three: fits either cap
+    ])
+    cand = {**_results([
+        _routed(_case("st-001", True), "score-changes", "utilization", "secured-card", "collections"),
+        _routed(_case("st-002", True), "rent-reporting", "collections"),
+        _routed(_case("st-003", True), "rent-reporting", "collections", "utilization", "secured-card"),
+        _routed(_case("st-004", True), "rent-reporting", "collections", "utilization"),
+    ]), "skill_cap": 4}
+    a = compare(base, cand)["attribution"]
+    assert a["rule"].startswith("a skill cap change")
+    assert (a["fixed"], a["chance_up"]) == (["st-001", "st-003"], ["st-002", "st-004"])
+    # Lowering the cap: the run with the higher cap went past the lower one, or the lower cap was filled.
+    lower = compare({**cand, "skill_cap": 4}, {**base, "skill_cap": 3})["attribution"]
+    assert (lower["broken"], lower["chance_down"]) == (["st-001", "st-003"], ["st-002", "st-004"])
+    # The cap limits new picks only: carried skills do not fill it.
+    carried = lambda case, *skills: {**case, "routing": {**case["routing"], "carried": list(skills)}}  # noqa: E731
+    held = ("score-changes", "utilization", "secured-card")
+    a = compare(_results([carried(_routed(_case("st-001", False)), *held)]),
+                {**_results([carried(_routed(_case("st-001", True), "collections"), *held)]), "skill_cap": 4})["attribution"]
+    assert (a["fixed"], a["chance_up"]) == ([], ["st-001"])
+
+
+def test_runs_that_record_no_change_count_every_flip() -> None:
+    # Same cap, no fingerprints: nothing the files record explains the change, so every case is reached.
+    base = _results([_case("st-001", False), _case("st-002", True)])
+    cand = _results([_case("st-001", True), _case("st-002", True)])
+    a = compare(base, cand)["attribution"]
+    assert a["rule"].startswith("the runs differ") and a["fixed"] == ["st-001"]
+    before = compare({**base, "bot": "before"}, {**cand, "bot": "before"})["attribution"]
+    assert before["rule"].startswith("the runs differ") and before["fixed"] == ["st-001"]
+
+
+def test_a_description_edit_on_the_before_bot_reaches_through_the_domain() -> None:
+    desc = Scenario(
+        id="s9", title="t", kind="description", skill="utilization", change="c", motivation="m",
+        hypothesis={"expected": "improve", "detail": "d"},
+    )
+    # Before routes to domains; utilization sits in score-and-reports, so only that domain entering counts.
+    base = {**_results([_routed(_case("st-001", False), "credit-products"),
+                        _routed(_case("st-002", False), "credit-products")]), "bot": "before"}
+    cand = {**_results([_routed(_case("st-001", True), "score-and-reports"),
+                        _routed(_case("st-002", True), "rent-and-bills")]), "bot": "before"}
+    a = compare(base, cand, desc)["attribution"]
+    assert (a["fixed"], a["chance_up"]) == (["st-001"], ["st-002"])
+
+
+def test_a_description_edit_with_a_cap_change_also_counts_where_the_cap_mattered() -> None:
+    desc = Scenario(
+        id="s9", title="t", kind="description", skill="utilization", change="c", motivation="m",
+        hypothesis={"expected": "improve", "detail": "d"},
+    )
+    base = _results([_routed(_case("st-001", False), "utilization", "score-changes", "secured-card")])
+    cand = {**_results([_routed(_case("st-001", True), "utilization", "score-changes", "secured-card", "collections")]),
+            "skill_cap": 4}
+    assert compare(base, cand, desc)["attribution"]["fixed"] == ["st-001"]
+
+
+def test_the_paired_test_backs_a_decision_only_in_its_direction() -> None:
+    from evals.report import backed
+
+    gain = {"overall": {"significant": True, "mean_diff": 0.4}}
+    loss = {"overall": {"significant": True, "mean_diff": -0.4}}
+    noise = {"overall": {"significant": False, "mean_diff": 0.4}}
+    assert backed("ship", gain) is True and backed("ship", loss) is False and backed("ship", noise) is False
+    assert backed("do not ship", loss) is True and backed("do not ship", gain) is False
+    assert backed("tradeoff", gain) is False and backed("tradeoff", loss) is False
+    assert backed("no effect", gain) is None and backed("ship", None) is False
+    line = decision_line({"decision": "no effect", "fixed": [], "broken": [], "chance_up": ["st-001"],
+                          "chance_down": [], "errored": [], "tested": None})
+    assert line.startswith("**Decision: No effect.**") and "lead" not in line
+
+
+def test_a_decision_the_paired_test_does_not_back_is_a_lead() -> None:
+    body = Scenario(
+        id="s9", title="t", kind="body", skill="utilization", change="c", motivation="m",
+        hypothesis={"expected": "improve", "detail": "d"},
+    )
+    base = _results([_routed(_case("st-001", False), "utilization"), _case("st-002", True)])
+    cand = _results([_routed(_case("st-001", True), "utilization"), _case("st-002", True)])
+    report = compare(base, cand, body)
+    assert report["attribution"]["decision"] == "ship" and report["attribution"]["tested"] is False
+    line = decision_line(report["attribution"])
+    assert line.startswith("**Decision: Ship, as a lead.**") and "may still be chance" in line
+
+
+def test_a_scenario_baseline_must_differ_only_in_the_edited_skill() -> None:
+    from evals.report import scenario_baseline_problems
+
+    scenario = Scenario(
+        id="s9", title="t", kind="description", skill="utilization", change="c", motivation="m",
+        hypothesis={"expected": "improve", "detail": "d"},
+    )
+    fp = {"utilization": {"description": "d", "body": "b", "meta": "m"}, "tone": {"description": "t", "body": "t", "meta": "m"}}
+    edited = {**fp, "utilization": {**fp["utilization"], "description": "d2"}}
+    assert scenario_baseline_problems({"skill_fingerprint": fp}, {"skill_fingerprint": edited}, scenario) == []
+    other = {**edited, "tone": {**fp["tone"], "body": "t2"}}
+    assert "also differ in tone" in scenario_baseline_problems({"skill_fingerprint": fp}, {"skill_fingerprint": other}, scenario)[0]
+    assert "already has s9's edit" in scenario_baseline_problems({"skill_fingerprint": edited}, {"skill_fingerprint": edited}, scenario)[0]
 
 
 def test_failures_are_labeled_with_their_attribution() -> None:
     text = render_markdown(compare(BASELINE, CANDIDATE, SCENARIO))
-    assert "### mi-001 (multi_intent, rebuilder) (chance: the change could not reach it)" in text
+    assert "### mi-001 (multi_intent, rebuilder) (chance: outside the change's reach)" in text
 
 
 def test_a_partial_run_is_flagged() -> None:

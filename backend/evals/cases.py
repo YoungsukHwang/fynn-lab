@@ -40,6 +40,9 @@ class EvalCase(BaseModel):
     expected_facts: list[str] = Field(min_length=2, max_length=5)
     must_not_regex: list[str] = Field(default_factory=list)
     must_include_regex: list[str] = Field(default_factory=list)
+    # Written so that every question beyond the Before router's likely pick hinges on a fact found only in
+    # another domain's topic skill: a Before agent cannot pass these by design. Reports split them out.
+    designed: bool = False
 
     @field_validator("skills")
     @classmethod

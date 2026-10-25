@@ -523,20 +523,22 @@
   "verdict": "Passed",
   "verdict_note": null,
   "attribution": {
-    "rule": "a body edit can reach a case only when the edited skill is loaded for it",
+    "rule": "a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides",
     "fixed": [
       "mi-008",
       "mi-012",
       "mi-016",
       "mi-019",
-      "mi-022",
       "mi-034"
     ],
     "broken": [],
-    "chance_up": [],
+    "chance_up": [
+      "mi-022"
+    ],
     "chance_down": [],
     "errored": [],
-    "decision": "ship"
+    "decision": "ship",
+    "tested": true
   },
   "flag_rule": {
     "min_fails": 1,
@@ -601,5 +603,185 @@
   },
   "warnings": [
     "expected facts differ between the runs, so not compared: mi-021; rerun the baseline to compare them"
-  ]
+  ],
+  "routing": {
+    "baseline": {
+      "strategy": "skills",
+      "cases": 17,
+      "runs": 17,
+      "all_available": 11,
+      "by_group": {
+        "cross": {
+          "runs": 11,
+          "all_available": 5
+        },
+        "single": {
+          "runs": 6,
+          "all_available": 6
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "credit-builder-account": {
+          "labeled": 16,
+          "available": 15,
+          "picked": 16,
+          "picked_unlabeled": 1
+        },
+        "debt-settlement": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 4,
+          "available": 3,
+          "picked": 4,
+          "picked_unlabeled": 1
+        },
+        "rent-reporting": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 4,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "secured-card": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 3,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        }
+      }
+    },
+    "candidate": {
+      "strategy": "skills",
+      "cases": 17,
+      "runs": 17,
+      "all_available": 12,
+      "by_group": {
+        "cross": {
+          "runs": 11,
+          "all_available": 6
+        },
+        "single": {
+          "runs": 6,
+          "all_available": 6
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 1,
+          "available": 1,
+          "picked": 2,
+          "picked_unlabeled": 1
+        },
+        "credit-builder-account": {
+          "labeled": 16,
+          "available": 16,
+          "picked": 17,
+          "picked_unlabeled": 1
+        },
+        "debt-settlement": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 4,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "rent-reporting": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 4,
+          "available": 1,
+          "picked": 1,
+          "picked_unlabeled": 0
+        },
+        "secured-card": {
+          "labeled": 2,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 3,
+          "available": 2,
+          "picked": 2,
+          "picked_unlabeled": 0
+        }
+      }
+    }
+  },
+  "lengths": {
+    "baseline": {
+      "replies": 17,
+      "median_words": 269,
+      "mean_words": 253.5,
+      "limit": 250,
+      "over_limit": 10,
+      "over_300": 4
+    },
+    "candidate": {
+      "replies": 17,
+      "median_words": 254,
+      "mean_words": 251.6,
+      "limit": 250,
+      "over_limit": 9,
+      "over_300": 6
+    }
+  },
+  "cost_per_1000": {
+    "baseline": null,
+    "candidate": null
+  }
 }

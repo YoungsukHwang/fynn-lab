@@ -2,7 +2,7 @@
 
     python -m evals.run --bot after --repeats 3 --out ../results/after.json
     python -m evals.run --bot after --repeats 3 --scenario s1 --baseline ../results/after.json \
-        --out ../results/scenarios/s1.json
+        --out ../results/scenarios/s1-k3.json
     python -m evals.run --bot after --max-skills 5 --baseline ../results/after.json \
         --out ../results/cap5.json
     python -m evals.run --bot after --rerun-errors ../results/after.partial.json --out ../results/after.json

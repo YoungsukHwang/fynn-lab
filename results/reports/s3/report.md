@@ -1,6 +1,6 @@
 # Regression report: s3 (Route score-drop questions to utilization too)
 
-**Decision: Ship.** The change fixed 2 cases and broke none; 3 other cases flipped where it could not reach them, so by chance.
+**Decision: Ship, as a lead.** The change fixed 2 cases and broke none; 3 other cases flipped outside its reach and count as chance. The paired test of the net change does not back it, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0.375, not significant at 0.05.
 
 ## What changed
@@ -8,7 +8,7 @@ Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0
 - Fixed by the change (2): st-001, mi-003
 - Broken by the change (0): none
 - Flipped by chance (2 up, 1 down): st-011, mi-004, st-009
-- How: a description edit or a different skill cap can reach a case only by changing its routing. A case the change cannot reach did not get the edit in its prompt, so its flip is chance; a case it can reach may still have flipped by chance.
+- How: a description edit can reach a case only when the edited skill (for the Before bot, its domain) enters or leaves its routing. A flip outside that counts as chance: the edit was not in that case's answering prompt, or was not the only thing that changed it. A flip inside it may still be chance.
 
 ## Scenario
 
@@ -29,7 +29,7 @@ Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0
 
 ## Failures overview
 
-### st-009 (single_topic, new-to-credit) (chance: the change could not reach it)
+### st-009 (single_topic, new-to-credit) (chance: outside the change's reach)
 
 **Message.** Should I apply for one of the credit cards I saw in the Marketplace?
 
@@ -116,6 +116,11 @@ Hypothesis: expected tradeoff, observed tradeoff (matches; from the flagged coun
 | context_use | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
 | safety_basic | 8 | 0 | 0 | 1.000 | 1.000 | n/a |
 | **overall** | 40 | 4 | 1 | 0.375 | primary | n/a |
+
+## Routing and length
+
+- Baseline: every labeled skill reached the answering agent in 40 of 40 cases (9 of 9 that need a second domain, 31 of 31 that do not). Replies: median 257.5 words, 21 of 40 over the 250-word limit.
+- Candidate: every labeled skill reached the answering agent in 40 of 40 cases (9 of 9 that need a second domain, 31 of 31 that do not). Replies: median 264.0 words, 25 of 40 over the 250-word limit.
 
 ## Transitions
 
