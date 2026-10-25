@@ -150,6 +150,7 @@ results/     committed eval results and reports (archive/ holds runs a report st
 docs/        product fact sheet for the fictional app
 backend/     Python: fynn core package, FastAPI app, eval runner and reports, tests
 web/         Next.js site: the demo and the eval pages
+render.yaml  Render Blueprint for the hosted backend of the public demo
 ```
 
 ## Backend
@@ -190,15 +191,13 @@ You can override each model with an environment variable; see `backend/.env.exam
 
 ### Hosted backend
 
-The public demo's backend runs as a Hugging Face Docker Space. `.github/workflows/space.yml` assembles it from `space/` (Dockerfile and Space README), `backend/`, `skills/` and `personas/`, and pushes it to the Space on every push to `main` that touches them. The Space allows 20 chat requests per visitor per hour and 400 a day in all (10 and 200 questions to both bots, at most about $4 to $5 a day with Sonnet answering), and only the GitHub Pages origin. The free Space sleeps after two days without visitors; the site then shows recorded replies until it wakes.
+The public demo's backend runs on Render's free tier, set up by the Blueprint in `render.yaml`: Render installs `backend/` and starts the API, and redeploys on pushes to `main` that touch it. It allows 20 chat requests per visitor per hour and 400 a day in all (10 and 200 questions to both bots, about $4 to $5 of Sonnet answers), and only the GitHub Pages origin. The free instance sleeps after 15 idle minutes and takes about a minute to wake; the site then shows recorded replies, keeps checking, and offers the live chat once the backend answers. The counts live in memory and start over each time it wakes, and a client can fake the address the per-visitor limit counts by, so they slow ordinary use but do not bound spending. The only hard cap is the spend limit on the API key, so set it to the most you are willing to spend in a month.
 
 One-time setup:
 
-1. Create a Docker Space on Hugging Face (blank template, free CPU, public), for example `fynn-lab-api`.
-2. In the Space's settings, add the secret `ANTHROPIC_API_KEY`. A key used only for this demo, with a monthly spend limit set in the Anthropic Console, is the backstop if the in-memory limits reset.
-3. Create a Hugging Face access token that can write to the Space.
-4. In this GitHub repo's Actions settings, add the secret `HF_TOKEN` (that token) and the variables `HF_SPACE` (for example `<hf-user>/fynn-lab-api`) and `FYNN_API_URL` (the Space's address, `https://<hf-user>-fynn-lab-api.hf.space`).
-5. Run the "Deploy API" workflow, then "Deploy site", so the site is rebuilt with the API address.
+1. In Render, choose New, then Blueprint, sign in with GitHub and connect this repo.
+2. When asked, enter `ANTHROPIC_API_KEY`: a key used only for this demo. Set a monthly spend limit for it in the Anthropic Console first; it is the only hard cap.
+3. Once it is live, add the service's address (for example `https://fynn-lab-api.onrender.com`) as the GitHub Actions variable `FYNN_API_URL`, and run the "Deploy site" workflow so the site is rebuilt with it.
 
 ## Web
 

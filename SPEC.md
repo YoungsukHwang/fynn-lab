@@ -394,7 +394,7 @@ fynn report results/a.json results/b.json
 - **실행**
   - 로컬: 백엔드 `uvicorn` (포트 8000), 프론트 `npm run dev` (포트 3000)
   - 배포: 사이트는 GitHub Pages에 정적 파일로 올립니다. `main`에 push하면 `.github/workflows/pages.yml`이 `FYNN_STATIC_SITE=1`로 빌드합니다(`output: "export"`, 저장소 이름을 basePath로). Demo는 녹화된 답변(`results/demo/recorded.json`, `evals/demo_snapshot.py`가 커밋된 3회 실행에서 뽑은 네 질문)도 함께 보여 주고, 백엔드가 15초 안에 답하지 않으면 그쪽으로 바꿉니다.
-  - 백엔드는 Hugging Face Docker Space에서 돌립니다. `.github/workflows/space.yml`이 `space/`(Dockerfile, Space README), `backend/`, `skills/`, `personas/`를 모아 `main`에 push될 때마다 Space로 보냅니다. 공개 데모라서 `/chat`에 한도를 둡니다(`api/limits.py`): 방문자당 시간당 20회, 전체 하루 400회 요청이고, 두 봇에 묻는 질문 하나가 요청 두 번이므로 질문으로는 10개와 200개입니다(Sonnet 답변 기준 하루 최대 약 $4~5). 한도는 메모리에 있어 서버가 다시 시작되면 초기화되므로, 이 데모 전용 API 키에 Anthropic Console의 월 지출 한도를 거는 것이 최종 안전장치입니다. 방문자는 `X-Forwarded-For`의 첫 주소로 구분하는데 클라이언트가 이 헤더를 꾸밀 수 있어서, 방문자 한도는 공정성 장치이고 지출은 하루 한도가 막습니다.
+  - 백엔드는 Render 무료 인스턴스에서 돌립니다(`render.yaml` Blueprint). Hugging Face Docker Space는 개인 계정이면 PRO($9/월)가 필요해서 바꿨습니다. 무료 인스턴스는 15분 동안 요청이 없으면 잠들고 깨는 데 약 1분이 걸립니다. 그동안 사이트는 녹화된 답변을 보여 주면서 10초마다 `/health`를 확인하고, 답이 오면 라이브 채팅으로 돌아가는 버튼을 보여 줍니다. 공개 데모라서 `/chat`에 한도를 둡니다(`api/limits.py`): 방문자당 시간당 20회, 전체 하루 400회 요청이고, 두 봇에 묻는 질문 하나가 요청 두 번이므로 질문으로는 10개와 200개입니다(Sonnet 답변으로 약 $4~5). 다만 한도는 메모리에 있어 서버가 잠들었다 깰 때마다(15분 무요청 후) 처음부터 다시 셉니다. 또 방문자는 `X-Forwarded-For`의 첫 주소로 구분하는데 클라이언트가 이 헤더를 꾸밀 수 있습니다. 그래서 두 한도는 평범한 사용을 늦출 뿐 지출을 막지 못하고, 실제 상한은 이 데모 전용 API 키에 Anthropic Console에서 거는 월 지출 한도 하나입니다.
 
 ### 백엔드 API (v1)
 
@@ -535,7 +535,7 @@ fynn-lab/
 | M4 | 회귀 리포트, 의존 테스트 선택, 스킬 개선 시나리오 3개 (S1~S3) | 시나리오별 리포트 Markdown + 가설 대비 결과 |
 | M5 | 평가 페이지: Before vs After, Skill edits (각각 Framework / Results 탭), Online evaluation 프레임워크 | 사이트의 평가 섹션 완성 |
 | 통계 | 짝지은 검정, 고침·망가뜨림·우연 구분 (반복 실행, A/A 노이즈 기준선, 플래그 규칙, Holm 보정은 코드에만 남김) | 리포트 첫머리와 사이트의 결정 |
-| M6 | 결과 사이트를 GitHub Pages에 정적 배포, 백엔드는 한도를 둔 Hugging Face Space (응답이 없으면 Demo는 녹화된 답변) | 공개 URL |
+| M6 | 결과 사이트를 GitHub Pages에 정적 배포, 백엔드는 한도를 둔 Render 무료 인스턴스 (응답이 없으면 Demo는 녹화된 답변) | 공개 URL |
 
 ## 7. 결정 사항
 
@@ -547,4 +547,4 @@ fynn-lab/
 | 데모 입력 | 입력창 하나로 양쪽에 동시 전송 |
 | UI 언어 | 영어 (문서는 한국어 병행) |
 | 스킬 예산 | 새로 고르는 스킬 4개(상한 실험 전에는 3개) + 직전 턴 이월 2개 (설정값) |
-| 남은 것 | 없음 (백엔드 공개는 Space 설정을 마치면 켜짐) |
+| 남은 것 | 없음 (백엔드 공개는 Render 설정을 마치면 켜짐) |
