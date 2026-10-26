@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AbTestFlow } from "@/components/evals/AbTestFlow";
 import { StepNumber } from "@/components/evals/LoopDiagram";
 import { Chip, type ChipTone, Expander, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
 import { getFrameworkData } from "@/lib/evalData";
@@ -18,33 +19,78 @@ const SECTIONS = [
 const LINK = "font-medium text-ink underline underline-offset-2";
 
 // Chip tones avoid fynn and peach, which mean the After and Before bots everywhere else on the site.
-function cards(personaCount: string): { chip: string; tone: ChipTone; items: string[] }[] {
+// In order from the eval set to real members: what stays behind, what carries over, what only members show.
+const CARDS: { chip: string; tone: ChipTone; items: string[] }[] = [
+  {
+    chip: "Stays offline",
+    tone: "neutral",
+    items: [
+      "Expected facts and the pass or fail verdict: a real message comes with no list of facts.",
+      "The same synthetic members on every run.",
+    ],
+  },
+  {
+    chip: "Carries over",
+    tone: "lime",
+    items: [
+      "Code checks on every reply, such as a banned “I guarantee”.",
+      "The LLM judge, grading by a rubric (a fixed list of questions for any reply), after its grades are checked against human reviewers.",
+      "The skill files and guardrails.",
+    ],
+  },
+  {
+    chip: "Only online",
+    tone: "dark",
+    items: [
+      "Whether a reply helped: what the member did next.",
+      "Follow-up turns that build on the new version's own replies.",
+      "Effects at real load, such as on the human support queue.",
+    ],
+  },
+];
+
+type Stage = { chip: string; title: string; dark: boolean; rows: { label: string; text: string }[] };
+
+function stages(personaCount: string): Stage[] {
   return [
     {
-      chip: "Carries over",
-      tone: "lime",
-      items: [
-        "Code checks on every reply, such as a banned “I guarantee”.",
-        "The LLM judge, grading by a rubric (a fixed list of questions for any reply), after its grades are checked against human reviewers.",
-        "The skill files and guardrails.",
+      chip: "Offline",
+      title: "Backtest on logged chats",
+      dark: false,
+      rows: [
+        {
+          label: "How",
+          text: "Replay past real messages, with personal details removed, through the current version and the change, and grade both replies with the code checks and the rubric judge.",
+        },
+        {
+          label: "Measures",
+          text: "Rubric pass rate; which reply the judge prefers on the same message (shown in random order, since judges favor a position); safety flags per 1,000 replies; cost and latency per reply; which skills the router picks.",
+        },
+        {
+          label: "Adds",
+          text: `Real typos, new topics and credit files unlike those of the ${personaCount}, in far larger numbers. Both versions still answer the same message, so the comparison stays paired.`,
+        },
+        {
+          label: "Cannot tell",
+          text: "Whether the facts are right (there is no answer key), how later turns would go (they were written in reply to the old version), or what members do next.",
+        },
       ],
     },
     {
-      chip: "Stays offline",
-      tone: "neutral",
-      items: [
-        "Expected facts and the pass or fail verdict.",
-        "The same members on every run.",
-        "Both bots answering the same message. Online, each member sees one bot.",
-      ],
-    },
-    {
-      chip: "Only online",
-      tone: "dark",
-      items: [
-        "Follow-up turns. Every offline case is one turn, so the After bot's carry-over is never tested offline.",
-        `Typos, new topics, and credit files unlike those of the ${personaCount}.`,
-        "Whether a reply helped, not only whether it had the facts.",
+      chip: "Online",
+      title: "A/B test with members",
+      dark: true,
+      rows: [
+        { label: "How", text: "Split members at random, so each sees one version (section 3)." },
+        {
+          label: "Measures",
+          text: "What members do: asking the same question again, handoffs to human support, and later outcomes (section 2).",
+        },
+        { label: "Adds", text: "Whether members are better off, including follow-up turns and effects at real load." },
+        {
+          label: "Costs",
+          text: "Weeks of traffic, with real members exposed to the change, so it runs only after the backtest finds nothing wrong.",
+        },
       ],
     },
   ];
@@ -52,10 +98,10 @@ function cards(personaCount: string): { chip: string; tone: ChipTone; items: str
 
 type Entry = { name: string; text: string };
 
-const LANES: { eyebrow: string; title: string; entries: Entry[]; style: "decides" | "plain" | "later"; note?: string }[] = [
+const LANES: { title: string; job: string; entries: Entry[]; style: "decides" | "plain" | "later"; note?: string }[] = [
   {
-    eyebrow: "Decides",
-    title: "One primary metric",
+    title: "Primary metric",
+    job: "Decides whether the change ships.",
     style: "decides",
     entries: [
       {
@@ -65,19 +111,23 @@ const LANES: { eyebrow: string; title: string; entries: Entry[]; style: "decides
     ],
   },
   {
-    eyebrow: "Can stop it",
     title: "Guardrails",
+    job: "Can block a launch even when the primary metric improves: each must not get worse by more than a margin set in advance.",
     style: "plain",
     entries: [
       { name: "Safety violations", text: "Promising a score gain, suggesting a product to a member in hardship, repeating a card number." },
       { name: "Preventable handoffs", text: "Chats sent to human support that the coach should have solved." },
+      {
+        name: "Still using the app a week later",
+        text: "Members active in the app 7 days after their first coach chat. It must not fall: a change that drives members away would also lower asking again.",
+      },
       { name: "Latency, 95th percentile", text: "95 of 100 replies arrive within it. An average hides the slow ones." },
       { name: "Cost per chat", text: "Before and After load different skills, so cost is measured." },
     ],
   },
   {
-    eyebrow: "Explains",
-    title: "Read, not decisive",
+    title: "Diagnostics",
+    job: "Explain why the primary metric moved. They never decide on their own.",
     style: "plain",
     entries: [
       {
@@ -88,8 +138,8 @@ const LANES: { eyebrow: string; title: string; entries: Entry[]; style: "decides
     ],
   },
   {
-    eyebrow: "Too slow to decide a test",
     title: "Long-term outcomes",
+    job: "What the coach is for, but they move over months, too slowly to decide one test.",
     style: "later",
     entries: [
       {
@@ -97,40 +147,53 @@ const LANES: { eyebrow: string; title: string; entries: Entry[]; style: "decides
         text: "Paying a card down before the statement date, on-time payments, staying with the app.",
       },
     ],
-    note: "A small holdout kept on the old version for months shows whether gains on fast metrics reach these. If they never do, the fast metric is the wrong target.",
+    note: "A small holdout kept on the old version for months shows whether gains on the primary metric reach these. If they never do, the primary metric is the wrong target.",
   },
 ];
 
-const RULES: Entry[] = [
+type Fit = { mark: "yes" | "partly" | "no"; note?: string };
+type Candidate = { name: string; fits: [Fit, Fit, Fit, Fit]; role: string };
+
+const CRITERIA = ["Every chat", "Moves within days", "Clear direction", "From members"] as const;
+
+const yes: Fit = { mark: "yes" };
+
+// The four tests a primary metric must pass, applied to metrics a team could pick instead.
+const CANDIDATES: Candidate[] = [
+  { name: "Asked again within a day", fits: [yes, yes, { mark: "yes", note: "lower" }, yes], role: "Primary metric" },
+  { name: "Thumbs up or down", fits: [{ mark: "no", note: "few click" }, yes, yes, yes], role: "Diagnostic" },
   {
-    name: "Split and analyze by member",
-    text: "Each member sees one version on every visit and device, so no chat switches bots mid-way. Per-reply metrics such as latency are combined per member, since one member's messages are alike.",
+    name: "Handoffs to human support",
+    fits: [yes, yes, { mark: "partly", note: "some chats belong with a person" }, yes],
+    role: "Guardrail (preventable ones)",
   },
   {
-    name: "Count members from their first coach chat",
-    text: "Others cannot be affected. Nobody sees a difference before opening the coach, so both groups open it at the same rate.",
+    name: "Judge-graded quality of live replies",
+    fits: [{ mark: "partly", note: "a sample" }, yes, yes, { mark: "no", note: "a model grading a model" }],
+    role: "Diagnostic",
   },
   {
-    name: "Name one primary metric",
-    text: "If a change does nothing, 20 metrics tested at 5% still show about one significant result by chance, as likely against B as for it. Correct the rest, for example with the Holm method, which keeps the chance of any false win at 5% or less.",
+    name: "Still using the app a week later",
+    fits: [yes, { mark: "partly", note: "a week, and one reply barely moves it" }, { mark: "yes", note: "higher" }, yes],
+    role: "Guardrail (must not fall)",
   },
   {
-    name: "Set guardrail margins",
-    text: "Guardrails need not improve. They must not get worse by more than a margin set in advance.",
+    name: "Messages per chat",
+    fits: [yes, yes, { mark: "no", note: "more can mean engaged or confused" }, yes],
+    role: "Not used",
   },
   {
-    name: "Run whole weeks",
-    text: "Long enough to reach the planned size. Weekdays and weekends differ, reactions to anything new fade (compare week one with week two), and payday outcomes need a full monthly cycle.",
-  },
-  {
-    name: "Look once, at the planned end",
-    text: "Stopping the first time the result looks significant makes false wins far more common than 5%. Sequential testing allows repeated looks without raising the false-win rate. Stopping early for harm is fine.",
-  },
-  {
-    name: "Watch for spillover",
-    text: "If B sends fewer members to human support, A's queue gets shorter too, and A looks better than it would alone.",
+    name: "Paid down before the statement date",
+    fits: [{ mark: "no", note: "only members with a card balance" }, { mark: "no", note: "a month or more" }, yes, yes],
+    role: "Long-term outcome",
   },
 ];
+
+const MARKS = {
+  yes: { label: "Yes", box: "bg-lime-soft text-forest" },
+  partly: { label: "Partly", box: "bg-mist text-ink" },
+  no: { label: "No", box: "border border-line bg-white text-slate" },
+} as const;
 
 type Method = { situation: string; method: string; what: string; assumes: string; probe: string };
 
@@ -190,7 +253,11 @@ const STEPS: { title: string; who: string; body: React.ReactNode }[] = [
         <Link href="/skill-edits/framework" className={LINK}>
           Skill edits
         </Link>
-        . Go on only with a Ship decision and no guardrail misses.
+        , then backtest it on logged chats (
+        <a href="#why" className={LINK}>
+          section 1
+        </a>
+        ). Go on only with a Ship decision, no guardrail misses and nothing wrong in the backtest.
       </>
     ),
   },
@@ -240,12 +307,25 @@ const FEEDBACK: Entry[] = [
   },
 ];
 
+/** The arrow from one card to the next: down on phones, right on wide screens. Decorative. */
+function FlowArrow() {
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-sm leading-none text-dim md:-right-[1.15rem] md:bottom-auto md:left-auto md:top-1/2 md:translate-x-0 md:-translate-y-1/2"
+    >
+      <span className="md:hidden">▼</span>
+      <span className="hidden md:inline">▶</span>
+    </span>
+  );
+}
+
 const LANE_STYLES = {
-  decides: { box: "bg-ink text-white", eyebrow: "text-lime", title: "text-white", rule: "border-white/15", dd: "text-white/80" },
-  plain: { box: "border border-line bg-white", eyebrow: "text-forest", title: "text-ink", rule: "border-line", dd: "text-slate" },
+  decides: { box: "bg-ink text-white", job: "text-lime", title: "text-white", rule: "border-white/15", dd: "text-white/80" },
+  plain: { box: "border border-line bg-white", job: "text-forest", title: "text-ink", rule: "border-line", dd: "text-slate" },
   later: {
     box: "border border-dashed border-field bg-white",
-    eyebrow: "text-forest",
+    job: "text-forest",
     title: "text-ink",
     rule: "border-line",
     dd: "text-slate",
@@ -280,34 +360,71 @@ export default async function OnlineEvaluationPage() {
             ). A real message arrives with no such list.
           </p>
         </SectionHeader>
-        <div className="grid gap-3 md:grid-cols-3">
-          {cards(personaCount).map((card) => (
-            <div key={card.chip} className="rounded-2xl border border-line bg-white p-4 sm:p-5">
+        <ol className="grid gap-7 md:grid-cols-3 md:gap-6">
+          {CARDS.map((card, i) => (
+            <li key={card.chip} className="relative rounded-2xl border border-line bg-white p-4 sm:p-5">
               <Chip tone={card.tone}>{card.chip}</Chip>
               <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate marker:text-dim">
                 {card.items.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-            </div>
+              {i < CARDS.length - 1 && <FlowArrow />}
+            </li>
           ))}
+        </ol>
+        <div className="flex flex-col gap-3">
+          <div className="max-w-3xl">
+            <h3 className="text-base font-semibold text-ink">Real chats in two steps: backtest, then test online</h3>
+            <p className="mt-1 text-sm leading-6 text-slate">
+              Logged chats can test a change before any member sees it. What a backtest measures differs from the eval
+              set, since there is no answer key, and from the online test, since no member reacts.
+            </p>
+          </div>
+          <ol className="grid gap-7 md:grid-cols-2 md:gap-6">
+            {stages(personaCount).map((stage, i, all) => (
+              <li
+                key={stage.title}
+                className={`relative rounded-2xl p-4 sm:p-5 ${stage.dark ? "bg-ink text-white" : "border border-line bg-white"}`}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip tone={stage.dark ? "lime" : "neutral"}>{stage.chip}</Chip>
+                  <h4 className={`text-base font-semibold ${stage.dark ? "text-white" : "text-ink"}`}>{stage.title}</h4>
+                </div>
+                <dl className={`mt-3 space-y-2.5 border-t pt-3 text-sm leading-6 ${stage.dark ? "border-white/15" : "border-line"}`}>
+                  {stage.rows.map((row) => (
+                    <div key={row.label}>
+                      <dt className={`text-[11px] font-semibold uppercase tracking-wide ${stage.dark ? "text-lime" : "text-forest"}`}>
+                        {row.label}
+                      </dt>
+                      <dd className={stage.dark ? "text-white/80" : "text-slate"}>{row.text}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {i < all.length - 1 && <FlowArrow />}
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
       <section aria-labelledby="measure" className="flex flex-col gap-4">
-        <SectionHeader id="measure" eyebrow="2 · What to measure" title="One metric decides, guardrails can stop it">
-          <p>Each metric gets one job, set before the test starts.</p>
+        <SectionHeader id="measure" eyebrow="2 · What to measure" title="One metric decides, the others guard or explain">
+          <p>
+            Each metric gets one job, set before the test starts: only the primary metric decides, a guardrail can block
+            the launch, and the rest explain the result or are checked later.
+          </p>
         </SectionHeader>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {LANES.map((lane) => {
             const s = LANE_STYLES[lane.style];
             return (
               <li key={lane.title} className={`flex flex-col rounded-2xl p-4 sm:p-5 ${s.box}`}>
-                <p className={`text-[11px] font-semibold uppercase tracking-wide ${s.eyebrow}`}>{lane.eyebrow}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className={`text-base font-semibold ${s.title}`}>{lane.title}</h3>
                   {lane.style === "decides" && <Chip tone="lime">Example</Chip>}
                 </div>
+                <p className={`mt-1 text-sm leading-6 ${s.job}`}>{lane.job}</p>
                 <dl className={`mt-3 space-y-2.5 border-t pt-3 ${s.rule}`}>
                   {lane.entries.map((entry) => (
                     <div key={entry.name}>
@@ -321,6 +438,66 @@ export default async function OnlineEvaluationPage() {
             );
           })}
         </ul>
+        <div className="flex flex-col gap-3">
+          <div className="max-w-3xl">
+            <h3 className="text-base font-semibold text-ink">Why asking again within a day</h3>
+            <p className="mt-1 text-sm leading-6 text-slate">
+              A primary metric needs four things: it is measured on every chat without asking the member, it moves
+              within days so a test of a few weeks can read it, one direction is plainly better, and it comes from what
+              members do rather than from a model&apos;s opinion. Of these candidates, only asking again has all four.
+            </p>
+          </div>
+          {/* Focusable so keyboard users can scroll the table sideways on narrow screens. */}
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label="Candidate primary metrics"
+            className="overflow-x-auto rounded-2xl border border-line bg-white"
+          >
+            <table className="w-full min-w-[46rem] text-left text-sm">
+              <caption className="sr-only">Candidate primary metrics against the four tests, and the role each gets</caption>
+              <thead className="border-b border-line text-xs text-slate">
+                <tr>
+                  <th scope="col" className="px-4 py-2.5 font-semibold">
+                    Candidate
+                  </th>
+                  {CRITERIA.map((c) => (
+                    <th key={c} scope="col" className="px-3 py-2.5 font-semibold">
+                      {c}
+                    </th>
+                  ))}
+                  <th scope="col" className="px-4 py-2.5 font-semibold">
+                    Used here as
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {CANDIDATES.map((c, i) => (
+                  <tr key={c.name} className={`align-top ${i === 0 ? "bg-lime-soft/40" : ""}`}>
+                    <th scope="row" className="px-4 py-2.5 font-semibold text-ink">
+                      {c.name}
+                    </th>
+                    {c.fits.map((fit, j) => (
+                      <td key={CRITERIA[j]} className="px-3 py-2.5">
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${MARKS[fit.mark].box}`}>
+                          {MARKS[fit.mark].label}
+                        </span>
+                        {fit.note && <span className="mt-0.5 block text-xs leading-5 text-slate">{fit.note}</span>}
+                      </td>
+                    ))}
+                    <td className={`px-4 py-2.5 ${i === 0 ? "font-semibold text-ink" : "text-slate"}`}>{c.role}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="max-w-3xl text-sm leading-6 text-slate">
+            It has weak spots too. Matching &ldquo;the same question&rdquo; takes a model (an LLM or text embeddings),
+            which needs checking against human labels, as the judge did. And a member who gives up and leaves never asks
+            again, so a change that drives members away could look like a win. The guardrail on members still using the app
+            catches that during the test, and the long-term holdout later.
+          </p>
+        </div>
       </section>
 
       <section aria-labelledby="ab-test" className="flex flex-col gap-4">
@@ -334,14 +511,7 @@ export default async function OnlineEvaluationPage() {
             . Chance alone decides who gets which, so a gap bigger than noise is caused by the change.
           </p>
         </SectionHeader>
-        <dl className="divide-y divide-line rounded-2xl border border-line bg-white">
-          {RULES.map((rule) => (
-            <div key={rule.name} className="grid gap-1 px-4 py-3 text-sm leading-6 sm:grid-cols-[15rem_minmax(0,1fr)] sm:gap-4">
-              <dt className="font-semibold text-ink">{rule.name}</dt>
-              <dd className="text-slate">{rule.text}</dd>
-            </div>
-          ))}
-        </dl>
+        <AbTestFlow />
         <Expander tone="canvas" summary={<span className="text-sm font-semibold text-ink">How many members a test needs</span>}>
           <div className="max-w-3xl space-y-2 text-sm leading-6 text-slate">
             <p>
@@ -353,9 +523,10 @@ export default async function OnlineEvaluationPage() {
               (80% power, 5% false-positive rate) would take about 25,000 members in each group.
             </p>
             <p>
-              CUPED adjusts each member&apos;s result with the same metric from before the test. That data predates the
-              split, so it cannot bias the result. A correlation of 0.5 cuts the variance, and the members needed, by about
-              a quarter.
+              CUPED adjusts each member&apos;s result with data from before the test: the same metric for members who used
+              the coach before, and something every member has, such as app activity, for those new to it. That data
+              predates the split, so it cannot bias the result. A correlation of 0.5 cuts the variance, and the members
+              needed, by about a quarter; members with weaker data from before gain less.
             </p>
           </div>
         </Expander>
