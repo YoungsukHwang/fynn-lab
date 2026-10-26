@@ -28,6 +28,8 @@ const WEB_DIR = process.cwd();
 const REPO_ROOT = path.resolve(WEB_DIR, "..");
 
 const CASES_DIR = path.join(REPO_ROOT, "backend", "evals", "cases");
+// Written after the skills were frozen and never used to change them (backend/evals/holdout/README.md).
+const HOLDOUT_DIR = path.join(REPO_ROOT, "backend", "evals", "holdout");
 const SCENARIOS_DIR = path.join(REPO_ROOT, "scenarios");
 const PERSONAS_DIR = path.join(REPO_ROOT, "personas");
 const SKILLS_DIR = path.join(REPO_ROOT, "skills");
@@ -533,10 +535,10 @@ function toNoiseFloor(value: unknown): NoiseFloor | null {
  * -------------------------------------------------------------------------------------------- */
 
 /** All eval cases from backend/evals/cases/<dataset>.yaml, in dataset order. */
-export async function getCases(): Promise<EvalCase[]> {
+export async function getCases(directory: string = CASES_DIR): Promise<EvalCase[]> {
   const cases: EvalCase[] = [];
   for (const dataset of DATASETS) {
-    const file = path.join(CASES_DIR, `${dataset}.yaml`);
+    const file = path.join(directory, `${dataset}.yaml`);
     const raw = await readYaml(file);
     if (raw === null) continue;
     if (!Array.isArray(raw)) {
@@ -1316,6 +1318,50 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
       .map((c) => c.id)
       .filter((id) => [before, after].some((run) => run && !run.cases.some((c) => c.id === id))),
     caseCount: cases.length,
+  };
+}
+
+/* ----------------------------------------------------------------------------------------------
+ * Held-out check: both bots on cases the skills were never tuned to
+ * -------------------------------------------------------------------------------------------- */
+
+export interface HoldoutData {
+  caseCount: number;
+  ranAt: string | null; // when the After run was made
+  byDomains: CaseGroup[]; // needs a second domain, one domain is enough
+  overall: CaseGroup | null;
+  report: Report | null; // results/reports/holdout
+}
+
+/** Both bots on backend/evals/holdout (results/holdout/{before,after}.json) and their report. */
+export async function getHoldoutData(): Promise<HoldoutData> {
+  const [cases, skills, before, after, report] = await Promise.all([
+    getCases(HOLDOUT_DIR),
+    getSkills(),
+    getRun("holdout/before.json"),
+    getRun("holdout/after.json"),
+    getReport("holdout"),
+  ]);
+  const skillDomain = new Map(skills.flatMap((s) => (s.type === "topic" && s.domain ? [[s.name, s.domain] as const] : [])));
+  const cross = new Set(cases.filter((c) => caseDomains(c, skillDomain).length > 1).map((c) => c.id));
+  const group = (key: string, label: string, note: string, ids: string[]): CaseGroup => {
+    const set = new Set(ids);
+    return { key, label, note, before: groupStat(before, set), after: groupStat(after, set) };
+  };
+  return {
+    caseCount: cases.length,
+    ranAt: after?.createdAt ?? null,
+    byDomains: [
+      group("holdout-cross", "Needs a second domain", "held-out cases whose skills span 2+ Before domains", [...cross]),
+      group(
+        "holdout-single",
+        "One domain is enough",
+        "held-out cases one Before agent covers",
+        cases.filter((c) => !cross.has(c.id)).map((c) => c.id),
+      ),
+    ],
+    overall: cases.length ? group("holdout-all", "All held-out cases", "", cases.map((c) => c.id)) : null,
+    report,
   };
 }
 

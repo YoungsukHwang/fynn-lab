@@ -6,13 +6,16 @@ import { Dumbbell, PairTile } from "@/components/evals/charts";
 import { TestBadge, TransitionStats } from "@/components/evals/Comparison";
 import { ModelList } from "@/components/evals/RunDetails";
 import { NotGenerated, OnThisPage, PageHero, SectionHeader } from "@/components/evals/ui";
-import { type CaseGroup, getBeforeAfterData, getPersonas } from "@/lib/evalData";
+import { type CaseGroup, getBeforeAfterData, getHoldoutData, getPersonas } from "@/lib/evalData";
 import { formatTimestamp, pct, plural, pPhrase, runsPerCase } from "@/lib/evalLabels";
 
 export const metadata: Metadata = { title: "Before vs After results" };
 
+const HOLDOUT_PLAN = "https://github.com/YoungsukHwang/fynn-lab/blob/main/backend/evals/holdout/README.md";
+
 const SECTIONS = [
   { href: "#where", label: "Where they differ" },
+  { href: "#holdout", label: "Held-out check" },
   { href: "#mix", label: "Traffic mix" },
   { href: "#overall", label: "Overall" },
   { href: "#skills", label: "Skills reaching the answer" },
@@ -40,7 +43,10 @@ function gap(group: CaseGroup | null | undefined): number | null {
 const points = (rate: number) => `${rate >= 0 ? "+" : ""}${Math.round(rate * 100)} pts`;
 
 export default async function BeforeAfterResultsPage() {
-  const [data, personas] = await Promise.all([getBeforeAfterData(), getPersonas()]);
+  const [data, personas, holdout] = await Promise.all([getBeforeAfterData(), getPersonas(), getHoldoutData()]);
+  const holdoutCross = holdout.byDomains.find((g) => g.key === "holdout-cross");
+  const holdoutSingle = holdout.byDomains.find((g) => g.key === "holdout-single");
+  const holdoutTest = holdout.report?.pairedTest?.overall ?? null;
   const personaNames = Object.fromEntries(personas.map((p) => [p.id, p.name]));
   const { before, after, comparison, overall } = data;
   const cross = data.byDomains.find((g) => g.key === "cross");
@@ -112,6 +118,12 @@ export default async function BeforeAfterResultsPage() {
                 {plural(organic.after.cases, "multi-domain case")} the gap is smaller but still there ({passed(organic)}).
               </p>
             )}
+            {holdoutCross?.after && holdoutCross.before && (
+              <p>
+                On {holdout.caseCount} held-out questions, written after the skills were frozen, the pattern held: on
+                those needing a second domain, {passed(holdoutCross)}.
+              </p>
+            )}
           </>
         ) : (
           <p>The case groups need both results files.</p>
@@ -152,6 +164,49 @@ export default async function BeforeAfterResultsPage() {
           ]}
         />
       </section>
+
+      {holdout.overall?.after && holdout.overall.before && (
+        <section aria-labelledby="holdout" className="flex flex-col gap-4">
+          <SectionHeader id="holdout" eyebrow="Held-out check" title={`On ${holdout.caseCount} questions the skills were never tuned to`}>
+            <p>
+              The skill edits were made by reading failures on the main set, so part of its gap could be tuning. These
+              cases were written after the skills were frozen, by drafting agents that never saw an eval result, and
+              committed with written expectations before either bot ran on them (
+              <a href={HOLDOUT_PLAN} className={LINK}>
+                the plan
+              </a>
+              ). Same skills, code and models as the main run, three runs per case.
+            </p>
+          </SectionHeader>
+          <Dumbbell
+            id="holdout-groups"
+            title="Pass rate on each bot, held-out cases and the main set"
+            description="Held-out rows first; the main set's rows are repeated for comparison."
+            caption="Pass rate on each bot, held-out and main set, by kind of question"
+            emphasisLabel="Can differ"
+            groups={[
+              { title: "Held-out cases", rows: holdout.byDomains.map((g) => ({ ...g, emphasis: g.key === "holdout-cross" })) },
+              { title: "Main set", rows: data.byConstruction.map((g) => ({ ...g, emphasis: g.key !== "single" })) },
+            ]}
+          />
+          <p className="text-sm leading-6 text-slate">
+            {holdoutTest?.meanDiff != null &&
+              `Across all ${holdout.caseCount} held-out cases: ${passed(holdout.overall)} runs, a mean gain of ${points(
+                holdoutTest.meanDiff,
+              )} per case (${pPhrase(holdoutTest.pValue)} on the run-permutation test), with ${plural(
+                holdout.report?.transitions.improved.length ?? 0,
+                "case",
+              )} better on After and ${holdout.report?.transitions.regressed.length ?? 0} worse. `}
+            Two of the three expectations written beforehand did not hold. The gap on held-out questions that need a
+            second domain came out close to the main set&apos;s designed cases, not its other multi-domain cases,
+            mostly because After passed every run; and After passed more of the held-out runs than of the main
+            set&apos;s, not fewer. The one-domain expectation held
+            {holdoutSingle?.after && holdoutSingle.before ? ` (${passed(holdoutSingle)})` : ""}. It is a small check,
+            and its cases were written by LLM agents from the same skill files the facts come from, so it is not
+            independent of how the facts were sourced.
+          </p>
+        </section>
+      )}
 
       {crossGap !== null && singleGap !== null && (
         <section aria-labelledby="mix" className="flex flex-col gap-4">
