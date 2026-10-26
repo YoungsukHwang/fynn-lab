@@ -34,10 +34,20 @@ const MARKS = {
 
 type MarkKind = keyof typeof MARKS;
 
-/** "Ship", or "Lead: ship" when the paired test of the net change does not back the decision. */
+/** "Ship", or "Lead: ship" when the test on the cases the edit could reach does not back the decision. */
 export function decisionLabel(a: Attribution): string {
   const label = DECISIONS[a.decision].label;
   return a.tested === false ? `Lead: ${label.toLowerCase()}` : label;
+}
+
+/** The reached test's p. It is stored rounded, so an exact p just above 0.05 can be stored as 0.05 itself. */
+function reachedPhrase(a: Attribution): string {
+  return a.reachedP === 0.05 && a.reachedSignificant === false ? "p just above 0.05" : pPhrase(a.reachedP);
+}
+
+/** A significant test on the reached cases that still leaves a Ship or Do not ship a lead: those cases moved the other way. */
+function movedAgainst(a: Attribution): boolean {
+  return a.decision !== "tradeoff" && a.tested === false && a.reachedSignificant === true;
 }
 
 function DecisionChip({ attribution, shipped }: { attribution: Attribution; shipped: string | null }) {
@@ -51,17 +61,40 @@ function DecisionChip({ attribution, shipped }: { attribution: Attribution; ship
   );
 }
 
-/** The report's own evidence next to the decision: the flag-rule verdict, the paired test, the hypothesis. */
+/** The report's own evidence next to the decision: the test on the reached cases, the net-change test, the prediction. */
 function Evidence({ comparison }: { comparison: Comparison }) {
   const { report } = comparison;
   const test = report.pairedTest;
   const hyp = report.hypothesisResult;
   const runs = report.flagRule ? Math.max(report.flagRule.baselineRepeats, report.flagRule.candidateRepeats) : 1;
+  const a = report.attribution;
   return (
     <dl className="mt-3 grid gap-x-4 gap-y-1 rounded-xl bg-canvas px-3 py-2.5 text-sm leading-6 sm:grid-cols-[11rem_minmax(0,1fr)]">
+      {a && (
+        <>
+          <dt className="text-slate">Test on reached cases</dt>
+          <dd className="text-ink">
+            {a.reachedP === null
+              ? runs === 1
+                ? "no case it could reach flipped"
+                : "no case it could reach was flagged"
+              : `${reachedPhrase(a)}, ${
+                  runs === 1 ? `on ${a.fixed.length} fixed against ${a.broken.length} broken` : `${runsPerCase(runs)} per case`
+                } (${
+                  a.decision === "tradeoff"
+                    ? "a tradeoff stays a lead whatever it shows"
+                    : movedAgainst(a)
+                      ? "but the reached cases moved the other way, so it does not back the decision"
+                      : "the one that decides"
+                })`}
+          </dd>
+        </>
+      )}
       <dt className="text-slate">Net-change test</dt>
       <dd className="text-ink">
-        {test ? `${pPhrase(test.overall.pValue, test.alpha)}, ${runsPerCase(runs)} per case` : "not run"}
+        {test
+          ? `${pPhrase(test.overall.pValue, test.alpha)} on every ${runs === 1 ? "flip" : "case"}, ${runsPerCase(runs)} per case`
+          : "not run"}
       </dd>
       {hyp && (
         <>
@@ -153,7 +186,7 @@ export function EditScorecard({ edits }: { edits: EditResult[] }) {
                 <th scope="col" className="py-2 pr-3 font-semibold">Fixed</th>
                 <th scope="col" className="py-2 pr-3 font-semibold">Broken</th>
                 <th scope="col" className="py-2 pr-3 font-semibold">By chance</th>
-                <th scope="col" className="py-2 pr-3 font-semibold">Net-change test</th>
+                <th scope="col" className="py-2 pr-3 font-semibold">Test on reached cases</th>
                 <th scope="col" className="py-2 font-semibold">Decision</th>
               </tr>
             </thead>
@@ -167,9 +200,7 @@ export function EditScorecard({ edits }: { edits: EditResult[] }) {
                     <td className="py-2 pr-3 font-mono text-xs">{a.broken.join(", ") || "none"}</td>
                     <td className="py-2 pr-3 font-mono text-xs">{[...a.chanceUp.map((id) => `${id} (now passes)`), ...a.chanceDown.map((id) => `${id} (now fails)`)].join(", ") || "none"}</td>
                     <td className="py-2 pr-3 text-xs">
-                      {edit.comparison?.report.pairedTest
-                        ? pPhrase(edit.comparison.report.pairedTest.overall.pValue, edit.comparison.report.pairedTest.alpha)
-                        : "not run"}
+                      {a.reachedP !== null ? `${reachedPhrase(a)}${movedAgainst(a) ? ", the other way" : ""}` : "n/a"}
                     </td>
                     <td className="py-2">{decisionLabel(a)}{edit.shipped ? ` (shipped ${edit.shipped})` : ""}</td>
                   </tr>

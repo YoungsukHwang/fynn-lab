@@ -124,11 +124,14 @@ export default async function SkillEditsFrameworkPage() {
           fixed cases and broke none, <span className="font-semibold text-ink">Tradeoff</span> when it broke some but
           fixed at least as many, <span className="font-semibold text-ink">Do not ship</span> when it broke more than it
           fixed, and <span className="font-semibold text-ink">No effect</span> when no case it could reach flipped. A
-          case the edit could reach may still have flipped by chance. So unless the paired test of the net change backs
-          it (a significant gain for Ship, a significant loss for Do not ship), the decision is shown as a{" "}
-          <span className="font-semibold text-ink">lead</span> (for example &ldquo;Lead: ship&rdquo;): worth checking
-          with more runs, not proof. A tradeoff is always a lead. The test counts every flip, including those outside
-          the edit&apos;s reach.
+          case the edit could reach may still have flipped by chance. So the decision counts as backed only when an exact
+          test on the cases the edit could reach is significant in the decision&apos;s direction; otherwise it is shown
+          as a <span className="font-semibold text-ink">lead</span> (for example &ldquo;Lead: ship&rdquo;): worth
+          checking with more runs, not proof. A tradeoff is always a lead. With one run per case the test compares fixed
+          against broken, so a Ship needs at least six fixed cases and none broken, and a Do not ship at least six
+          broken and none fixed (or eight against one); with more runs it is the run-permutation test on those cases.
+          Whether a case is reached depends on its routing, not on its result, so the cases outside the reach can be
+          set aside for this test.
         </p>
       </section>
 

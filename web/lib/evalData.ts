@@ -238,6 +238,8 @@ export interface PairedTest {
   family: number; // per-dataset p-values in the Holm family
   overall: PairedTestRow;
   byDataset: Record<string, PairedTestRow>;
+  // Counting cases instead of runs: cases better against worse, as an exact sign test. Null in older reports.
+  caseLevel: { cases: number; better: number; worse: number; pValue: number | null } | null;
 }
 
 export interface NoiseRow {
@@ -500,6 +502,14 @@ function toPairedTest(value: unknown): PairedTest | null {
     family: num(value.family, Object.values(byDataset).filter((row) => row.pValue !== null).length),
     overall: toTestRow(value.overall),
     byDataset,
+    caseLevel: isObj(value.case_level)
+      ? {
+          cases: num(value.case_level.cases),
+          better: num(value.case_level.better),
+          worse: num(value.case_level.worse),
+          pValue: numOrNull(value.case_level.p_value),
+        }
+      : null,
   };
 }
 
@@ -901,7 +911,13 @@ export interface Attribution {
   chanceDown: string[];
   errored: string[]; // left out: one side had only errored runs
   decision: Decision;
-  tested: boolean | null; // the paired test backs the decision; false makes it a lead; null in older reports
+  tested: boolean | null; // the test on the reached cases backs the decision; false makes it a lead; null in older reports
+  // The test on the cases the edit could reach: exact McNemar on fixed against broken with one run per case,
+  // the run-permutation test on every reached case with more. Null for No effect and in older reports.
+  reachedP: number | null;
+  // Whether that test is significant (exact, unlike reachedP). Significant but not backed: the reached cases
+  // moved against the decision, or the decision is a tradeoff.
+  reachedSignificant: boolean | null;
 }
 
 function toAttribution(value: unknown): Attribution | null {
@@ -916,6 +932,8 @@ function toAttribution(value: unknown): Attribution | null {
     errored: strList(value.errored),
     decision: (["ship", "tradeoff", "do not ship", "no effect"].includes(decision) ? decision : "no effect") as Decision,
     tested: typeof value.tested === "boolean" ? value.tested : null,
+    reachedP: numOrNull(value.reached_p),
+    reachedSignificant: typeof value.reached_significant === "boolean" ? value.reached_significant : null,
   };
 }
 
@@ -1200,6 +1218,8 @@ export interface CaseGroup {
   note: string;
   before: GroupStat | null;
   after: GroupStat | null;
+  // Cases whose pass share is higher on After (better) or lower (worse); null when a side is missing.
+  shift: { better: number; worse: number } | null;
 }
 
 export interface BeforeAfterData {
@@ -1209,7 +1229,7 @@ export interface BeforeAfterData {
   overall: CaseGroup | null;
   byDomains: CaseGroup[]; // cases whose labeled skills need one Before domain vs more than one
   // The multi-domain cases written so a Before agent cannot pass them, the other multi-domain cases, and
-  // the one-domain cases: the designed group shows the mechanism, the others how big the gap is elsewhere.
+  // the one-domain cases: the designed group shows the mechanism, the others a rough read of the gap elsewhere.
   byConstruction: CaseGroup[];
   crossByQuestions: CaseGroup[]; // the cases that need a second domain, split by number of questions
   byQuestions: CaseGroup[];
@@ -1217,6 +1237,24 @@ export interface BeforeAfterData {
   crossDomain: { ids: string[]; domains: Record<string, string[]> }; // case id -> Before domains it spans
   pending: string[]; // cases in the eval set that the committed results do not cover yet
   caseCount: number;
+}
+
+function caseShift(before: Run | null, after: Run | null, ids: Set<string>): { better: number; worse: number } | null {
+  if (!before || !after) return null;
+  const share = (run: Run, id: string) => {
+    const c = run.cases.find((x) => x.id === id);
+    return c && c.repeats ? c.passes / c.repeats : null;
+  };
+  let better = 0;
+  let worse = 0;
+  for (const id of ids) {
+    const b = share(before, id);
+    const a = share(after, id);
+    if (a === null || b === null) continue;
+    if (a > b) better += 1;
+    else if (a < b) worse += 1;
+  }
+  return { better, worse };
 }
 
 function groupStat(run: Run | null, ids: Set<string>): GroupStat | null {
@@ -1255,7 +1293,7 @@ export async function getBeforeAfterData(): Promise<BeforeAfterData> {
 
   const group = (key: string, label: string, note: string, ids: string[]): CaseGroup => {
     const set = new Set(ids);
-    return { key, label, note, before: groupStat(before, set), after: groupStat(after, set) };
+    return { key, label, note, before: groupStat(before, set), after: groupStat(after, set), shift: caseShift(before, after, set) };
   };
   const questions = (n: number) => (n === 1 ? "1 question" : `${n} questions`);
   const hasCases = (g: CaseGroup) => (g.after?.cases ?? g.before?.cases ?? 0) > 0;
@@ -1346,7 +1384,7 @@ export async function getHoldoutData(): Promise<HoldoutData> {
   const cross = new Set(cases.filter((c) => caseDomains(c, skillDomain).length > 1).map((c) => c.id));
   const group = (key: string, label: string, note: string, ids: string[]): CaseGroup => {
     const set = new Set(ids);
-    return { key, label, note, before: groupStat(before, set), after: groupStat(after, set) };
+    return { key, label, note, before: groupStat(before, set), after: groupStat(after, set), shift: caseShift(before, after, set) };
   };
   return {
     caseCount: cases.length,
@@ -1466,6 +1504,7 @@ export interface PairedFlip {
   down: number;
   meanDiff: number | null; // b's pass share minus a's, averaged over cases
   p: number | null;
+  signP: number | null; // counting cases instead of runs (exact sign test); null in older reports
 }
 
 export interface JudgeRow {
@@ -1486,6 +1525,8 @@ export interface HumanJudgeRow {
   interval: [number, number] | null;
   stricter: number;
   lenient: number;
+  weightedRate: number | null; // agreement weighted back to each stratum's share of all replies
+  kappa: number | null;
   repliesJudgeFailed: number | null; // whole replies the judge failed, and of those the ones the person passed
   repliesPersonPassed: number | null;
   repliesJudgePassedPersonFailed: number | null;
@@ -1500,7 +1541,9 @@ export interface ModelsData {
   // Passing runs per model (by source) if replies over each cutoff counted as failures.
   lengthSensitivity: { cutoff: number; passed: Record<string, number> }[];
   judges: JudgeRow[];
-  human: { labeledItems: number; items: number; judges: HumanJudgeRow[] } | null; // null until labels exist
+  // null until labels exist; targetedLenient: facts the eval's judge passed and the person did not, among the
+  // targeted replies (picked because the judge looked inconsistent, so not part of the agreement rate).
+  human: { labeledItems: number; items: number; judges: HumanJudgeRow[]; targetedLenient: number } | null;
 }
 
 function toPaired(raw: Obj): PairedFlip {
@@ -1513,6 +1556,7 @@ function toPaired(raw: Obj): PairedFlip {
     down: num(raw.down),
     meanDiff: numOrNull(raw.mean_diff),
     p: numOrNull(raw.p),
+    signP: numOrNull(raw.sign_p),
   };
 }
 
@@ -1582,6 +1626,12 @@ export async function getModelsData(): Promise<ModelsData> {
         ? {
             labeledItems: num(human.labeled_items),
             items: num(human.items),
+            targetedLenient: objList(human.targeted)
+              .flatMap((item) => objList(item.facts))
+              .filter((f) => {
+                const original = Object.entries(f).find(([key]) => key.startsWith("original"))?.[1];
+                return original === "PRESENT" && f.human !== "PRESENT";
+              }).length,
             judges: Object.entries(humanJudges)
               .filter((entry): entry is [string, Obj] => isObj(entry[1]))
               .map(([name, j]) => {
@@ -1597,6 +1647,8 @@ export async function getModelsData(): Promise<ModelsData> {
                   repliesJudgeFailed: numOrNull(j.replies_judge_fail),
                   repliesPersonPassed: numOrNull(j.replies_judge_fail_human_pass),
                   repliesJudgePassedPersonFailed: numOrNull(j.replies_judge_pass_human_fail),
+                  weightedRate: numOrNull(j.weighted_rate_binary),
+                  kappa: numOrNull(j.kappa_binary),
                 };
               }),
           }

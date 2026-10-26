@@ -174,8 +174,8 @@ export default async function BeforeAfterFrameworkPage() {
             question beyond the Before router&apos;s likely pick was built around a fact only another domain&apos;s skill
             held, so a Before agent should rarely pass them. (One no longer fits: a later skill edit copied its fact into
             a skill of the Before router&apos;s pick.) They show the mechanism. The results page reports them apart from
-            the other multi-domain cases, which show how big the gap is when a case was not built around the Before
-            domains.
+            the other multi-domain cases, which give a rough read of the gap when a case was not built around the
+            Before domains.
           </p>
         </SectionHeader>
 

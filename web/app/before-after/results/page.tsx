@@ -98,6 +98,8 @@ export default async function BeforeAfterResultsPage() {
   const crossGap = gap(cross);
   const organicGap = gap(organic);
   const singleGap = gap(single);
+  const heldGap = gap(holdoutCross);
+  const heldSingleGap = gap(holdoutSingle);
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
@@ -115,7 +117,8 @@ export default async function BeforeAfterResultsPage() {
               <p>
                 {plural(designed.after.cases, "of the multi-domain case")} were written for this comparison around facts
                 a Before agent lacks, and Before rarely passes them ({passed(designed)}). On the other{" "}
-                {plural(organic.after.cases, "multi-domain case")} the gap is smaller but still there ({passed(organic)}).
+                {plural(organic.after.cases, "multi-domain case")} the gap is smaller and less certain ({passed(organic)}
+                {organic.shift ? `; ${organic.shift.better} of them came out better on After and ${organic.shift.worse} worse` : ""}).
               </p>
             )}
             {holdoutCross?.after && holdoutCross.before && (
@@ -146,8 +149,8 @@ export default async function BeforeAfterResultsPage() {
               how this is counted
             </Link>
             ). Most of those cases were written for this comparison, with every extra question built around a fact only
-            another domain&apos;s skill held, so they show the mechanism; the other multi-domain cases show how big the
-            gap is when a case was not built around the Before domains.
+            another domain&apos;s skill held, so they show the mechanism; the other multi-domain cases give a rough read of
+            the gap when a case was not built around the Before domains, since only a few of them came out differently.
           </p>
         </SectionHeader>
         <Dumbbell
@@ -193,10 +196,11 @@ export default async function BeforeAfterResultsPage() {
             {holdoutTest?.meanDiff != null &&
               `Across all ${holdout.caseCount} held-out cases: ${passed(holdout.overall)} runs, a mean gain of ${points(
                 holdoutTest.meanDiff,
-              )} per case (${pPhrase(holdoutTest.pValue)} on the run-permutation test), with ${plural(
-                holdout.report?.transitions.improved.length ?? 0,
-                "case",
-              )} better on After and ${holdout.report?.transitions.regressed.length ?? 0} worse. `}
+              )} per case. The run-permutation test (${pPhrase(holdoutTest.pValue)}) says only that the gap beats run-to-run noise on these questions. `}
+            {holdout.report?.pairedTest?.caseLevel &&
+              `Counting the cases as a sample of questions, ${holdout.report.pairedTest.caseLevel.better} came out better on After and ${holdout.report.pairedTest.caseLevel.worse} worse (sign test ${pPhrase(holdout.report.pairedTest.caseLevel.pValue)})${
+                holdoutCross?.shift ? `; on those needing a second domain, ${holdoutCross.shift.better} better and ${holdoutCross.shift.worse} worse` : ""
+              }. `}
             Two of the three expectations written beforehand did not hold. The gap on held-out questions that need a
             second domain came out close to the main set&apos;s designed cases, not its other multi-domain cases,
             mostly because After passed every run; and After passed more of the held-out runs than of the main
@@ -214,7 +218,9 @@ export default async function BeforeAfterResultsPage() {
             <p>
               The overall gain depends on how often members ask questions that need a second domain, which nobody has
               measured here. It is the share of such questions times their gap, plus the rest times the one-domain gap.
-              The lower figure uses only the multi-domain cases not written for this comparison.
+              The first column uses only the main set&apos;s multi-domain cases not written for this comparison
+              {organic?.shift ? `, and only ${organic.shift.better + organic.shift.worse} of those ${organic.after?.cases ?? 9} came out differently, so it is a rough figure` : ""}
+              . The last column uses the held-out cases, which were never tuned to.
             </p>
           </SectionHeader>
           <div className="overflow-x-auto rounded-2xl border border-line bg-white">
@@ -224,6 +230,9 @@ export default async function BeforeAfterResultsPage() {
                   <th className="px-4 py-3">Share needing a second domain</th>
                   <th className="px-4 py-3 text-right">Expected gain, other multi-domain cases</th>
                   <th className="px-4 py-3 text-right">Expected gain, all multi-domain cases</th>
+                  {heldGap !== null && heldSingleGap !== null && (
+                    <th className="px-4 py-3 text-right">Expected gain, held-out cases</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -234,6 +243,9 @@ export default async function BeforeAfterResultsPage() {
                       {organicGap === null ? "n/a" : points(share * organicGap + (1 - share) * singleGap)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{points(share * crossGap + (1 - share) * singleGap)}</td>
+                    {heldGap !== null && heldSingleGap !== null && (
+                      <td className="px-4 py-3 text-right tabular-nums">{points(share * heldGap + (1 - share) * heldSingleGap)}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -273,6 +285,8 @@ export default async function BeforeAfterResultsPage() {
             `Here it gives ${pPhrase(test.overall.pValue, test.alpha)}, from the cases ${
               repeated ? "whose runs did not all agree" : "that flipped"
             }.`}{" "}
+          {test?.caseLevel &&
+            `Counting cases instead of runs, ${test.caseLevel.better} came out better on After and ${test.caseLevel.worse} worse (sign test ${pPhrase(test.caseLevel.pValue, test.alpha)}).`}{" "}
           {cost?.baseline && cost.candidate
             ? `Cost per 1,000 replies, answer and router at list prices with a warm cache: Before $${cost.baseline.toFixed(2)}, After $${cost.candidate.toFixed(2)}.`
             : ""}

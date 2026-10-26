@@ -50,8 +50,10 @@ export default async function SkillEditsResultsPage() {
           the same prompt can pass once and fail the next time, and the router now and then changes its picks.
         </p>
         <p>
-          Three smaller routing fixes to skill descriptions shipped on 2026-10-23 alongside the cap change; their
-          reports are in the repository&apos;s history rather than on this page.
+          Three smaller routing fixes to skill descriptions also shipped on 2026-10-23 alongside the cap change, as
+          leads too (each fixed one or two cases it could reach and broke none), together with three skill-text fixes
+          that were not tested on their own. Their reports are in the repository&apos;s history rather than on this
+          page.
         </p>
       </PageHero>
 
@@ -63,10 +65,11 @@ export default async function SkillEditsResultsPage() {
         <SectionHeader id="scorecard" eyebrow="All edits" title="Fixed, broken, or chance">
           <p>
             Ship means the edit fixed cases and broke none. Tradeoff means it broke some but fixed at least as many. Do
-            not ship means it broke more than it fixed. No effect means no case it could reach flipped. A decision the
-            paired test of the net change does not back (a significant gain for Ship, a significant loss for Do not
-            ship) is shown as a lead, such as &ldquo;Lead: ship&rdquo;: a case the edit could reach may still have
-            flipped by chance. With one run per case, few edits flip enough cases for the test to back them.
+            not ship means it broke more than it fixed. No effect means no case it could reach flipped. A decision is
+            backed only when an exact test on the cases the edit could reach is significant; otherwise it is shown as a
+            lead, such as &ldquo;Lead: ship&rdquo;: a case the edit could reach may still have flipped by chance. With
+            one run per case a Ship needs six fixed cases and none broken, and a Do not ship six broken and none fixed
+            (or eight against one). None of these got there.
           </p>
         </SectionHeader>
         {ran.length ? (

@@ -48,7 +48,8 @@ function FlipLine({ rows, flip }: { rows: ModelRow[]; flip: PairedFlip }) {
         {sourceName(rows, flip.a)} to {sourceName(rows, flip.b)}:
       </span>{" "}
       {flip.up} cases {verb} on {sourceName(rows, flip.b)}, {flip.down} {rest} on {sourceName(rows, flip.a)},{" "}
-      {pPhrase(flip.p)}.
+      {pPhrase(flip.p)}
+      {flip.signP !== null && flip.method !== "mcnemar_exact" ? `; counting cases instead of runs, ${pPhrase(flip.signP)}` : ""}.
     </li>
   );
 }
@@ -203,7 +204,8 @@ export default async function ModelsPage() {
           {topPair && middle && priciest && topPair.p !== null && topPair.p >= 0.05 && (
             <p className="mt-2">
               So {modelName(middle.model)} and {modelName(priciest.model)} could not be told apart with {runsPhrase(repeats)}.
-              That is not proof they are equally good: a gap of a few cases would not show at this size.
+              That is not proof they are equally good: a gap of a few cases would not show at this size. The run test
+              holds these 64 cases fixed; counting cases as a sample of questions gives a much weaker signal still.
             </p>
           )}
         </div>
@@ -345,11 +347,11 @@ export default async function ModelsPage() {
         {humanOriginal && (
           <div className="rounded-2xl border border-lime-soft bg-lime-soft p-4 text-sm leading-6 text-forest sm:p-5">
             <p className="font-semibold">
-              On {humanOriginal.replies} replies drawn at random ({humanOriginal.facts} facts), the eval&apos;s judge
-              agreed with the person on {percent(humanOriginal.rate)} of facts
+              On {humanOriginal.replies} sampled replies ({humanOriginal.facts} facts), the eval&apos;s judge agreed with
+              the person on {percent(humanOriginal.rate)} of facts
               {humanOriginal.interval ? ` (${percent(humanOriginal.interval[0])} to ${percent(humanOriginal.interval[1])})` : ""}
               {humanOriginal.lenient === 0 && humanOriginal.stricter > 0
-                ? `, and it was never the more lenient one: in all ${humanOriginal.stricter} disagreements it failed a fact the person passed.`
+                ? `; in all ${humanOriginal.stricter} disagreements it failed a fact the person passed.`
                 : "."}
             </p>
             {humanOriginal.repliesJudgeFailed !== null &&
@@ -359,10 +361,23 @@ export default async function ModelsPage() {
                   The person passed every reply the judge passed, and would also have passed{" "}
                   {humanOriginal.repliesPersonPassed} of the {humanOriginal.repliesJudgeFailed} it failed. In those, the
                   reply left out one detail of a fact, such as how often free reports are available or that the effect
-                  depends on the scoring model, that the person let pass and the judge did not. So the pass rates on this site are strict; both bots
-                  are graded by the same judge against the same facts.
+                  depends on the scoring model, that the person let pass and the judge did not. So the pass rates on this site
+                  are likely strict.
                 </p>
               )}
+            <p className="mt-1">
+              The replies were drawn at random within each answer model and the judge&apos;s own pass or fail, which
+              over-samples failures
+              {humanOriginal.weightedRate !== null ? `; weighted back to each group's real share, agreement is ${percent(humanOriginal.weightedRate)}` : ""}
+              {humanOriginal.kappa !== null ? `. On the unweighted sample, Cohen's kappa is ${humanOriginal.kappa.toFixed(2)}` : ""}. Whole verdicts agreed on{" "}
+              {humanOriginal.replies - (humanOriginal.repliesPersonPassed ?? 0) - (humanOriginal.repliesJudgePassedPersonFailed ?? 0)} of{" "}
+              {humanOriginal.replies} replies.
+              {data.human && data.human.targetedLenient > 0
+                ? ` Among the extra replies picked because the judge looked inconsistent, it once passed a fact the person marked missing.`
+                : ""}{" "}
+              Every labeled reply came from the After bot, so whether the judge is as strict with Before&apos;s replies
+              was not measured.
+            </p>
             {closerJudge && (
               <p className="mt-1">
                 {judgeName(closerJudge.name)} agreed with the person on {closerFacts} more{" "}
