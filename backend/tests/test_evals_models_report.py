@@ -76,6 +76,7 @@ def test_paired_counts_flips_with_and_without_the_length_cap() -> None:
     b = _run("m2", [_case("c1", [], True), _case("c2", [], True), _case("c3", [], True)])
     assert mr.paired(a, b) == {
         "cases": 3, "left_out": 0, "method": "mcnemar_exact", "up": 1, "down": 0, "mean_diff": 0.3333, "p": 1.0,
+        "sign_p": 1.0,  # with one run per case, the sign test is McNemar
     }
     assert mr.paired(a, b, cutoff=300)["up"] == 2  # c3 fails on a once its 400 words count
 
@@ -97,6 +98,8 @@ def test_repeated_runs_count_every_run_and_give_a_flip_rate(mini_library: SkillL
     other = _run("claude-haiku-5-5", [_repeated("c1", [False, False, False]), _repeated("c2", [True, False, False])])
     test = mr.paired(other, results)
     assert (test["method"], test["up"], test["down"]) == ("run_permutation", 2, 0)
+    # Counting cases, two up and none down is far from significant, though the runs are closer to it.
+    assert test["sign_p"] == 0.5 and test["p"] < test["sign_p"]
 
 
 def _regrade(label: str, model: str, source: str, rows: list[tuple[str, bool]]) -> dict[str, Any]:
@@ -140,7 +143,9 @@ def test_build_report_orders_by_cost_and_compares_neighbours(mini_library: Skill
     assert report["router_usage_from"] is None
     assert [row["cutoff"] for row in report["length_sensitivity"]] == list(mr.LENGTH_CUTOFFS)
     assert report["length_sensitivity"][0]["passed"] == {"after-haiku": 0, "after-sonnet": 1, "after-opus": 1}
-    assert mr.render_markdown(report).startswith("# Answer model and judge")
+    text = mr.render_markdown(report)
+    assert text.startswith("# Answer model and judge")
+    assert "- after-haiku to after-sonnet (mcnemar_exact): 1 up, 0 down, p = 1.0; counting cases (sign test), p = 1.0" in text
 
 
 def test_cli_writes_the_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

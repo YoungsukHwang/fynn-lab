@@ -435,3 +435,24 @@ def test_quantile_interpolation_matches_numpy_default() -> None:
     assert _quantile(values, 0.5) == 1.5
     assert _quantile(values, 0.0) == 0.0 and _quantile(values, 1.0) == 3.0
     assert math.isclose(_quantile(values, 0.25), 0.75)
+
+
+def test_case_sign_test_counts_cases_not_runs() -> None:
+    from evals.stats import case_sign_test
+
+    def case(cid: str, outcomes: list[bool]) -> dict:
+        return {"id": cid, "dataset": "single_topic", "persona": "p", "passed": sum(outcomes) * 2 > len(outcomes),
+                "runs": [{"passed": ok, "status": "ok"} for ok in outcomes]}
+
+    pairs = [(case(f"c{i}", [False, False, False]), case(f"c{i}", [True, True, True])) for i in range(9)]
+    pairs.append((case("c9", [True, True, False]), case("c9", [True, False, False])))  # one case worse
+    pairs.append((case("c10", [True, True, True]), case("c10", [True, True, True])))  # a tie drops out
+    assert case_sign_test(pairs) == {"cases": 11, "better": 9, "worse": 1, "p_value": 0.021484}
+    # Errored runs are left out of a case's share, and a case with none left on a side drops out.
+    errored = {"passed": False, "status": "error"}
+    with_errors = case("c11", [True, True])
+    with_errors["runs"].append(errored)
+    only_errors = {**case("c12", []), "runs": [errored]}
+    assert case_sign_test([(case("c11", [True, False, True]), with_errors), (only_errors, case("c12", [True]))]) == {
+        "cases": 1, "better": 1, "worse": 0, "p_value": 1.0}
+    assert case_sign_test([(only_errors, case("c12", [True]))]) is None

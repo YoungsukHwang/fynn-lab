@@ -610,7 +610,7 @@ def test_flips_the_edit_cannot_reach_are_chance() -> None:
     assert report["attribution"] == {
         "rule": "a body edit can reach a case only when the edited skill (for the Before bot, its domain) is loaded on both sides",
         "fixed": ["st-001"], "broken": [], "chance_up": ["st-002"], "chance_down": ["mi-001"], "errored": [],
-        "decision": "ship", "tested": False,
+        "decision": "ship", "tested": False, "reached_p": 1.0, "reached_significant": False,
     }
     text = render_markdown(report)
     assert text.splitlines()[2].startswith("**Decision: Ship, as a lead.** The change fixed 1 case and broke none")
@@ -743,19 +743,94 @@ def test_a_description_edit_with_a_cap_change_also_counts_where_the_cap_mattered
     assert compare(base, cand, desc)["attribution"]["fixed"] == ["st-001"]
 
 
-def test_the_paired_test_backs_a_decision_only_in_its_direction() -> None:
-    from evals.report import backed
+ALWAYS_ON = Scenario(
+    id="s9", title="t", kind="always_on", skill="tone", change="c", motivation="m",
+    hypothesis={"expected": "improve", "detail": "d"},
+)
 
-    gain = {"overall": {"significant": True, "mean_diff": 0.4}}
-    loss = {"overall": {"significant": True, "mean_diff": -0.4}}
-    noise = {"overall": {"significant": False, "mean_diff": 0.4}}
-    assert backed("ship", gain) is True and backed("ship", loss) is False and backed("ship", noise) is False
-    assert backed("do not ship", loss) is True and backed("do not ship", gain) is False
-    assert backed("tradeoff", gain) is False and backed("tradeoff", loss) is False
-    assert backed("no effect", gain) is None and backed("ship", None) is False
+
+def _flips(fixed: int, broken: int, scenario: Scenario = ALWAYS_ON) -> dict:
+    """A one-run report where every case is reached: `fixed` cases go from fail to pass, `broken` the other way."""
+    ids = [f"st-{i:03d}" for i in range(fixed + broken)]
+    base = _results([_case(i, n >= fixed) for n, i in enumerate(ids)])
+    cand = _results([_case(i, n < fixed) for n, i in enumerate(ids)])
+    return compare(base, cand, scenario)["attribution"]
+
+
+def test_the_test_on_reached_flips_backs_a_decision() -> None:
+    # With one run per case the test is exact McNemar on fixed against broken. A Ship needs six fixed and
+    # none broken (p = 0.031; five gives 0.0625); a Do not ship, six broken and none fixed, or eight against one.
+    assert [(a["decision"], a["reached_p"], a["tested"]) for a in (_flips(6, 0), _flips(5, 0))] == [
+        ("ship", 0.03125, True), ("ship", 0.0625, False)]
+    assert [(a["decision"], a["reached_p"], a["tested"]) for a in (_flips(0, 6), _flips(1, 7), _flips(1, 8))] == [
+        ("do not ship", 0.03125, True), ("do not ship", 0.070312, False), ("do not ship", 0.039062, True)]
+    # A tradeoff stays a lead even when the test is significant, and the line says why.
+    tradeoff = _flips(9, 1)
+    assert (tradeoff["decision"], tradeoff["reached_p"], tradeoff["tested"]) == ("tradeoff", 0.021484, False)
+    assert decision_line(tradeoff).endswith(
+        " A tradeoff stays a lead whatever the test shows, since it broke 1 case it could reach"
+        " (the test on the cases it could reach gives p = 0.021).")
     line = decision_line({"decision": "no effect", "fixed": [], "broken": [], "chance_up": ["st-001"],
-                          "chance_down": [], "errored": [], "tested": None})
+                          "chance_down": [], "errored": [], "tested": None, "reached_p": None})
     assert line.startswith("**Decision: No effect.**") and "lead" not in line
+    lead = decision_line({"decision": "ship", "fixed": ["a"] * 5, "broken": [], "chance_up": ["b"], "chance_down": [],
+                          "errored": [], "tested": False, "reached_p": 0.0625, "reached_significant": False})
+    assert lead.startswith("**Decision: Ship, as a lead.**") and "gives p = 0.063, so a reached flip may still be chance" in lead
+
+
+def test_a_reached_p_just_above_alpha_is_not_shown_as_alpha() -> None:
+    # Errored runs leave mixed run counts, where the exact p can be 0.050000375: stored as 0.05, not significant.
+    pairs = [([T, E, E], [F, E, E]), ([T, F, E], [F, F, F]), ([T, F, F], [T, F, E]), ([F, F, F], [T, F, F]),
+             ([F, F, F], [T, T, F]), ([F, F, F], [T, T, T]), ([T, F, F], [T, T, T]), ([T, F, F], [T, T, T])]
+    pairs += [([T, T, F], [T, T, T])] * 4
+    base = _repeated_results([_repeated(f"st-{i:03d}", b, persona=f"p{i}") for i, (b, _) in enumerate(pairs)])
+    cand = _repeated_results([_repeated(f"st-{i:03d}", c, persona=f"p{i}") for i, (_, c) in enumerate(pairs)])
+    a = compare(base, cand, ALWAYS_ON)["attribution"]
+    assert (a["decision"], a["reached_p"], a["reached_significant"], a["tested"]) == ("ship", 0.05, False, False)
+    assert decision_line(a).endswith(
+        " The test on the cases it could reach gives p just above 0.05, so a reached flip may still be chance.")
+
+
+def test_only_reached_flips_decide_not_every_flip() -> None:
+    # The S4 shape: five reached fixes and one chance improvement. Counting every flip (6 to 0) would be
+    # significant; the five the edit could reach are not.
+    body = ALWAYS_ON.model_copy(update={"kind": "body", "skill": "utilization"})
+    reached = [f"st-{i:03d}" for i in range(5)]
+    base = _results([_routed(_case(i, False), "utilization") for i in reached] + [_case("st-099", False)])
+    cand = _results([_routed(_case(i, True), "utilization") for i in reached] + [_case("st-099", True)])
+    report = compare(base, cand, body)
+    a = report["attribution"]
+    assert (a["fixed"], a["chance_up"]) == (reached, ["st-099"])
+    assert (a["reached_p"], a["tested"]) == (0.0625, False)
+    assert report["paired_test"]["overall"]["p_value"] == 0.03125
+
+
+def test_with_repeats_the_reached_cases_get_the_run_permutation_test() -> None:
+    # One case is fixed (0 of 3, then 3 of 3) and none broken, so the flag rule says Ship. Eight reached
+    # cases that were unstable (2 of 3) fall to 0 of 3: the flag rule cannot label them, but the test on the
+    # reached cases counts them, so the decision is a lead and the line says the cases moved the other way.
+    def run(case_id: str, outcomes: list[bool]) -> dict:
+        return _repeated(case_id, outcomes, persona=f"p{case_id}")
+
+    drops = [f"st-{i:03d}" for i in range(1, 9)]
+    base = _repeated_results([run("st-000", [F, F, F])] + [run(i, [T, T, F]) for i in drops])
+    cand = _repeated_results([run("st-000", [T, T, T])] + [run(i, [F, F, F]) for i in drops])
+    report = compare(base, cand, ALWAYS_ON)
+    a = report["attribution"]
+    assert (a["decision"], a["fixed"], a["broken"]) == ("ship", ["st-000"], [])
+    cells = [(0, 3, 3, 3)] + [(2, 3, 0, 3)] * 8
+    assert a["reached_p"] == round(permutation_test(cells), 6) and a["reached_p"] <= 0.05
+    assert a["tested"] is False and a["reached_significant"] is True
+    assert decision_line(a).endswith("but those cases moved the other way on average, so it does not back the decision.")
+    # Moving the decision's way, the same test backs it.
+    up = compare(base, _repeated_results([run("st-000", [T, T, T])] + [run(i, [T, T, T]) for i in drops]), ALWAYS_ON)
+    assert up["attribution"]["decision"] == "ship" and up["attribution"]["tested"] is True
+
+
+def test_the_summary_counts_cases_as_well_as_runs() -> None:
+    text = render_markdown(compare(REPEATED_BASELINE, REPEATED_CANDIDATE))
+    # st-004 is better; st-001, st-002, st-003 and mi-002 are worse; mi-001 is a tie.
+    assert "Counting cases instead of runs (sign test): 1 better, 4 worse, p = 0.375." in text
 
 
 def test_a_decision_the_paired_test_does_not_back_is_a_lead() -> None:

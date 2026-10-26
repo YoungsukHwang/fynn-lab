@@ -181,6 +181,8 @@ def paired(a: Mapping[str, Any], b: Mapping[str, Any], *, cutoff: int | None = N
         "down": down,
         "mean_diff": None if mean is None else round(mean, 4),
         "p": round(p, 4),
+        # Counting cases instead of runs: up against down as an exact sign test (the same as p with one run).
+        "sign_p": round(mcnemar_exact(up, down), 4),
     }
 
 
@@ -292,7 +294,10 @@ def render_markdown(report: Mapping[str, Any]) -> str:
 
     lines += ["", "Paired by case (up: the second passes more often):", ""]
     for p in report["paired"]:
-        lines.append(f"- {p['a']} to {p['b']} ({p['method']}): {p['up']} up, {p['down']} down, {pval(p['p'])}")
+        lines.append(
+            f"- {p['a']} to {p['b']} ({p['method']}): {p['up']} up, {p['down']} down, {pval(p['p'])}; "
+            f"counting cases (sign test), {pval(p['sign_p'])}"
+        )
     names = [r["source"] for r in report["models"]]
     lines += [
         "",

@@ -333,6 +333,21 @@ def _test(pairs: Sequence[Pair], method: str, seed: int) -> tuple[dict[str, Any]
     return {**row, "p_value": _rp(p)}, p
 
 
+def case_sign_test(pairs: Sequence[Pair]) -> dict[str, Any] | None:
+    """Cases whose pass fraction rose against cases where it fell, as a two-sided exact sign test (ties drop).
+
+    The run tests above hold the cases fixed and ask whether a change beats run-to-run noise on them.
+    This one counts cases, so it speaks, more weakly, to questions like them; with one run per case it is
+    the same as exact McNemar."""
+    tested = testable(pairs)
+    if not tested:
+        return None
+    diffs = [Fraction(cp, cr) - Fraction(bp, br) for (bp, br), (cp, cr) in (pair_counts(b, c) for b, c in tested)]
+    better = sum(1 for d in diffs if d > 0)
+    worse = sum(1 for d in diffs if d < 0)
+    return {"cases": len(tested), "better": better, "worse": worse, "p_value": _rp(_mcnemar(better, worse))}
+
+
 def _significant(p: Fraction | float | None, alpha: float) -> bool | None:
     """Exact comparison: alpha is read as the decimal it is written as (0.05 is 1/20)."""
     return None if p is None else Fraction(p) <= Fraction(str(alpha))
@@ -382,6 +397,7 @@ def paired_tests(
         ),
         "overall": overall,
         "by_dataset": by_dataset,
+        "case_level": case_sign_test(pairs),
     }
 
 

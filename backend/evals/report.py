@@ -401,8 +401,9 @@ def attribute(
     scenario: Scenario | None,
 ) -> dict[str, Any]:
     """Splits the improved and regressed cases into those the change could reach (fixed, broken), those
-    it could not (chance) and those with only errored runs on a side (errored, left out), and turns the
-    fixed and broken counts into a decision."""
+    it could not (chance) and those with only errored runs on a side (errored, left out), turns the
+    fixed and broken counts into a decision, and tests the reached cases to see whether that decision is
+    backed or a lead."""
     how, skills = _change(baseline, candidate, scenario)
     # A Before run routes to a whole domain, so an edit reaches it through the edited skill's domain.
     if how in ("body", "description") and candidate.get("bot") == "before":
@@ -419,6 +420,7 @@ def attribute(
         else "ship" if fixed
         else "no effect"
     )
+    test = reached_test([(base, cand) for base, cand in compared if reach.get(cand["id"]) is True])
     return {
         "rule": ATTRIBUTION_RULES[how],
         "fixed": fixed,
@@ -427,25 +429,61 @@ def attribute(
         "chance_down": pick("regressed", False),
         "errored": pick("improved", None) + pick("regressed", None),
         "decision": decision,
+        "reached_p": test["p_value"] if test and decision != "no effect" else None,
+        # Exact, unlike reached_p, which is rounded; a significant test that does not back the decision
+        # moved the other way (or the decision is a tradeoff).
+        "reached_significant": test["significant"] if test and decision != "no effect" else None,
+        "tested": backed(decision, test),
     }
 
 
+def reached_test(reached: Sequence[tuple[Mapping[str, Any], Mapping[str, Any]]], alpha: float = ALPHA) -> dict[str, Any] | None:
+    """The paired test on only the cases the change could reach, every one of them, flagged or not.
+    Whether a case is reached depends on its routing, not on whether it passed, so the cases outside the
+    reach can be set aside; the net-change test counts them too. With one run per case this is exact
+    McNemar on fixed against broken. With more runs it is the run-permutation test on those cases: the
+    flag rule's improved and regressed labels are not equally likely under no change (regressed needs a
+    stable baseline pass, improved a stable fail), so McNemar on them would not be exact."""
+    test = paired_tests(reached, (), alpha=alpha)
+    if test is None or not test["overall"]["cases"]:
+        return None
+    row = test["overall"]
+    return {"method": test["method"], "mean_diff": row["mean_diff"], "p_value": row["p_value"], "significant": row["significant"]}
+
+
 def backed(decision: str, test: Mapping[str, Any] | None) -> bool | None:
-    """Whether the paired test of the net change backs a decision: Ship needs a significant gain and Do not
-    ship a significant loss. A net test cannot back a tradeoff, and No effect has nothing to back (None).
-    The test counts every flip, including those outside the change's reach."""
+    """Whether the test on the reached cases backs a decision. Ship (fixed only) and Do not ship (more broken
+    than fixed) are backed when that test is significant and the reached cases moved the decision's way; a
+    tradeoff never is, and No effect has nothing to back (None)."""
     if decision == "no effect":
         return None
-    overall = (test or {}).get("overall") or {}
-    if not overall.get("significant"):
+    if decision not in ("ship", "do not ship") or test is None or not test["significant"]:
         return False
-    gain = (overall.get("mean_diff") or 0) > 0
-    return gain if decision == "ship" else (not gain) if decision == "do not ship" else False
+    toward = 1 if decision == "ship" else -1
+    return (test["mean_diff"] or 0) * toward > 0
+
+
+def _lead_reason(attribution: Mapping[str, Any]) -> str:
+    """Why a decision is a lead, for the decision line."""
+    p = attribution.get("reached_p")
+    # reached_p is rounded, so an exact p just above alpha can be stored as alpha itself.
+    shown = f"p just above {ALPHA}" if p == ALPHA and attribution.get("reached_significant") is False else _p_eq(p, ALPHA)
+    test = f"the test on the cases it could reach gives {shown}" if p is not None else ""
+    if attribution["decision"] == "tradeoff":
+        broke = len(attribution["broken"])
+        return f" A tradeoff stays a lead whatever the test shows, since it broke {_n(broke, 'case')} it could reach" + (
+            f" ({test})." if test else "."
+        )
+    if p is None:
+        return " The test on the cases it could reach does not back it, so a reached flip may still be chance."
+    if attribution.get("reached_significant"):
+        return f" {test[0].upper()}{test[1:]}, but those cases moved the other way on average, so it does not back the decision."
+    return f" {test[0].upper()}{test[1:]}, so a reached flip may still be chance."
 
 
 def decision_line(attribution: Mapping[str, Any]) -> str:
     """'**Decision: Ship.** The change fixed 3 cases and broke none; 7 other cases flipped by chance.'
-    When the paired test does not back it, the decision is called a lead."""
+    When the test on the cases the change could reach does not back it, the decision is called a lead."""
     chance = len(attribution["chance_up"]) + len(attribution["chance_down"])
     errored = len(attribution.get("errored") or [])
     lead = attribution.get("tested") is False
@@ -456,7 +494,7 @@ def decision_line(attribution: Mapping[str, Any]) -> str:
         + (f"; {_n(chance, 'other case')} flipped outside its reach and {'counts' if chance == 1 else 'count'} as chance" if chance else "")
         + (f"; {_n(errored, 'case')} errored on one side and {'is' if errored == 1 else 'are'} left out" if errored else "")
         + "."
-        + (" The paired test of the net change does not back it, so a reached flip may still be chance." if lead else "")
+        + (_lead_reason(attribution) if lead else "")
     )
 
 
@@ -592,11 +630,10 @@ def compare(
     test = paired_tests(compared, DATASETS)
     verdict = NO_CASES if total == 0 else "Passed" if regressed == 0 else "Not passed"
     # For two runs of one bot with something changed: which flips the change could have caused, and
-    # whether the paired test backs the decision (if not, the decision is a lead to check).
+    # whether the test on the cases it could reach backs the decision (if not, the decision is a lead to check).
     attribution = None
     if baseline.get("bot") == candidate.get("bot") and kind != "aa":
         attribution = attribute(baseline, candidate, compared, transitions, scenario)
-        attribution["tested"] = backed(attribution["decision"], test)
     return {
         "scenario": scenario.model_dump(mode="json") if scenario else ({"id": scenario_id} if scenario_id else None),
         "baseline": _run_info(baseline),
@@ -736,9 +773,16 @@ def test_summary(test: Mapping[str, Any] | None) -> str:
         if row["ci_low"] is not None
         else f"No persona interval: only {_n(row['clusters'], 'persona')} (an interval needs {ci['min_clusters']})."
     )
+    sign = test.get("case_level")
+    by_case = (
+        f" Counting cases instead of runs (sign test): {sign['better']} better, {sign['worse']} worse, "
+        f"{_p_eq(sign['p_value'], alpha)}."
+        if sign
+        else ""
+    )
     return (
         f"Paired test of the net change (exact run-permutation test; {row['informative']} of {_n(row['cases'], 'case')} "
-        f"had runs that disagreed): mean pass-fraction change {_pts(row['mean_diff'])}, {result}. {interval}{left_out}"
+        f"had runs that disagreed): mean pass-fraction change {_pts(row['mean_diff'])}, {result}. {interval}{left_out}{by_case}"
     )
 
 
