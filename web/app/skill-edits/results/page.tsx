@@ -49,6 +49,10 @@ export default async function SkillEditsResultsPage() {
           counts as fixed or broken by the edit only when the edit could reach its prompt. The rest count as chance:
           the same prompt can pass once and fail the next time, and the router now and then changes its picks.
         </p>
+        <p>
+          Three smaller routing fixes to skill descriptions shipped on 2026-10-23 alongside the cap change; their
+          reports are in the repository&apos;s history rather than on this page.
+        </p>
       </PageHero>
 
       <OnThisPage

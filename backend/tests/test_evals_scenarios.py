@@ -110,10 +110,7 @@ def test_unknown_field_is_rejected(tmp_path: Path, skills_dir: Path) -> None:
 REAL = {
     "s1": ("body", "score-changes", "improve"),
     "s2": ("always_on", "response-rules", "regress"),
-    "s3": ("description", "utilization", "tradeoff"),
     "s4": ("body", "credit-builder-account", "improve"),
-    "s5": ("description", "payment-history", "improve"),
-    "s6": ("description", "score-changes", "improve"),
 }
 
 
@@ -133,11 +130,5 @@ def test_real_scenarios(scenario_id: str) -> None:
     if scenario_id == "s2":
         assert "120 words" in skill.body and "250 words" not in skill.body
         assert base.body.replace("250 words", "120 words") == skill.body
-    if scenario_id == "s3":
-        assert "drop" in skill.description.lower()
     if scenario_id == "s4":
         assert "up to 10 years" in skill.body and "see score-changes" not in skill.body
-    if scenario_id == "s5":
-        assert "credit reports for free" in skill.description and "recover" in skill.description
-    if scenario_id == "s6":
-        assert "how long a closed account stays on a report" in skill.description

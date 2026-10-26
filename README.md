@@ -22,8 +22,8 @@ Before vs After and the answer models ran three times per case, on the skills sh
 - **On real traffic the gain depends on the mix.** Nobody has measured how often members ask a question that needs a second domain. If 10% do, the expected gain is about 5 points using the 9 multi-domain cases not built for the comparison, or 8 using all 33; at 30% it is about 12 or 20. The total on this eval set (After 165 of 192 runs, Before 101; a mean gain of 33 points per case, p < 0.001 on a run-permutation test) reflects this set's mix, which leans on multi-domain cases by design, so it is not a forecast.
 - **After costs about 9% less per reply.** $9.57 against $10.50 per 1,000 replies with Sonnet answering, router included, at list prices and assuming a warm prompt cache. Its prompt holds only the picked skills rather than a whole domain's. Answers run at low effort; latency was not recorded.
 - **The same prompt does not always give the same result.** Two runs of the same bot disagree on 10% of cases with Sonnet or Opus answering and 27% with Haiku. The judge alone accounts for about 3%: grading the same replies again changed 6 of 192 verdicts. So a skill edit's flips are split into fixed or broken by the edit (the edit could reach the case) and chance (it could not).
-- **Only one skill edit is backed by its test.** A body edit that put a missing fact into the skill the router already picks (S4) fixed 5 cases and broke none, and its net change is significant (p = 0.031). The test counts every flip, including one the reach rule calls chance; on the five reached cases alone it would give p = 0.0625. The routing fixes through skill descriptions (S3, S5, S6) and the cap of 4 fixed 1 to 3 cases each and broke none, but none of their net changes is significant, so they are leads: a case they reached may still have flipped by chance. They shipped as leads, and a rerun afterwards showed that together they closed the cases every model failed (next point). Shortening the always-on response rules (S2) broke 7 cases and fixed 1.
-- **The shipped edits closed the cases every model failed.** Eight cases failed with Haiku, Sonnet and Opus answering, and seven of them were routing gaps no answer model can fix. With S3, S5, S6, the cap of 4 and three small skill-text fixes, they pass in 23 of 24 runs with Sonnet answering and 24 of 24 with Opus (Haiku: 15). In single runs against the previous After run the bundle fixed 12 cases and broke 7 (p = 0.36), so outside its targets the flips are hard to tell from noise. Two of the eight (`st-001`, `mi-003`) had an expected fact reworded in between, so that comparison leaves them out.
+- **Only one skill edit is backed by its test.** A body edit that put a missing fact into the skill the router already picks (S4) fixed 5 cases and broke none, and its net change is significant (p = 0.031). The test counts every flip, including one the reach rule calls chance; on the five reached cases alone it would give p = 0.0625. Raising the skill cap to 4 fixed the three four-skill cases it could reach and broke none, but its net change is not significant (p = 0.065), so it shipped as a lead: a case it reached may still have flipped by chance. Per-card utilization in score-drop answers (S1) fixed 4 cases and broke 1, a tradeoff; shortening the always-on response rules (S2) broke 7 and fixed 1.
+- **The shipped edits closed the cases every model failed.** Eight cases failed with Haiku, Sonnet and Opus answering, and seven of them were routing gaps no answer model can fix. With S4, the cap of 4, three routing fixes to skill descriptions (scenarios S3, S5 and S6 in the git history) and three small skill-text fixes, they pass in 23 of 24 runs with Sonnet answering and 24 of 24 with Opus (Haiku: 15). In single runs against the previous After run the bundle fixed 12 cases and broke 7 (p = 0.36), so outside its targets the flips are hard to tell from noise. Two of the eight (`st-001`, `mi-003`) had an expected fact reworded in between, so that comparison leaves them out.
 - **Answer model:** the After bot with each model, the same Opus judge. Haiku passed 129 of 192 runs (67%) at $0.82 per 1,000 replies, Sonnet 165 (86%) at $9.57, Opus 174 (91%) at $23.49. Sonnet against Opus is not significant (p = 0.10); Haiku is clearly behind both (p < 0.001). Nothing grades reply length, though the response rules ask for about 250 words, and the ranking depends on where a cap would sit: counting replies over 250 words as failures, Haiku passes the most runs (79, 58 and 50); over 300 words, Opus does (102, 137 and 161).
 - **The judge:** Opus grading the same 192 replies again changed 6 verdicts; Sonnet and Haiku as judges each changed 17 and cost $0.50 and $0.04 per 64 replies, against $1.16 for Opus. A person graded 13 randomly drawn replies blind (48 facts): the Opus judge agreed on 92% of facts (86% to 98%) and was never the more lenient one. The person passed every reply the judge passed and would also have passed 4 of the 7 it failed, each over a detail the reply left out (such as "weekly" or "depends on the scoring model"). So the pass rates are strict, for both bots alike.
 
@@ -31,10 +31,7 @@ Before vs After and the answer models ran three times per case, on the skills sh
 |---|---|---|
 | S1 | score-changes body: give per-card utilization on a score drop | Lead: tradeoff |
 | S2 | response-rules: answers under 120 words instead of 250 | Lead: do not ship |
-| S3 | utilization description: also route score-drop questions | Lead: ship (shipped) |
 | S4 | credit-builder-account body: closed accounts can stay up to 10 years | Ship (shipped) |
-| S5 | payment-history description: free reports, score recovery | Lead: ship (shipped) |
-| S6 | score-changes description: how long closed accounts stay | Lead: ship (shipped) |
 | Cap 4 | the After router may pick 4 new skills instead of 3 | Lead: ship (shipped) |
 
 Skill-edit results are from one run per case. A decision is backed when the paired test of the net change is significant in its direction (a gain for Ship, a loss for Do not ship); otherwise it is a lead to read, not proof. A tradeoff is always a lead.
@@ -114,20 +111,18 @@ FYNN_AGENT_MODEL=claude-opus-5-5 .venv/bin/python -m evals.run --bot after --rep
 
 ### Reproduce the committed reports
 
-The reports need no API. Each skill edit compares the After run its scenario was run against, which has since moved to `results/archive/`. Rerunning a scenario itself needs the commit it was run at (`ac8ccae` for S1 to S3, `f303797` for S4 to S6 and the cap), since S3 to S6 have shipped and the skills have changed.
+The reports need no API. Each skill edit compares the After run its scenario was run against, which has since moved to `results/archive/`. Rerunning a scenario itself needs the commit it was run at (`ac8ccae` for S1 and S2, `f303797` for S4 and the cap), since S4 and the cap have shipped and the skills have changed.
 
 ```bash
 cd backend
 .venv/bin/python -m evals.report --baseline ../results/before.json --candidate ../results/after.json --out ../results/reports/before-vs-after
 .venv/bin/python -m evals.report --baseline ../results/archive/after-2026-10-22T17-15-15.json --candidate ../results/cap4.json --out ../results/reports/cap4
-for s in s1 s2 s3; do
+for s in s1 s2; do
   .venv/bin/python -m evals.report --baseline ../results/archive/after-2026-10-22T01-19-16.json \
     --candidate ../results/scenarios/$s.json --out ../results/reports/$s
 done
-for s in s4 s5 s6; do
-  .venv/bin/python -m evals.report --baseline ../results/archive/after-2026-10-22T17-15-15.json \
-    --candidate ../results/scenarios/$s.json --out ../results/reports/$s
-done
+.venv/bin/python -m evals.report --baseline ../results/archive/after-2026-10-22T17-15-15.json \
+  --candidate ../results/scenarios/s4.json --out ../results/reports/s4
 ```
 
 - **Models report:** the `evals.models_report` command above.

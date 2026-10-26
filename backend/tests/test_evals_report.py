@@ -204,15 +204,16 @@ def test_cli_refuses_to_replace_a_report_of_other_runs_without_force(tmp_path: P
 
 
 def test_cli_refuses_a_baseline_that_does_not_fit_the_scenario(tmp_path: Path) -> None:
-    fp = {"utilization": {"description": "d", "body": "b", "meta": "m"}, "tone": {"description": "t", "body": "t", "meta": "m"}}
-    edited = {**fp, "utilization": {**fp["utilization"], "description": "d2"}, "tone": {**fp["tone"], "body": "t2"}}
+    # scenarios/s4 on disk edits the body of credit-builder-account.
+    fp = {"credit-builder-account": {"description": "d", "body": "b", "meta": "m"}, "tone": {"description": "t", "body": "t", "meta": "m"}}
+    edited = {**fp, "credit-builder-account": {**fp["credit-builder-account"], "body": "b2"}, "tone": {**fp["tone"], "body": "t2"}}
     a, b = tmp_path / "a.json", tmp_path / "b.json"
     a.write_text(json.dumps({**BASELINE, "skill_fingerprint": fp}), encoding="utf-8")
-    b.write_text(json.dumps({**CANDIDATE, "skill_fingerprint": edited}), encoding="utf-8")
+    b.write_text(json.dumps({**CANDIDATE, "scenario": "s4", "skill_fingerprint": edited}), encoding="utf-8")
     args = ["--baseline", str(a), "--candidate", str(b), "--out", str(tmp_path / "r")]
     with pytest.raises(SystemExit, match="also differ in tone"):
         main(args)
-    assert main([*args, "--force"])["scenario"]["id"] == "s3"
+    assert main([*args, "--force"])["scenario"]["id"] == "s4"
 
 
 # ---- Noise and significance ------------------------------------------------------------------
