@@ -364,7 +364,8 @@ export default async function BeforeAfterResultsPage() {
           Before: {before ? `${formatTimestamp(before.meta.createdAt)}, ${runsPerCase(before.meta.repeats)} per case` : "not run"}.
           After: {after ? `${formatTimestamp(after.meta.createdAt)}, ${runsPerCase(after.meta.repeats)} per case` : "not run"}.
           The answering model runs at low effort. The cases, facts and skills were written by the same author, and the
-          shipped skill edits were made after reading failures on these cases, so no case here is held out.
+          shipped skill edits were made after reading failures on these cases, so no case in the main set is held out;
+          the held-out check above uses cases written after the skills were frozen.
         </p>
         {after?.meta.models && <ModelList models={after.meta.models} />}
       </section>

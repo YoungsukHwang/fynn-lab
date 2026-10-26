@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { Demo } from "@/components/Demo";
 import { RecordedDemo } from "@/components/RecordedDemo";
-import { getRecordedDemo } from "@/lib/evalData";
+import { getBeforeAfterData, getHoldoutData, getModelsData, getRecordedDemo } from "@/lib/evalData";
+import { pct } from "@/lib/evalLabels";
 
 // The layout's title template only applies to child segments, so the root page sets its full title.
 export const metadata: Metadata = { title: { absolute: "Demo | Fynn Lab" } };
@@ -13,8 +15,51 @@ const SAME = ["Same skill files", "Same member profile", "Same answer model"];
 const STATIC_SITE = process.env.FYNN_STATIC_SITE === "1";
 const LIVE = !STATIC_SITE || Boolean(process.env.NEXT_PUBLIC_API_URL);
 
+interface Highlight {
+  label: string;
+  value: string;
+  detail: string;
+  href: string;
+}
+
+/** The three results a first-time reader should see, from the committed results (none when a file is missing). */
+async function highlights(): Promise<Highlight[]> {
+  const [main, holdout, models] = await Promise.all([getBeforeAfterData(), getHoldoutData(), getModelsData()]);
+  const cross = main.byDomains.find((g) => g.key === "cross");
+  const heldCross = holdout.byDomains.find((g) => g.key === "holdout-cross");
+  const judge = models.human?.judges.find((j) => j.name.startsWith("original"));
+  const items: Highlight[] = [];
+  if (cross?.after && cross.before) {
+    items.push({
+      label: "Questions that need a second domain",
+      value: `${pct(cross.after.rate)} vs ${pct(cross.before.rate)}`,
+      detail: "of runs passed, After against Before; about even when one domain is enough",
+      href: "/before-after/results",
+    });
+  }
+  if (heldCross?.after && heldCross.before) {
+    items.push({
+      label: "Pre-registered held-out check",
+      value: `${heldCross.after.passed}/${heldCross.after.runs} vs ${heldCross.before.passed}/${heldCross.before.runs}`,
+      detail: "runs passed, After against Before, on new multi-domain questions written after the skills were frozen",
+      href: "/before-after/results#holdout",
+    });
+  }
+  if (judge?.rate != null) {
+    const stricter =
+      judge.lenient === 0 && judge.stricter > 0 ? `; in all ${judge.stricter} disagreements the judge was the stricter one` : "";
+    items.push({
+      label: "LLM judge against a person",
+      value: pct(judge.rate),
+      detail: `of facts graded the same on ${judge.replies} sampled replies, graded blind${stricter}`,
+      href: "/models#judge",
+    });
+  }
+  return items;
+}
+
 export default async function DemoPage() {
-  const recorded = STATIC_SITE ? await getRecordedDemo() : null;
+  const [recorded, results] = await Promise.all([STATIC_SITE ? getRecordedDemo() : null, highlights()]);
   return (
     <div className="flex flex-col gap-6">
       <section className="overflow-hidden rounded-2xl bg-ink px-5 py-7 text-white sm:px-8 sm:py-9">
@@ -40,6 +85,36 @@ export default async function DemoPage() {
             <span className="sr-only">What differs: </span>Different routing
           </p>
         </div>
+      </section>
+      <section aria-labelledby="study" className="flex flex-col gap-3">
+        <h2 id="study" className="text-base font-semibold text-ink">
+          A study of how to evaluate a skill-based LLM assistant
+        </h2>
+        <p className="max-w-4xl text-sm leading-6 text-slate">
+          The two bots below are the test bed. Around them: an eval set graded by an LLM judge, a regression check for
+          every skill edit, a check of the judge against a person, and a plan for experiments on real traffic.
+        </p>
+        {results.length > 0 && (
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {results.map((item) => (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className="flex h-full flex-col gap-1 rounded-2xl border border-line bg-white p-4 transition-colors hover:border-ink"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate">{item.label}</span>
+                  <span className="text-2xl font-semibold tracking-tight text-ink tabular-nums">{item.value}</span>
+                  <span className="text-sm leading-5 text-slate">{item.detail}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-sm">
+          <Link href="/before-after/results" className="font-semibold text-ink underline underline-offset-2">
+            Read the results
+          </Link>
+        </p>
       </section>
       {LIVE ? (
         <Demo recorded={recorded} />

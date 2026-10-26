@@ -145,7 +145,11 @@ export function ChatColumn({ bot, state, architecture, onRetry, retryDisabled, f
 
       <div
         ref={transcript}
-        className="flex max-h-[28rem] min-h-40 flex-col gap-3 overflow-y-auto rounded-xl bg-canvas p-3 sm:max-h-[32rem]"
+        // Focusable so keyboard users can scroll a long reply.
+        tabIndex={0}
+        role="region"
+        aria-label={`${copy.title} conversation`}
+        className="flex max-h-[28rem] min-h-40 flex-col gap-3 overflow-y-auto rounded-xl bg-canvas p-3 focus-visible:outline-2 focus-visible:outline-ink sm:max-h-[32rem]"
       >
         {state.turns.length === 0 && !state.pending && !state.error && (
           <p className="m-auto text-center text-sm text-dim">Send a message to compare the two designs.</p>

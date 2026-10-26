@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     "Independent study of skill-based routing for a credit-coach chatbot: Before vs After, skill edits and answer models, each with its eval.",
 };
 
+const REPO_URL = "https://github.com/YoungsukHwang/fynn-lab";
+const CODE_LINK = "whitespace-nowrap text-sm font-medium text-slate underline-offset-2 hover:text-ink hover:underline";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}>
@@ -42,13 +45,27 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <span className="hidden text-xs text-slate sm:block">A study of skill-based routing</span>
               </span>
             </Link>
-            <Nav />
+            {/* Phones: logo and Code on one row, the nav below. Wider: logo, nav, Code. Two links keep the
+                focus order the same as the visual order at every width. */}
+            <a href={REPO_URL} className={`${CODE_LINK} sm:hidden`}>
+              Code
+            </a>
+            <div className="w-full sm:ml-auto sm:w-auto">
+              <Nav />
+            </div>
+            <a href={REPO_URL} className={`${CODE_LINK} hidden sm:inline`}>
+              Code
+            </a>
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:py-8">{children}</main>
         <footer className="border-t border-line bg-white">
           <p className="mx-auto max-w-7xl px-4 py-5 text-xs leading-5 text-slate">
-            An independent study of the architecture described in Kikoff&apos;s{" "}
+            Built by Young Suk Hwang.{" "}
+            <a className="font-medium text-ink underline underline-offset-2" href={REPO_URL}>
+              Code and data on GitHub
+            </a>
+            . An independent study of the architecture described in Kikoff&apos;s{" "}
             <a className="font-medium text-ink underline underline-offset-2" href="https://about.kikoff.com/build/fynn-at-100-scale">
               &ldquo;Fynn at 100% scale&rdquo;
             </a>{" "}

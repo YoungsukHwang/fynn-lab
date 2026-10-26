@@ -263,8 +263,8 @@ export default async function OnlineEvaluationPage() {
     <div className="flex flex-col gap-8 sm:gap-10">
       <PageHero eyebrow="Online evaluation · Framework" title="How the bots would be tested with real members">
         <p>
-          Fynn Lab is not deployed, so there are no real chats and no online results. This page is the plan for the day it
-          is.
+          No real members use the bots: the public demo is anonymous and rate-limited, so there are no online results.
+          This page is the plan for testing the bots with real members.
         </p>
       </PageHero>
 

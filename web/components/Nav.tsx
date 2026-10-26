@@ -14,9 +14,10 @@ const LINKS = [
 ];
 
 export function Nav() {
-  const pathname = usePathname();
+  // The static site ends paths with a slash (trailingSlash), so compare without it.
+  const pathname = usePathname().replace(/(.)\/+$/, "$1");
   return (
-    <nav aria-label="Main" className="flex gap-1 rounded-full bg-mist p-1">
+    <nav aria-label="Main" className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-mist p-1">
       {LINKS.map((link) => {
         const active = link.section === "/" ? pathname === "/" : pathname.startsWith(link.section);
         // "page" only on the exact page; inside a section the link marks where the reader is.

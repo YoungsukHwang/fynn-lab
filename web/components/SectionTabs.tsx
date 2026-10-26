@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 
 // The Framework / Results tabs inside a section. Links, so each tab has its own URL.
 export function SectionTabs({ base, label }: { base: string; label: string }) {
-  const pathname = usePathname();
+  // The static site ends paths with a slash (trailingSlash), so compare without it.
+  const pathname = usePathname().replace(/(.)\/+$/, "$1");
   const tabs = [
     { href: `${base}/framework`, text: "Framework" },
     { href: `${base}/results`, text: "Results" },
@@ -13,7 +14,8 @@ export function SectionTabs({ base, label }: { base: string; label: string }) {
   return (
     <nav aria-label={`${label} tabs`} className="flex gap-1 border-b border-line">
       {tabs.map((tab) => {
-        const active = pathname === tab.href;
+        // The section's own URL shows the Results tab.
+        const active = pathname === tab.href || (pathname === base && tab.text === "Results");
         return (
           <Link
             key={tab.href}

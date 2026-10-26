@@ -1,7 +1,7 @@
 import { CaseChangeList } from "@/components/evals/CaseChangeList";
 import { Chip, type ChipTone } from "@/components/evals/ui";
 import type { Attribution, CaseChange, Comparison, Decision } from "@/lib/evalData";
-import { formatTimestamp, plural, pPhrase, runsPerCase } from "@/lib/evalLabels";
+import { EXPECTED_LABELS, formatTimestamp, plural, pPhrase, runsPerCase } from "@/lib/evalLabels";
 
 /** One skill edit (or the skill-cap change) and the report that compared it with the After run. */
 export interface EditResult {
@@ -63,13 +63,13 @@ function Evidence({ comparison }: { comparison: Comparison }) {
       <dd className="text-ink">
         {test ? `${pPhrase(test.overall.pValue, test.alpha)}, ${runsPerCase(runs)} per case` : "not run"}
       </dd>
-      <dt className="text-slate">Flag-rule verdict</dt>
-      <dd className="text-ink">{report.verdict || "n/a"}</dd>
       {hyp && (
         <>
-          <dt className="text-slate">Hypothesis</dt>
+          <dt className="text-slate">Prediction</dt>
           <dd className="text-ink">
-            expected {hyp.expected}, observed {hyp.observed} ({hyp.matches ? "matches" : "does not match"})
+            Written before the run: {(EXPECTED_LABELS[hyp.expected] ?? hyp.expected).replace(/^[^:]*: /, "")}. Result:{" "}
+            {plural(report.transitions.improved.length, "case")} improved and {report.transitions.regressed.length}{" "}
+            regressed, counting every flip. {hyp.matches ? "The prediction held." : "The prediction did not hold."}
           </dd>
         </>
       )}

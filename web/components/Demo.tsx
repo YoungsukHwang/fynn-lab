@@ -159,6 +159,18 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
   );
 }
 
+/** What a visitor to the public site sees when a chat request fails, instead of developer-facing details. */
+function hostedMessage(error: ApiError): string {
+  const recorded = "The recorded replies above still show how both bots answer.";
+  if (error.status === 0 && error.retryable && /too long/i.test(error.message)) return error.message;
+  if (error.status === 0) return `The live demo's server could not be reached. Try again in a minute. ${recorded}`;
+  if (error.status === 413 || error.status === 422) {
+    return "The demo could not take this message, probably because the conversation is too long. Start a new conversation.";
+  }
+  if (error.status === 429 || (error.status === 503 && !error.retryable)) return `${error.message} ${recorded}`;
+  return `The live demo hit a problem on its server.${error.retryable ? " Try again in a minute." : ""} ${recorded}`;
+}
+
 /** `hosted`: the public site's backend, which sleeps when idle, so a first load can take a while. */
 function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnavailable?: (waking: boolean) => void }) {
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -210,12 +222,13 @@ function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnava
     requestAnimationFrame(() => textarea.current?.focus());
   }
 
-  function reset() {
+  // Focus moves to the composer for "New conversation", but not when the reset comes from picking a member.
+  function reset(focus = true) {
     conversation.current += 1;
     inFlight.current?.abort();
     inFlight.current = null;
     setColumns(EMPTY_COLUMNS);
-    focusComposer();
+    if (focus) focusComposer();
   }
 
   function send(text: string, bots: BotName[]) {
@@ -259,6 +272,7 @@ function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnava
         .catch((error: unknown) => {
           if (conversation.current !== id || error instanceof RequestCancelled) return;
           const apiError = error instanceof ApiError ? error : new ApiError("Unexpected error.", 0, false);
+          const shown = hosted ? hostedMessage(apiError) : apiError.message;
           // Drop the unanswered message so the history stays user/assistant alternating;
           // the error box keeps the text so it can be retried.
           updateColumn(bot, (c) => {
@@ -268,7 +282,7 @@ function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnava
               ...c,
               turns,
               pending: false,
-              error: { message: apiError.message, retryable: apiError.retryable, text: message },
+              error: { message: shown, retryable: apiError.retryable, text: message },
             };
           });
         });
@@ -332,7 +346,7 @@ function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnava
               value={personaId}
               onChange={(event) => {
                 setPersonaId(event.target.value);
-                reset();
+                reset(false);
               }}
             >
               {personas.map((p) => (
@@ -345,7 +359,7 @@ function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnava
           <button
             type="button"
             className="rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-ink enabled:hover:bg-mist disabled:opacity-50"
-            onClick={reset}
+            onClick={() => reset()}
             disabled={!hasConversation && !pending}
           >
             New conversation
