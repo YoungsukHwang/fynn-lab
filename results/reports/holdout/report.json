@@ -1,0 +1,954 @@
+{
+  "scenario": null,
+  "baseline": {
+    "name": "before",
+    "bot": "before",
+    "scenario": null,
+    "created_at": "2026-10-26T01:17:23+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    },
+    "repeats": 3,
+    "skill_cap": null
+  },
+  "candidate": {
+    "name": "after",
+    "bot": "after",
+    "scenario": null,
+    "created_at": "2026-10-26T01:17:19+00:00",
+    "models": {
+      "router": "claude-haiku-5-5",
+      "agent": "claude-sonnet-5-5",
+      "judge": "claude-opus-5-5"
+    },
+    "repeats": 3,
+    "skill_cap": 4
+  },
+  "kind": "change",
+  "selection": {
+    "rule": "no selection: the candidate ran every case it lists",
+    "case_count": 24
+  },
+  "pass_rates": {
+    "overall": {
+      "total": 24,
+      "baseline": {
+        "passed": 43,
+        "runs": 72,
+        "rate": 0.5972
+      },
+      "candidate": {
+        "passed": 69,
+        "runs": 72,
+        "rate": 0.9583
+      }
+    },
+    "by_dataset": {
+      "single_topic": {
+        "total": 6,
+        "baseline": {
+          "passed": 16,
+          "runs": 18,
+          "rate": 0.8889
+        },
+        "candidate": {
+          "passed": 15,
+          "runs": 18,
+          "rate": 0.8333
+        },
+        "delta": -0.0556
+      },
+      "multi_intent": {
+        "total": 12,
+        "baseline": {
+          "passed": 9,
+          "runs": 36,
+          "rate": 0.25
+        },
+        "candidate": {
+          "passed": 36,
+          "runs": 36,
+          "rate": 1.0
+        },
+        "delta": 0.75
+      },
+      "context_use": {
+        "total": 6,
+        "baseline": {
+          "passed": 18,
+          "runs": 18,
+          "rate": 1.0
+        },
+        "candidate": {
+          "passed": 18,
+          "runs": 18,
+          "rate": 1.0
+        },
+        "delta": 0.0
+      }
+    }
+  },
+  "transitions": {
+    "improved": [
+      "mi-101",
+      "mi-103",
+      "mi-104",
+      "mi-105",
+      "mi-106",
+      "mi-108",
+      "mi-109",
+      "mi-110",
+      "mi-112"
+    ],
+    "regressed": [],
+    "unchanged_pass": [
+      "st-101",
+      "st-102",
+      "st-104",
+      "st-106",
+      "mi-102",
+      "mi-107",
+      "mi-111",
+      "cu-101",
+      "cu-102",
+      "cu-103",
+      "cu-104",
+      "cu-105",
+      "cu-106"
+    ],
+    "unchanged_fail": [],
+    "unstable": [
+      "st-103",
+      "st-105"
+    ]
+  },
+  "transition_counts": {
+    "improved": 9,
+    "regressed": 0,
+    "unchanged_pass": 13,
+    "unchanged_fail": 0,
+    "unstable": 2
+  },
+  "sharp_changes": {
+    "dropped": [],
+    "rose": []
+  },
+  "errors": [],
+  "baseline_errors": [],
+  "facts_changed": [],
+  "failures": [],
+  "improvements": [
+    {
+      "id": "mi-101",
+      "dataset": "multi_intent",
+      "persona": "rebuilder",
+      "intents": 2,
+      "message": "Once my secured card finally shows up, can I start using it right away? Also, if I turn on rent reporting, can the rent I already paid earlier this year count too, or only months after I sign up?",
+      "skills": [
+        "secured-card",
+        "rent-reporting"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "secured-card",
+        "rent-reporting"
+      ],
+      "baseline_reply": "**1. Using your Secured Card right away**\n\nNot quite. The card has to be activated in the app before its first use. Your profile shows it shipped on 2026-10-06 and hasn't been activated yet. The expected delivery window is 2026-10-16 to 2026-10-21. Once it arrives, activate it, then you can use it.\n\nYour limit is $300, equal to your deposit. Keep in mind that the balance on the statement gets reported monthly, so a small limit fills up fast. Paying before the statement date lowers the balance that gets reported.\n\n**2. Rent reporting and past rent**\n\nI can't confirm that. I don't have details on Rent Reporting, such as whether earlier payments can be counted, so I don't want to guess. Your profile also shows no Rent Reporting on file. Human support can tell you how it works before you decide on anything.\n\nNext step: If the card hasn't arrived by 2026-10-21, check the app under Card > Report not received; and for the rent question, ask support at Help > Chat with support.",
+      "candidate_reply": "**1. Using your Secured Card once it arrives**\n\nNot quite right away. The card must be activated in the app before first use. Your profile shows it shipped on 2026-10-06 and is not activated yet. The expected delivery window is 2026-10-16 to 2026-10-21. If it hasn't arrived by 2026-10-21, you can request a replacement in the app at Card > Report not received.\n\nOnce it's active, your statement balance and payment status are reported monthly to the three credit bureaus. Your limit is $300, so small balances can show as a high percentage. Paying before the statement date lowers the balance that gets reported.\n\n**2. Rent Reporting and past rent**\n\nPast rent can count. Up to 12 months of past rent can be added for a one-time $25 fee, on top of the $4 monthly cost. Your profile shows you aren't enrolled in Rent Reporting now.\n\nA few things to know:\n- On-time rent is verified through your linked bank account.\n- It goes to TransUnion and Experian only, not Equifax.\n- Your score is VantageScore 3.0, which can count rent. Each lender picks its own model and bureaus, so the effect varies and no score change is certain.\n- Late or missed rent months are never reported through the app.\n\nNext step: Watch for your card between 2026-10-16 and 2026-10-21, and activate it in the app as soon as it arrives.",
+      "judge_facts": [
+        {
+          "fact": "Says the Secured Card must be activated in the app before first use",
+          "status": "PRESENT",
+          "note": "Reply says \"The card must be activated in the app before first use.\""
+        },
+        {
+          "fact": "Says up to 12 months of past rent can be added",
+          "status": "PRESENT",
+          "note": "Reply says \"Up to 12 months of past rent can be added.\""
+        },
+        {
+          "fact": "Says adding past rent costs a one-time $25 fee",
+          "status": "PRESENT",
+          "note": "Reply says past rent can be added \"for a one-time $25 fee.\""
+        },
+        {
+          "fact": "Does not promise that adding past rent will raise Jordan's score",
+          "status": "PRESENT",
+          "note": "Reply says \"the effect varies and no score change is certain,\" so it makes no promise."
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-103",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 2,
+      "message": "The Marketplace keeps showing me balance transfer cards. Does that mean I'd probably get approved? Separately, if I turned on Bill Reporting for my phone and electric bills, would a lender actually see those payments?",
+      "skills": [
+        "marketplace-offers",
+        "bill-reporting"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "marketplace-offers",
+        "bill-reporting"
+      ],
+      "baseline_reply": "**1. Does seeing balance transfer cards mean you'd probably get approved?**\n\nNo. Coach doesn't know how offers are chosen or ranked, and seeing an offer says nothing about your approval odds. The issuer makes the decision. Marketplace partners may pay the app when a user is approved for an offer.\n\nHere is what your profile shows. Your utilization (how much of your card limits you're using) is 85%, with $2,550 owed on $3,000 in limits. Applying usually triggers a hard inquiry (a lender's check of your credit that can affect your score). Some issuers offer prequalification, which is typically a soft check that doesn't affect scores, but it isn't approval. A new limit would only lower your utilization if your balances don't grow. Paying down the cards lowers it with no inquiry.\n\n**2. Would a lender see Bill Reporting payments?**\n\nI can't confirm how Bill Reporting works in the app. I don't have details on which bureaus receive the payments or how quickly. Your profile also shows you haven't turned it on.\n\nIn general, a lender only sees a payment if it's reported to the credit bureaus. Even then, some scoring models count that kind of data and others don't, so it depends on the lender. Human support can tell you what the app reports and to whom.\n\nNext step: Ask human support at Help > Chat with support which bureaus receive Bill Reporting payments and how they're shown.",
+      "candidate_reply": "**1. Do balance transfer offers mean you'd probably get approved?**\n\nNo. Coach doesn't know how offers are selected or ranked, and seeing an offer says nothing about your approval odds. The issuer makes the decision, and the app can't predict it. Marketplace partners may pay the app when a user is approved.\n\nYour profile shows utilization (how much of your card limits you're using) at 85%, with $2,550 owed against $3,000 in limits. You have no late payments and no hard inquiries in the last 12 months. Applying usually triggers a hard inquiry, which can affect your score. A new limit would lower your ratio only if your balances don't grow. Paying balances down helps with no inquiry at all. Some issuers offer prequalification, usually a soft inquiry that doesn't affect scores, but it isn't approval. Compare APR (yearly interest rate), fees, and terms on the offer page.\n\n**2. Would a lender see your Bill Reporting payments?**\n\nMaybe, but I can't say. Bill Reporting is free. It sends on-time phone and electric payments from your linked bank account to Equifax only, not Experian or TransUnion. A lender sees them only if it pulls your Equifax data, and whether they affect a score depends on the scoring model. Your profile shows a VantageScore 3.0 of 655, but not which bureau it comes from. Bill Reporting isn't turned on for you yet. Only on-time payments are reported, and nothing can be promised about a score change.\n\nNext step: Check which bureau your 655 score comes from, so you know whether Equifax bill data could show up in it.",
+      "judge_facts": [
+        {
+          "fact": "Says seeing an offer in the Marketplace says nothing about her approval odds",
+          "status": "PRESENT",
+          "note": "Reply says \"seeing an offer says nothing about your approval odds.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply states \"Marketplace partners may pay the app when a user is approved.\""
+        },
+        {
+          "fact": "Says the app's Bill Reporting sends on-time bill payments only to Equifax",
+          "status": "PRESENT",
+          "note": "Reply says it \"sends on-time phone and electric payments... to Equifax only\" and \"Only on-time payments are reported.\""
+        },
+        {
+          "fact": "Says only a lender that pulls her Equifax report would see these bill payments",
+          "status": "PRESENT",
+          "note": "Reply says \"A lender sees them only if it pulls your Equifax data.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-104",
+      "dataset": "multi_intent",
+      "persona": "high-util",
+      "intents": 3,
+      "message": "I want to think this through before I change anything. My score here says 655, but my bank's app shows me a different number, so why don't they match? Since I already have two credit cards, is my Credit Builder plan actually adding anything? And what would Rent Reporting cost me if I signed up?",
+      "skills": [
+        "score-changes",
+        "credit-builder-account",
+        "rent-reporting"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "score-changes",
+        "credit-builder-account",
+        "rent-reporting"
+      ],
+      "baseline_reply": "**1. Why the scores differ**\nYour score here is 655 on VantageScore 3.0 (a scoring model). A gap between two scores is normal and not an error. Different apps may use different models, such as FICO or a newer VantageScore, and they weigh the same data differently. They may also pull from different bureaus, and bureaus update on different days. Your profile doesn't show which model or bureau your bank uses, so I can't say exactly why the numbers differ.\n\n**2. Is Credit Builder adding anything?**\nYour profile shows 7 on-time payments, no late payments, and 17 payments remaining. Payment history is the largest score factor, so steady on-time payments are a good habit to have. I can't confirm from what I have how or where the plan reports to the bureaus, so check that in the app or with support.\n\nIt doesn't affect your card utilization (how much of your card limits you're using), because it's an installment loan, not revolving credit. Your utilization is 85%, with $2,550 on $3,000 in limits. The Rewards card is at 95% ($1,900 of $2,000). That is likely the bigger factor right now.\n\n**3. Rent Reporting cost**\nYou aren't signed up for Rent Reporting, and I don't have its price or terms. Please check the details in the app or ask human support (Help > Chat with support) before deciding.\n\nNext step: Open your bank's app and look for which score model and bureau it names, so you can compare like with like.",
+      "candidate_reply": "**1. Why the scores differ**\n\nYour score here is 655, and the profile shows it's a VantageScore 3.0. A gap with your bank's number is normal. Banks often show a different model, such as a FICO score, and models weigh the same data differently. Your bank may also pull from a different bureau (Equifax, Experian, or TransUnion), and bureaus update on different days. Neither number is an error. If you're not sure which model your bank uses, check its app or ask the bank.\n\nYour score also moved from 668 to 655 since September 15. The likely cause is utilization (how much of your card limits you're using). Your profile shows it at 85%, up from 70% after a car repair was charged to your Rewards card. You paid on time, so this looks like a balance effect, not a late payment.\n\n**2. Is the Credit Builder plan adding anything?**\n\nYes. It's an installment account (fixed payments, set end date), and your cards are revolving (a limit you borrow against and repay). Having both adds to your credit mix. Your profile shows 7 on-time payments, no late ones, and 17 payments remaining. Each payment is reported to all three bureaus. It does not lower your utilization, since it isn't a card. At the end you get back your savings balance, which is $144 minus any unpaid amounts.\n\n**3. Rent Reporting cost**\n\n- $4 per month.\n- A one-time $25 fee if you want up to 12 months of past rent added.\n- It reports on-time rent to TransUnion and Experian, not Equifax.\n- Whether it affects a score depends on the model. FICO 8 ignores rent. VantageScore 3.0 and 4.0 can count it.\n\nI can't say how much it would change your score, if at all.\n\nNext step: Find out which score model and bureau your bank's app uses, so you can compare the two numbers fairly before deciding on anything.",
+      "judge_facts": [
+        {
+          "fact": "Says her score in the app is a VantageScore 3.0 score",
+          "status": "PRESENT",
+          "note": "Reply says \"the profile shows it's a VantageScore 3.0.\""
+        },
+        {
+          "fact": "Says different scoring models can give different scores from the same credit data",
+          "status": "PRESENT",
+          "note": "Reply says banks often show a different model and \"models weigh the same data differently.\""
+        },
+        {
+          "fact": "Says the Credit Builder plan adds to her credit mix",
+          "status": "PRESENT",
+          "note": "Reply says \"Having both adds to your credit mix.\""
+        },
+        {
+          "fact": "Says Rent Reporting costs $4 per month",
+          "status": "PRESENT",
+          "note": "Reply lists Rent Reporting cost as \"$4 per month.\""
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-105",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 2,
+      "message": "I'm thinking about the Secured Card as my first real card. How does it work, like how much would I have to put down? Also, is Bill Reporting free or is it another monthly charge? I'd want to add my phone bill.",
+      "skills": [
+        "secured-card",
+        "bill-reporting"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "secured-card",
+        "bill-reporting"
+      ],
+      "baseline_reply": "**Secured Card**\n\nMaya, here is how it works:\n\n- You put down a refundable deposit of $50 to $2,000. Your credit limit equals your deposit.\n- There is no annual fee and no hard inquiry (a credit check that can lower scores) to apply.\n- The APR (yearly interest rate) is a variable 27.99%. It only applies to a balance you carry from month to month.\n- After approval, the card ships in 1 to 2 business days. Delivery then takes 7 to 10 business days. You activate it in the app before first use.\n- Your statement balance and payment status are reported monthly to Equifax, Experian and TransUnion. Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. If it is upgraded, your deposit is returned. An upgrade is not promised.\n\nBecause your limit equals your deposit, a small deposit means a small limit. A small limit makes utilization (how much of your limit you're using) jump fast, so paying before the statement date matters.\n\n**Bill Reporting**\n\nI don't have details on Bill Reporting, including its cost or whether it accepts phone bills. Your profile also shows you aren't enrolled. I can't say whether it's free or a monthly charge. Please check the product page in the app, or ask human support at Help > Chat with support or support@example.com.\n\nNext step: Decide how much deposit you could set aside and not need to spend, since that sets your limit.",
+      "candidate_reply": "**1. How the Secured Card works**\n\nYou put down a refundable deposit of $50 to $2,000. Your credit limit (the most you can charge) equals your deposit. So a $200 deposit gives you a $200 limit.\n\n- Applying does not cause a hard inquiry (a credit check that can lower your score a bit).\n- There is no annual fee.\n- The APR (yearly interest rate) is a variable 27.99%, charged only on balances you carry from month to month.\n- After approval, it ships in 1 to 2 business days. Delivery takes 7 to 10 business days after that. You activate it in the app before first use.\n- Each month, your statement balance and payment status go to Equifax, Experian and TransUnion. Paying before the statement date lowers the balance that gets reported.\n- After 8 consecutive on-time payments, the account is reviewed for an upgrade to an unsecured card. If upgraded, your deposit is returned. An upgrade is not promised.\n\nYour profile shows no credit card yet, so this would be your first. If you apply through the Marketplace instead, partners may pay the app when you're approved. The Secured Card here is a separate product.\n\n**2. Bill Reporting**\n\nIt is free. There is no monthly charge. On-time phone, utility, and internet payments found in your linked bank account are reported to Equifax only, not Experian or TransUnion. Late bills are never reported through the app.\n\nYour profile shows Bill Reporting is not turned on yet. Your current score is a VantageScore 3.0, and I can't tell which bureau's data it uses. Because of that, I can't say if phone bill payments would show up in it. A lender that checks Experian or TransUnion would not see them.\n\nNext step: Decide what deposit you could set aside without straining your budget, since that sets your limit.",
+      "judge_facts": [
+        {
+          "fact": "Says the Secured Card deposit is $50 to $2,000",
+          "status": "PRESENT",
+          "note": "Reply says \"You put down a refundable deposit of $50 to $2,000.\""
+        },
+        {
+          "fact": "Says the Secured Card's credit limit equals the deposit",
+          "status": "PRESENT",
+          "note": "Reply says \"Your credit limit (the most you can charge) equals your deposit.\""
+        },
+        {
+          "fact": "Says Bill Reporting is free",
+          "status": "PRESENT",
+          "note": "Reply says of Bill Reporting \"It is free. There is no monthly charge.\""
+        }
+      ],
+      "judge_reason": "All three expected facts are present: the $50 to $2,000 deposit range, the limit equaling the deposit, and Bill Reporting being free.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-106",
+      "dataset": "multi_intent",
+      "persona": "new-to-credit",
+      "intents": 3,
+      "message": "ok a few things. 1) I'm signing my first lease next month, how would rent reporting even know I paid if my landlord doesn't report anything? 2) does checking my score in here every day hurt it lol 3) does the credit builder thing show up with all 3 credit bureaus or just one?",
+      "skills": [
+        "rent-reporting",
+        "score-changes",
+        "credit-builder-account"
+      ],
+      "baseline_routing": [
+        "rent-and-bills"
+      ],
+      "candidate_routing": [
+        "rent-reporting",
+        "credit-builder-account",
+        "score-changes"
+      ],
+      "baseline_reply": "**1) How rent reporting knows you paid**\n\nIt doesn't need your landlord. The app checks your linked bank account to verify on-time rent payments, then reports them. Rent Reporting costs $4 per month. On-time rent goes to TransUnion and Experian, not Equifax. Late or missed months are never reported through the app. Up to 12 months of past rent can be added for a one-time $25 fee, but that won't matter for a brand-new lease. Your profile shows you aren't enrolled, so it's your call, and whether it helps depends on the score model a lender uses.\n\n**2) Does checking your score here hurt it?**\n\nNo. Checking your own score is a soft check, which doesn't affect your score. Hard inquiries happen when you apply for credit, and your profile shows 0 in the last 12 months.\n\n**3) Which bureaus see Credit Builder?**\n\nI can't confirm which bureaus receive your Credit Builder plan data. The guidance I have doesn't say. Your profile shows the account as open and current, with 4 on-time payments and no late ones. Your score is a VantageScore 3.0 of 612, up from 603 a month ago. To see which bureaus list it, check your reports directly, or ask human support in the app at Help > Chat with support.\n\nNext step: Before you sign the lease, ask your landlord for their payment method (bank transfer, check, or other) so you know your rent payments will show up in the bank account you'd link.",
+      "candidate_reply": "**1) How rent reporting knows you paid**\n\nIt doesn't rely on your landlord. The app verifies on-time rent through your linked bank account, then reports it to TransUnion and Experian. It does not report to Equifax. Rent Reporting costs $4 per month. You can also add up to 12 months of past rent for a one-time $25 fee, but that won't apply to a first lease. Your profile shows you don't have Rent Reporting now. Late rent is never reported through the app, and a missed month is simply left out. Whether rent helps a score depends on the model a lender uses, and some models ignore it.\n\n**2) Does checking your score hurt it?**\n\nNo. Checking your own score is a soft inquiry (a look that doesn't affect scores). Check as often as you like.\n\n**3) Which bureaus see Credit Builder?**\n\nAll three: Equifax, Experian and TransUnion. Each payment is reported monthly as an installment account (a loan with fixed payments), a few days after it posts. Your profile shows 4 on-time payments and no late ones. Your next payment is due 2026-11-01.\n\nNext step: Pay your Credit Builder payment on or before 2026-11-01, since that is the one already building your history.",
+      "judge_facts": [
+        {
+          "fact": "Says Rent Reporting verifies rent payments through her linked bank account",
+          "status": "PRESENT",
+          "note": "Reply says \"The app verifies on-time rent through your linked bank account.\""
+        },
+        {
+          "fact": "Says checking her own score does not affect it",
+          "status": "PRESENT",
+          "note": "Reply says \"Checking your own score is a soft inquiry (a look that doesn't affect scores).\""
+        },
+        {
+          "fact": "Says Credit Builder payments are reported to all three bureaus (Equifax, Experian and TransUnion)",
+          "status": "PRESENT",
+          "note": "Reply says \"All three: Equifax, Experian and TransUnion.\""
+        }
+      ],
+      "judge_reason": "All three expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-108",
+      "dataset": "multi_intent",
+      "persona": "renter",
+      "intents": 3,
+      "message": "A few things while I get ready for a mortgage. Is the $6 Credit Builder plan worth adding for someone in my spot? There's a card in the Marketplace I keep looking at, what would applying do to my credit? And is the $550 on my bank card too much right now?",
+      "skills": [
+        "credit-builder-account",
+        "marketplace-offers",
+        "utilization"
+      ],
+      "baseline_routing": [
+        "credit-products"
+      ],
+      "candidate_routing": [
+        "credit-builder-account",
+        "marketplace-offers",
+        "utilization"
+      ],
+      "baseline_reply": "**1. Is the $6 Credit Builder plan worth it?**\nIt could fit, but it isn't essential. It costs $6 a month for 24 months. It's a small installment loan (fixed payments, set end date), so it adds to your credit mix. You have a card and an auto loan, so you already have both types. Opening it needs no hard inquiry. Each payment is reported monthly, and a payment 30 or more days late would be reported as late. You'd get back $144 minus any unpaid amounts at the end. Your 24 months would run past a 2027 mortgage application, so it wouldn't be finished by then.\n\n**2. What would applying for the Marketplace card do?**\nApplying through a partner usually triggers a hard inquiry (a lender check that can dip your score a little for a time). Your profile shows no hard inquiries in the last 12 months. If approved, the new limit adds to your total available credit, and a new account can lower your average account age. Approval is up to the issuer, and I can't predict your odds. Marketplace partners may pay the app when a user is approved. Some issuers offer prequalification, usually a soft check that doesn't affect scores. Your profile has no card details, so compare APR, fees, and terms on the offer page. Your credit is steady enough that applying can be reasonable, but it's not needed for a mortgage.\n\n**3. Is $550 too much?**\nYour profile shows $550 owed on a $2,500 limit, which is 22% utilization (how much of your limits you're using). That's reasonable. Lower is generally better, and paying the balance down before the statement date can lower the reported figure.\n\nYour score is 641 on VantageScore 3.0, up from 634 a month ago. The 30-day late from December 2024 is on your report. If it's accurate, it can stay for its full reporting period. Keep paying on time, including your rent.\n\nNext step: Pay your card balance down before the next statement date, and hold off on any new applications until you've compared them closer to your mortgage timeline.",
+      "candidate_reply": "**1. Is the $6 Credit Builder plan worth it?**\n\nIt could fit, but it isn't a clear must-have. The plan costs $6 a month for 24 months. It's a small installment loan (fixed payments, set end date), so it adds to your credit mix. Opening it needs no credit check. Each payment is reported to all three bureaus, and a payment 30 or more days late would be reported as late. After 24 months you get back $144, minus any unpaid amounts.\n\nYour profile shows an auto loan already, so you have an installment account. A mortgage is also a little over a year away, and the plan would run well past that. I can't say how a lender would view it.\n\n**2. What would applying for the Marketplace card do?**\n\nApplying usually triggers a hard inquiry (a lender's check of your credit), which can affect your score. Some issuers offer prequalification, typically a soft check that doesn't affect scores, but that isn't approval. Your profile shows no hard inquiries in the last 12 months, and your only late payment is a 30-day late on your bank card from 2024. Applying can be reasonable, but you may want to compare APR, fees, and terms on the offer page. Marketplace partners may pay the app when a user is approved. I can't predict whether you'd be approved.\n\n**3. Is $550 too much?**\n\nYour profile shows utilization (how much of your card limits you're using) at 22%, from $550 on a $2,500 limit. That's under the common 30% guidance, but above the 10% that tends to be better. Paying the card down before the statement closing date lowers the balance that gets reported. Since the balance is on a single card, that card's own ratio is also 22%.\n\nNext step: Check your bank card's statement closing date and plan a payment before it, so a lower balance gets reported.",
+      "judge_facts": [
+        {
+          "fact": "Says opening the Credit Builder plan needs no hard inquiry",
+          "status": "PRESENT",
+          "note": "Reply says \"Opening it needs no credit check,\" which is equivalent to saying no hard inquiry."
+        },
+        {
+          "fact": "Says applying for a Marketplace card usually triggers a hard inquiry",
+          "status": "PRESENT",
+          "note": "Reply says \"Applying usually triggers a hard inquiry.\""
+        },
+        {
+          "fact": "Discloses that Marketplace partners may pay the app when a user is approved",
+          "status": "PRESENT",
+          "note": "Reply says \"Marketplace partners may pay the app when a user is approved.\""
+        },
+        {
+          "fact": "Gives his utilization as 22%",
+          "status": "PRESENT",
+          "note": "Reply says utilization is \"at 22%, from $550 on a $2,500 limit.\""
+        },
+        {
+          "fact": "Says his 22% utilization is under the common 30% guidance",
+          "status": "PRESENT",
+          "note": "Reply says \"That's under the common 30% guidance.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-109",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 2,
+      "message": "Two things. When the settlement on my bank card goes through, do I have to save up for it in some special account? Also, does Bill Reporting cost anything? I can't take on another monthly charge right now.",
+      "skills": [
+        "debt-settlement",
+        "bill-reporting"
+      ],
+      "baseline_routing": [
+        "debt-and-collections"
+      ],
+      "candidate_routing": [
+        "debt-settlement",
+        "bill-reporting"
+      ],
+      "baseline_reply": "**1. Saving for the settlement**\n\nNo, there is no special savings account. The Debt Settlement service doesn't use a dedicated account. When a settlement is agreed, you pay the creditor directly or through the app. Your profile shows the bank card ($2,800) is still in negotiation, with no settlement agreed yet, and no fees charged so far.\n\nThe fee is 20% of the amount saved, and it's charged only after a settlement is agreed and you make at least one payment under it. For example, if $2,800 settled for $1,800, you'd save $1,000, the fee would be $200, and you'd pay $2,000 total. That is only an example, not a prediction. Creditors don't have to agree, and outcomes vary.\n\nTwo other points:\n- Get the terms in writing before you pay anything.\n- Forgiven debt may count as taxable income, and $600 or more forgiven usually triggers a Form 1099-C. A tax professional can tell you how it applies to you.\n\n**2. Bill Reporting cost**\n\nI don't have any details on Bill Reporting, including whether it costs anything. Your profile shows you haven't signed up for it. Please check with human support in the app at Help > Chat with support, or at support@example.com, before taking it on. Since you can't add a monthly charge right now, that's a sensible thing to confirm first.\n\nNext step: Ask human support in Help > Chat with support what Bill Reporting costs, and hold off on any new commitment until you know.",
+      "candidate_reply": "**1. Saving for the settlement**\n\nNo, there is no special account. Your profile shows the Bank credit card ($2,800) is still in negotiation, with no settlement agreed yet. If one is agreed, you pay the creditor directly or through the app. Nothing in the program requires a dedicated savings account.\n\nThe fee is 20% of the amount saved (your balance minus the settlement amount). It is charged only after a settlement is agreed and you make at least one payment under it. Your profile shows $0 in fees so far. For example, if $2,800 were settled for $2,000, you would save $800, the fee would be $160, and you would pay $2,160 total. That is only an example, not a prediction. No outcome is guaranteed, and the creditor does not have to agree.\n\nTwo cautions:\n- Get any terms in writing before you pay.\n- Because this is an old debt, ask an attorney or legal aid office about the statute of limitations (the time limit for suing over a debt) before you pay or sign anything.\n\nAny forgiven amount may count as taxable income. A Form 1099-C usually comes at $600 or more forgiven, but tax may apply even without one. A tax professional can explain your case.\n\n**2. Bill Reporting cost**\n\nBill Reporting is free. It reports on-time utility, phone, and internet payments from your linked bank account to Equifax only. Late payments are never reported through it. It does not remove or offset the collections or charge-off on your report.\n\nNext step: Before agreeing to any settlement amount, ask the creditor to put the terms in writing and talk to a legal aid office about the statute of limitations.",
+      "judge_facts": [
+        {
+          "fact": "Says there is no dedicated savings account for the settlement",
+          "status": "PRESENT",
+          "note": "Reply says \"No, there is no special account\" and \"Nothing in the program requires a dedicated savings account.\""
+        },
+        {
+          "fact": "Says she pays the settlement to the creditor directly or through the app",
+          "status": "PRESENT",
+          "note": "Reply says \"If one is agreed, you pay the creditor directly or through the app.\""
+        },
+        {
+          "fact": "Says Bill Reporting is free",
+          "status": "PRESENT",
+          "note": "Reply states \"Bill Reporting is free.\""
+        }
+      ],
+      "judge_reason": "All three expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-110",
+      "dataset": "multi_intent",
+      "persona": "collections",
+      "intents": 3,
+      "message": "Sorry, a few basic questions. Would asking for a higher limit on my $800 store card help my utilization? What's the catch with the $6 credit builder plan? And the card offers I see in the app, would I actually get approved with a 560?",
+      "skills": [
+        "utilization",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "baseline_routing": [
+        "score-and-reports"
+      ],
+      "candidate_routing": [
+        "utilization",
+        "credit-builder-account",
+        "marketplace-offers"
+      ],
+      "baseline_reply": "Not basic at all. With a collection and a charged-off card on file, I'll start with options that cost nothing: ask the phone collection agency about a payment plan, talk to a nonprofit credit counselor, or reach human support (Help > Chat with support).\n\n**1. Higher limit on the store card**\nIt can help. Your profile shows utilization (how much of your limits you're using) at 35%, from a $280 balance on an $800 limit. A higher limit would lower that ratio. Some issuers run a hard inquiry (a credit check that can dip scores slightly) for an increase, so ask first. You have no hard inquiries in the last 12 months. Another lever is paying the balance down before the statement date. A balance under $240 would put you below 30%.\n\n**2. The $6 credit builder plan**\nI don't have details on its fees, terms, or what happens if a payment is missed, so I can't name a catch. Your profile shows you aren't enrolled. Human support can give you the full terms before you decide anything.\n\n**3. Card offers and a 560 score**\nI can't tell whether you'd be approved. Approval depends on each issuer's rules, and the collection and charge-off on your report will likely matter. Marketplace partners may pay the app when a user is approved. Applying can also add a hard inquiry, so I wouldn't apply right now without checking the terms first.\n\nNext step: Ask your store card issuer whether a limit increase request triggers a hard inquiry.",
+      "candidate_reply": "Three questions, so here they are in order.\n\n**1. Higher limit on your store card**\n\nYes, it could help. Your profile shows utilization (how much of your card limits you're using) at 35%, which is $280 on an $800 limit. A higher limit with the same balance would lower that ratio. The common guidance is to stay under 30%, and under 10% tends to be better.\n\nThe catch is that some issuers do a hard inquiry (a credit check that can affect scores) for a limit increase. Ask the issuer first whether they would. Paying the balance down also lowers the ratio with no inquiry.\n\n**2. The $6 credit builder plan**\n\nYou have some collection and charge-off accounts, so I'm not going to suggest opening anything new right now. Here is the catch, since you asked:\n- It's $6 a month for 24 months.\n- A payment 30 or more days past due is reported as late.\n- Payments from 1 to 29 days late are not reported as late.\n- After 24 months you get back the savings balance, which is $144 minus any unpaid amounts.\n- It's an installment loan, not a card, so it doesn't lower utilization.\n\n**3. Card offers and approval**\n\nI can't tell you whether you'd be approved. The app doesn't know your approval odds, and the issuer makes that call. Applying usually triggers a hard inquiry, and a denial would still leave that inquiry. Marketplace partners may pay the app when a user is approved.\n\nWith a $1,200 unpaid collection and a $2,800 charged-off card, it may help to look at those first. Consider asking the creditors about payment plans or hardship programs, or talking with a nonprofit credit counselor. Human support is also available in the app at Help > Chat with support.\n\nNext step: Ask your store card issuer whether a limit increase would involve a hard inquiry before you request one.",
+      "judge_facts": [
+        {
+          "fact": "Says some card issuers do a hard inquiry for a limit increase",
+          "status": "PRESENT",
+          "note": "Reply says \"some issuers do a hard inquiry (a credit check that can affect scores) for a limit increase.\""
+        },
+        {
+          "fact": "Says the Credit Builder plan commits her to a $6 monthly payment for 24 months",
+          "status": "PRESENT",
+          "note": "Reply says \"It's $6 a month for 24 months.\""
+        },
+        {
+          "fact": "Says a Credit Builder payment 30 or more days past due is reported as late",
+          "status": "PRESENT",
+          "note": "Reply says \"A payment 30 or more days past due is reported as late.\""
+        },
+        {
+          "fact": "Says the app does not know her approval odds for Marketplace offers",
+          "status": "PRESENT",
+          "note": "Reply says \"The app doesn't know your approval odds, and the issuer makes that call.\""
+        },
+        {
+          "fact": "Says applying for a Marketplace offer usually triggers a hard inquiry from the issuer",
+          "status": "PRESENT",
+          "note": "Reply says \"Applying usually triggers a hard inquiry.\""
+        }
+      ],
+      "judge_reason": "All five expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    },
+    {
+      "id": "mi-112",
+      "dataset": "multi_intent",
+      "persona": "multi-product",
+      "intents": 3,
+      "message": "Couple questions. My lease actually started in May 2023, so can I get more of my older rent added to my reports? If I carry a balance on my Secured Card through the holidays, what interest rate am I looking at? And what's the free way to check all three of my reports?",
+      "skills": [
+        "rent-reporting",
+        "secured-card",
+        "payment-history"
+      ],
+      "baseline_routing": [
+        "rent-and-bills"
+      ],
+      "candidate_routing": [
+        "rent-reporting",
+        "secured-card",
+        "payment-history"
+      ],
+      "baseline_reply": "**1. Adding more past rent**\nYour profile shows 12 past months already added, plus 15 months reported since you enrolled, for 27 in total. The app allows up to 12 months of past rent to be added, so you've used that. Your lease began in May 2023, which means older months exist, but I don't see a way in my guidance to add more than that 12-month limit. For anything beyond it, ask human support (Help > Chat with support).\n\n**2. Interest rate on the Secured Card**\nI don't have the interest rate (APR) for your Secured Card, so I can't give you a number. You can find it on your card agreement or monthly statement, or ask support. In general, carrying a balance means you pay interest on it, and a higher balance can raise your utilization (how much of your limit you use). Your profile shows $60 on a $500 limit. You can avoid interest by paying the statement balance in full, though check your terms to confirm how that works on your card.\n\n**3. Free way to check all three reports**\nI don't have details on a free report service in my guidance. In general, federal law gives you access to your reports from Equifax, Experian, and TransUnion, and the official site for this is AnnualCreditReport.com. Checking your own reports does not hurt your score. It's a good way to confirm that your rent (TransUnion and Experian) and bills (Equifax only) are showing up.\n\nNext step: Ask support in the app whether more past rent can be added, and check your Secured Card statement for the interest rate.",
+      "candidate_reply": "**1. Adding more past rent**\n\nYour profile shows you already added 12 past months, and the app allows up to 12 months of past rent. So I don't see a way to add more through the app. Your lease started in May 2023, and you enrolled in July 2025. Your profile shows 15 months reported since enrolling, plus the 12 past months, for 27 in total. I can't confirm whether anything else is possible for the older months. Human support can tell you (Help > Chat with support).\n\nOne note: app-reported rent goes to TransUnion and Experian, not Equifax. Your score is VantageScore 3.0, which can count rent.\n\n**2. Interest on a Secured Card balance**\n\nThe Secured Card has a variable APR (the yearly interest rate) of 27.99%. It applies only to balances you carry from month to month. Your profile shows a $60 balance on a $500 limit. If you pay the full statement balance by the due date, you aren't charged interest on it. Your next payment is due 2026-11-05.\n\n**3. Free way to check all three reports**\n\nGo to AnnualCreditReport.com. It offers free reports from Equifax, Experian and TransUnion every week.\n\nNext step: Visit AnnualCreditReport.com and pull all three reports to confirm your rent history shows on TransUnion and Experian.",
+      "judge_facts": [
+        {
+          "fact": "Says up to 12 months of past rent can be added",
+          "status": "PRESENT",
+          "note": "Reply says \"the app allows up to 12 months of past rent.\""
+        },
+        {
+          "fact": "Notes Sam's profile shows 12 months of past rent already added",
+          "status": "PRESENT",
+          "note": "Reply says \"Your profile shows you already added 12 past months.\""
+        },
+        {
+          "fact": "Gives 27.99% as the Secured Card's APR",
+          "status": "PRESENT",
+          "note": "Reply says the Secured Card \"has a variable APR... of 27.99%.\""
+        },
+        {
+          "fact": "Names AnnualCreditReport.com as the free source for reports from all three bureaus",
+          "status": "PRESENT",
+          "note": "Reply says \"Go to AnnualCreditReport.com\" for free reports from Equifax, Experian and TransUnion."
+        }
+      ],
+      "judge_reason": "All four expected facts are present in the reply.",
+      "check_failures": [],
+      "status": "ok",
+      "error": null,
+      "baseline_passed": 0,
+      "baseline_runs": 3,
+      "candidate_passed": 3,
+      "candidate_runs": 3,
+      "baseline_errored": 0,
+      "candidate_errored": 0,
+      "baseline_all_errored": false,
+      "candidate_all_errored": false,
+      "baseline_status": "ok",
+      "baseline_error": null
+    }
+  ],
+  "verdict": "Passed",
+  "verdict_note": null,
+  "attribution": null,
+  "flag_rule": {
+    "min_fails": 2,
+    "baseline_repeats": 3,
+    "candidate_repeats": 3,
+    "text": "a case regresses when it fails at least 2 of its 3 runs and passed every one of its 3 baseline runs that did not error; it improves when it passes at least 2 of 3 and failed every one of its 3 baseline runs that did not error"
+  },
+  "paired_test": {
+    "method": "run_permutation",
+    "alpha": 0.05,
+    "ci": {
+      "method": "persona_cluster_bootstrap",
+      "confidence": 0.95,
+      "resamples": 10000,
+      "min_clusters": 3,
+      "descriptive": true
+    },
+    "family": 3,
+    "correction": "Holm across the per-dataset tests, which controls the chance of any false positive among them; the overall test is the primary one and is not adjusted, so across every row that chance can reach twice alpha",
+    "overall": {
+      "cases": 24,
+      "left_out": 0,
+      "mean_diff": 0.3611,
+      "informative": 11,
+      "clusters": 6,
+      "ci_low": 0.2778,
+      "ci_high": 0.4583,
+      "p_value": 0.0,
+      "significant": true
+    },
+    "by_dataset": {
+      "single_topic": {
+        "cases": 6,
+        "left_out": 0,
+        "mean_diff": -0.0556,
+        "informative": 2,
+        "clusters": 6,
+        "ci_low": -0.1667,
+        "ci_high": 0.0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      },
+      "multi_intent": {
+        "cases": 12,
+        "left_out": 0,
+        "mean_diff": 0.75,
+        "informative": 9,
+        "clusters": 6,
+        "ci_low": 0.5833,
+        "ci_high": 0.9167,
+        "p_value": 0.0,
+        "p_holm": 0.0,
+        "significant": true
+      },
+      "context_use": {
+        "cases": 6,
+        "left_out": 0,
+        "mean_diff": 0.0,
+        "informative": 0,
+        "clusters": 6,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "p_value": 1.0,
+        "p_holm": 1.0,
+        "significant": false
+      }
+    }
+  },
+  "noise_floor": {
+    "source": "baseline_repeats",
+    "unit": "single_run_flips",
+    "overall": {
+      "cases": 24,
+      "flips": 1.3333,
+      "regressed": null,
+      "improved": null
+    },
+    "by_dataset": {
+      "single_topic": {
+        "cases": 6,
+        "flips": 1.3333,
+        "regressed": null,
+        "improved": null
+      },
+      "multi_intent": {
+        "cases": 12,
+        "flips": 0.0,
+        "regressed": null,
+        "improved": null
+      },
+      "context_use": {
+        "cases": 6,
+        "flips": 0.0,
+        "regressed": null,
+        "improved": null
+      }
+    },
+    "unstable": [
+      "st-103",
+      "st-105"
+    ],
+    "unmeasured": [],
+    "repeats": 3
+  },
+  "noise_floor_note": null,
+  "hypothesis_result": null,
+  "warnings": [
+    "bots differ: baseline before, candidate after",
+    "skill caps differ: baseline None, candidate 4"
+  ],
+  "routing": {
+    "baseline": {
+      "strategy": "single_agent",
+      "cases": 24,
+      "runs": 72,
+      "all_available": 33,
+      "by_group": {
+        "cross": {
+          "runs": 39,
+          "all_available": 0
+        },
+        "single": {
+          "runs": 33,
+          "all_available": 33
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 12,
+          "available": 3,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "credit-builder-account": {
+          "labeled": 18,
+          "available": 9,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "debt-settlement": {
+          "labeled": 6,
+          "available": 6,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 21,
+          "available": 18,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "payment-history": {
+          "labeled": 6,
+          "available": 3,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "rent-reporting": {
+          "labeled": 21,
+          "available": 15,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 15,
+          "available": 6,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "secured-card": {
+          "labeled": 12,
+          "available": 9,
+          "picked": 0,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 15,
+          "available": 6,
+          "picked": 0,
+          "picked_unlabeled": 0
+        }
+      }
+    },
+    "candidate": {
+      "strategy": "skills",
+      "cases": 24,
+      "runs": 72,
+      "all_available": 70,
+      "by_group": {
+        "cross": {
+          "runs": 39,
+          "all_available": 37
+        },
+        "single": {
+          "runs": 33,
+          "all_available": 33
+        }
+      },
+      "skills": {
+        "bill-reporting": {
+          "labeled": 12,
+          "available": 12,
+          "picked": 12,
+          "picked_unlabeled": 0
+        },
+        "collections": {
+          "labeled": 3,
+          "available": 3,
+          "picked": 3,
+          "picked_unlabeled": 0
+        },
+        "credit-builder-account": {
+          "labeled": 18,
+          "available": 18,
+          "picked": 21,
+          "picked_unlabeled": 3
+        },
+        "debt-settlement": {
+          "labeled": 6,
+          "available": 6,
+          "picked": 6,
+          "picked_unlabeled": 0
+        },
+        "marketplace-offers": {
+          "labeled": 21,
+          "available": 21,
+          "picked": 22,
+          "picked_unlabeled": 1
+        },
+        "payment-history": {
+          "labeled": 6,
+          "available": 6,
+          "picked": 8,
+          "picked_unlabeled": 2
+        },
+        "rent-reporting": {
+          "labeled": 21,
+          "available": 21,
+          "picked": 21,
+          "picked_unlabeled": 0
+        },
+        "score-changes": {
+          "labeled": 15,
+          "available": 13,
+          "picked": 13,
+          "picked_unlabeled": 0
+        },
+        "secured-card": {
+          "labeled": 12,
+          "available": 12,
+          "picked": 12,
+          "picked_unlabeled": 0
+        },
+        "utilization": {
+          "labeled": 15,
+          "available": 15,
+          "picked": 15,
+          "picked_unlabeled": 0
+        }
+      }
+    }
+  },
+  "lengths": {
+    "baseline": {
+      "replies": 72,
+      "median_words": 243.5,
+      "mean_words": 244.5,
+      "limit": 250,
+      "over_limit": 28,
+      "over_300": 4
+    },
+    "candidate": {
+      "replies": 72,
+      "median_words": 265.0,
+      "mean_words": 261.7,
+      "limit": 250,
+      "over_limit": 45,
+      "over_300": 13
+    }
+  },
+  "cost_per_1000": {
+    "baseline": {
+      "answer": 10.31,
+      "router": 0.3,
+      "total": 10.61
+    },
+    "candidate": {
+      "answer": 9.3,
+      "router": 0.31,
+      "total": 9.62
+    }
+  }
+}

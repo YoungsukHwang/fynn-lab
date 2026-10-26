@@ -26,3 +26,23 @@ Expected (written before running):
 3. After passes a smaller share of held-out runs than of main-set runs (86%), since the skill edits were made by reading main-set failures.
 
 Whatever the runs show is reported as it is, including where these expectations fail.
+
+## Results (2026-10-26)
+
+Added after the runs; the plan above is unchanged from the commit before them (`6ae254e`).
+
+| Cases | Before | After |
+|---|---|---|
+| Need a second domain (13) | 12 of 39 runs (31%) | 39 of 39 (100%) |
+| One domain is enough (11) | 31 of 33 (94%) | 30 of 33 (91%) |
+| All (24) | 43 of 72 (60%) | 69 of 72 (96%) |
+
+Mean gain +36 points per case, p < 0.001 (run-permutation), persona bootstrap interval +28 to +46; 9 cases improved and none regressed under the flag rule. Recorded cost $3.56.
+
+Against the expectations:
+
+1. After led on the cases that need a second domain by +69 points: a little less than on the main set's designed cases (+73), as expected, but far closer to them than to its other multi-domain cases (+33). Not as expected.
+2. The one-domain cases were within 10 points (-3). As expected.
+3. After passed 96% of held-out runs, more than its 86% on the main set. Not as expected.
+
+Why the gap is so large is not known. Before passed 4 of the 13 cases on every run even though its one domain lacked a labeled skill (it never had every labeled skill on these cases), and its 31% sits between the designed cases (3%) and the other multi-domain cases (52%); the gap matches the designed cases mostly because After passed every run. This check is also small, and its cases were written by LLM agents from the same skill files as the facts, so it is not independent of how the facts are sourced. Report: `results/reports/holdout/`.
