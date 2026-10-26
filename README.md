@@ -19,6 +19,7 @@ Before vs After and the answer models ran three times per case, on the skills sh
 
 - **After wins where a question needs a second domain, and only there.** On the 33 cases whose skills span two or more Before domains, After passes 78 of 99 runs and Before 16. A Before agent holds only one domain's skills: in none of those runs did its prompt hold every labeled skill, and After's did in 92 of 99. On the 31 cases one domain covers, the two are about even (85 and 87 of 93).
 - **Most of that gap comes from cases built to show it.** 24 of the 33 multi-domain cases (`mi-013` to `mi-036`) were written for this comparison: every question beyond the Before router's likely pick was built around a fact only another domain's skill held. There Before passes 2 of 72 runs and After 55. Both Before passes are `mi-016`, whose fact a later skill edit (S4) copied into a skill the Before agent loads. On the other 9 multi-domain cases, which were not built around the Before domains, the gap is smaller but still there (14 and 23 of 27).
+- **It held on questions the skills were never tuned to.** 24 held-out cases were written after the skills were frozen, by agents that never saw an eval result, and committed with written expectations before either bot ran ([the plan](backend/evals/holdout/README.md)). On the 13 that need a second domain, After passed 39 of 39 runs and Before 12 of 39; on the 11 one-domain cases they were about even (After 30, Before 31 of 33). Overall After passed 69 of 72 runs and Before 43, a mean gain of 36 points per case (p < 0.001). Two of the three expectations failed: the multi-domain gap (+69 points) came out close to the designed cases' (+73) rather than the other multi-domain cases' (+33), and After did better on the held-out cases than on the main set, not worse. The check is small, and its cases were also written by LLM agents from the same skill files.
 - **On real traffic the gain depends on the mix.** Nobody has measured how often members ask a question that needs a second domain. If 10% do, the expected gain is about 5 points using the 9 multi-domain cases not built for the comparison, or 8 using all 33; at 30% it is about 12 or 20. The total on this eval set (After 165 of 192 runs, Before 101; a mean gain of 33 points per case, p < 0.001 on a run-permutation test) reflects this set's mix, which leans on multi-domain cases by design, so it is not a forecast.
 - **After costs about 9% less per reply.** $9.57 against $10.50 per 1,000 replies with Sonnet answering, router included, at list prices and assuming a warm prompt cache. Its prompt holds only the picked skills rather than a whole domain's. Answers run at low effort; latency was not recorded.
 - **The same prompt does not always give the same result.** Two runs of the same bot disagree on 10% of cases with Sonnet or Opus answering and 27% with Haiku. The judge alone accounts for about 3%: grading the same replies again changed 6 of 192 verdicts. So a skill edit's flips are split into fixed or broken by the edit (the edit could reach the case) and chance (it could not).
@@ -39,7 +40,7 @@ Skill-edit results are from one run per case. A decision is backed when the pair
 ## Limitations
 
 - **Single-turn only.** Every case is one message, so carrying skills between turns is not evaluated.
-- **No held-out set.** The cases, the expected facts and the skill fixes were all written by one person looking at the same eval set, so the gap includes tuning. Before the shipped edits, a single run on 2026-10-22 gave After 42 and Before 31 of 64 (p = 0.019); a single run after them gave 54 and 29.
+- **Tuning, and a small held-out check.** The main cases, the expected facts and the skill fixes were all written looking at the same eval set, so its gap includes tuning: before the shipped edits, a single run on 2026-10-22 gave After 42 and Before 31 of 64 (p = 0.019); a single run after them gave 54 and 29. The 24-case held-out check shows the same pattern, but it is small, and its cases were also written by LLM agents from the same skill files.
 - **The judge is checked against one person, on a small sample.** One LLM judge (Opus) grades every reply; the human check covers 13 random replies from the answer-model runs, all from the After bot, labeled by the author.
 - **Synthetic setting.** Six fictional members, fictional products, and a Before domain split that is this project's own; a different split would change which cases need a second domain. No real members use the bots (the hosted demo is anonymous and rate-limited), so the Online evaluation page is a plan with no data.
 
@@ -71,6 +72,10 @@ cd backend
 # Both bots on every case, three runs each (how results/before.json and after.json were made)
 .venv/bin/python -m evals.run --bot before --repeats 3 --out ../results/before.json
 .venv/bin/python -m evals.run --bot after --repeats 3 --out ../results/after.json
+
+# The held-out cases (--cases runs another case set and records it in the results file)
+.venv/bin/python -m evals.run --bot before --cases evals/holdout --repeats 3 --out ../results/holdout/before.json
+.venv/bin/python -m evals.run --bot after --cases evals/holdout --repeats 3 --out ../results/holdout/after.json
 
 # A skill edit on the After bot; --baseline picks the cases it can affect. A shipped scenario no longer runs.
 .venv/bin/python -m evals.run --bot after --scenario s1 --baseline ../results/after.json --out ../results/scenarios/s1-new.json
@@ -116,6 +121,7 @@ The reports need no API. Each skill edit compares the After run its scenario was
 ```bash
 cd backend
 .venv/bin/python -m evals.report --baseline ../results/before.json --candidate ../results/after.json --out ../results/reports/before-vs-after
+.venv/bin/python -m evals.report --baseline ../results/holdout/before.json --candidate ../results/holdout/after.json --out ../results/reports/holdout
 .venv/bin/python -m evals.report --baseline ../results/archive/after-2026-10-22T17-15-15.json --candidate ../results/cap4.json --out ../results/reports/cap4
 for s in s1 s2; do
   .venv/bin/python -m evals.report --baseline ../results/archive/after-2026-10-22T01-19-16.json \
