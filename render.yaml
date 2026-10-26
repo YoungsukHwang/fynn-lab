@@ -20,7 +20,7 @@ services:
         value: https://youngsukhwang.github.io
       # The limits count requests, and one question to both bots is two: 10 questions per visitor per
       # hour, 200 a day for everyone. Counts live in memory and start over each time the instance wakes,
-      # so the API key's spend limit (set in the Anthropic Console) is the only hard cap.
+      # so a monthly spend limit on the key's own Anthropic Console workspace is the only hard cap.
       - key: FYNN_CHAT_LIMIT_PER_VISITOR_PER_HOUR
         value: "20"
       - key: FYNN_CHAT_LIMIT_PER_DAY

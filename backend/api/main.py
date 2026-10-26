@@ -35,9 +35,16 @@ logger = logging.getLogger("fynn.api")
 # Cheap guards for a public demo; the request limits are in api/limits.py.
 MAX_MESSAGES = 20
 MAX_USER_MESSAGE_CHARS = 2000
-# Assistant turns are text this server generated and the client sends back, so their cap
-# must cover the longest reply the agent can produce (about 6 characters per token at most).
-MAX_ASSISTANT_MESSAGE_CHARS = config.AGENT_MAX_TOKENS * 6
+# The demo caps each answer at API_AGENT_MAX_TOKENS output tokens, for both bots alike (the evals keep
+# config.AGENT_MAX_TOKENS). Recorded replies run about 600 tokens and at most 2,351 characters.
+API_AGENT_MAX_TOKENS = 4096
+# Assistant turns come back from the client, which could forge them. Each must still fit the longest reply
+# the demo can produce (about 6 characters per token at most), and the whole conversation gets a cap that
+# bounds what one request can cost.
+MAX_ASSISTANT_MESSAGE_CHARS = API_AGENT_MAX_TOKENS * 6
+MAX_CONVERSATION_CHARS = 64_000
+# Bodies over this are refused before they are read into memory (a valid request is well under it).
+MAX_BODY_BYTES = 256 * 1024
 # Input-size guard only; the After bot applies the real carry limit (MAX_CARRIED_SKILLS).
 MAX_CARRY_SKILLS_INPUT = 10
 
@@ -74,7 +81,7 @@ def get_runtime() -> Runtime:
     return Runtime(
         library=library,
         personas=load_personas(),
-        bots=build_bots(llm, library),
+        bots=build_bots(_CappedLLM(llm, API_AGENT_MAX_TOKENS), library),
         credentials_ok=credentials_ok,
         limits=ChatLimits(per_visitor_per_hour=config.CHAT_LIMIT_PER_VISITOR_PER_HOUR, per_day=config.CHAT_LIMIT_PER_DAY),
     )
@@ -114,7 +121,55 @@ class ChatRequest(BaseModel):
                 raise ValueError("messages must alternate user/assistant, starting and ending with user")
         if messages[-1].role != "user":
             raise ValueError("the last message must come from the user")
+        if sum(len(m.content) for m in messages) > MAX_CONVERSATION_CHARS:
+            raise ValueError(f"the conversation is longer than {MAX_CONVERSATION_CHARS} characters; start a new one")
         return messages
+
+
+class _CappedLLM:
+    """Caps answer length for the public demo. Both bots get the same cap, so their comparison stays fair;
+    the evals build bots on the plain client and keep config.AGENT_MAX_TOKENS."""
+
+    def __init__(self, llm: AnthropicLLM, max_tokens: int):
+        self._llm = llm
+        self._max_tokens = max_tokens
+
+    def generate(self, **kwargs: Any) -> Any:
+        kwargs["max_tokens"] = min(kwargs["max_tokens"], self._max_tokens)
+        return self._llm.generate(**kwargs)
+
+    def generate_json(self, **kwargs: Any) -> Any:
+        return self._llm.generate_json(**kwargs)
+
+
+class BodyLimit:
+    """Refuses request bodies over MAX_BODY_BYTES with a 413, by Content-Length up front and by counting
+    the bytes of a body sent without one, so an oversized request is never read into memory whole."""
+
+    def __init__(self, app: Any):
+        self.app = app
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        length = dict(scope.get("headers") or []).get(b"content-length", b"")
+        if length.isdigit() and int(length) > MAX_BODY_BYTES:
+            await _error(413, f"request body is larger than {MAX_BODY_BYTES} bytes", retryable=False)(scope, receive, send)
+            return
+        received = 0
+
+        async def limited() -> Any:
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > MAX_BODY_BYTES:
+                    # Raised while the route reads the body, so the HTTP error handler answers with CORS headers.
+                    raise HTTPException(status_code=413, detail=f"request body is larger than {MAX_BODY_BYTES} bytes")
+            return message
+
+        await self.app(scope, limited, send)
 
 
 class RoutingOut(BaseModel):
@@ -157,6 +212,7 @@ async def _catch_unhandled(request: Request, call_next: RequestResponseEndpoint)
 
 
 app = FastAPI(title="Fynn Lab API", version="0.1.0")
+app.add_middleware(BodyLimit)  # innermost of the three, so CORS also wraps its 413
 app.add_middleware(BaseHTTPMiddleware, dispatch=_catch_unhandled)
 app.add_middleware(
     CORSMiddleware,
@@ -189,10 +245,17 @@ async def rate_limited(_: Request, exc: anthropic.RateLimitError) -> JSONRespons
     return _error(503, "the model API is rate limiting requests", True, {"Retry-After": retry_after} if retry_after else None)
 
 
+# How the model API words an exhausted credit balance or a spend limit set in the Console.
+SPEND_LIMIT_WORDS = ("credit balance", "usage limit", "spend limit", "spending limit")
+
+
 @app.exception_handler(anthropic.APIStatusError)
 async def api_status_error(_: Request, exc: anthropic.APIStatusError) -> JSONResponse:
     if exc.status_code >= 500:
         return _error(503, "the model API is overloaded or unavailable", retryable=True)
+    spent = exc.status_code == 402 or getattr(exc, "type", None) == "billing_error"
+    if spent or any(words in str(exc.message).lower() for words in SPEND_LIMIT_WORDS):
+        return _error(503, "The live demo has used up its spending allowance for now.", retryable=False)
     return _error(502, f"the model API rejected the request ({exc.status_code})", retryable=False)
 
 

@@ -7,7 +7,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.limits import ChatLimits, Refusal, client_address
-from api.main import MAX_ASSISTANT_MESSAGE_CHARS, MAX_USER_MESSAGE_CHARS, Runtime, app, get_runtime
+from api.main import (
+    API_AGENT_MAX_TOKENS,
+    MAX_ASSISTANT_MESSAGE_CHARS,
+    MAX_BODY_BYTES,
+    MAX_CONVERSATION_CHARS,
+    MAX_USER_MESSAGE_CHARS,
+    Runtime,
+    app,
+    get_runtime,
+)
 from fynn import config
 from fynn.bots import build_bots
 from fynn.llm import LLMError
@@ -102,8 +111,8 @@ def test_not_found_and_validation_errors_use_the_error_format(client: TestClient
 
 
 def test_long_assistant_turn_does_not_break_the_conversation(client: TestClient) -> None:
-    # The longest reply the agent could produce must pass validation when the client sends it back.
-    long_answer = "w" * (config.AGENT_MAX_TOKENS * 4)
+    # The longest reply the demo could produce must pass validation when the client sends it back.
+    long_answer = "w" * (API_AGENT_MAX_TOKENS * 4)
     history = [*USER, {"role": "assistant", "content": long_answer}, {"role": "user", "content": "thanks, and?"}]
     assert MAX_ASSISTANT_MESSAGE_CHARS >= len(long_answer) > MAX_USER_MESSAGE_CHARS
     assert _chat(client, history).status_code == 200
@@ -120,6 +129,8 @@ def test_long_assistant_turn_does_not_break_the_conversation(client: TestClient)
         [{"role": "user", "content": "x" * (MAX_USER_MESSAGE_CHARS + 1)}],
         [*USER, {"role": "assistant", "content": "y" * (MAX_ASSISTANT_MESSAGE_CHARS + 1)}, *USER],
         [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}] * 10 + USER,
+        # Each turn within its cap, but the conversation over its total.
+        [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "z" * MAX_ASSISTANT_MESSAGE_CHARS}] * 3 + USER,
     ],
 )
 def test_chat_validates_messages(client: TestClient, messages) -> None:
@@ -291,3 +302,57 @@ def test_client_address_trusts_x_forwarded_for_only_when_told() -> None:
     assert client_address("10.0.0.1", "203.0.113.5, 10.0.0.1", trust_forwarded=False) == "10.0.0.1"
     assert client_address("10.0.0.1", "203.0.113.5, 10.0.0.1", trust_forwarded=True) == "203.0.113.5"
     assert client_address(None, None, trust_forwarded=True) == "unknown"
+
+
+# ---- Request size and cost guards -------------------------------------------------------------
+
+
+def test_oversized_bodies_are_refused_before_they_are_read(client: TestClient) -> None:
+    big = b'{"bot": "after", "persona_id": "tester", "messages": [' + b"1," * MAX_BODY_BYTES + b"1]}"
+    by_length = client.post("/chat", content=big, headers={**ORIGIN, "Content-Type": "application/json"})
+    assert by_length.status_code == 413 and by_length.json()["retryable"] is False
+    assert by_length.headers["access-control-allow-origin"] == ORIGIN["Origin"]
+    # Sent in chunks with no Content-Length, it is cut off once it passes the limit.
+    chunks = (big[i : i + 65_536] for i in range(0, len(big), 65_536))
+    streamed = client.post("/chat", content=chunks, headers={**ORIGIN, "Content-Type": "application/json"})
+    assert streamed.status_code == 413
+    assert streamed.headers["access-control-allow-origin"] == ORIGIN["Origin"]
+
+
+def test_conversation_cap_covers_a_full_demo_conversation() -> None:
+    # Ten questions at the user cap and nine replies twice as long as any recorded one still fit.
+    assert 10 * MAX_USER_MESSAGE_CHARS + 9 * 2 * 2_351 < MAX_CONVERSATION_CHARS
+
+
+def test_the_demo_caps_answer_length_for_both_bots(monkeypatch: pytest.MonkeyPatch) -> None:
+    import api.main as api_main
+
+    fake = FakeLLM([TWO_SKILLS, {"reason": "one", "agent": "score-and-reports"}])
+    monkeypatch.setattr(api_main, "AnthropicLLM", lambda *args, **kwargs: fake)
+    get_runtime.cache_clear()
+    try:
+        runtime = get_runtime()
+        persona = next(iter(runtime.personas.values()))
+        runtime.bots["after"].reply(persona, list(USER), carry_skills=[])
+        runtime.bots["before"].reply(persona, list(USER), carry_skills=[])
+    finally:
+        get_runtime.cache_clear()
+    assert [c["max_tokens"] for c in fake.text_calls] == [API_AGENT_MAX_TOKENS, API_AGENT_MAX_TOKENS]
+    assert all(c["max_tokens"] == config.ROUTER_MAX_TOKENS for c in fake.json_calls)  # routers keep their own
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "message"),
+    [
+        (400, None, "Your credit balance is too low to access the Anthropic API."),
+        (400, None, "You have reached your specified API usage limits."),
+        (402, {"type": "error", "error": {"type": "billing_error", "message": "Unpaid invoice."}}, "Unpaid invoice."),
+    ],
+)
+def test_a_spent_credit_balance_says_so(make_client, status: int, body: dict | None, message: str) -> None:
+    request = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    llm = FakeLLM([TWO_SKILLS])
+    llm.text_error = anthropic.APIStatusError(message, response=httpx2.Response(status, request=request), body=body)
+    reply = _chat(make_client(llm), USER)
+    assert reply.status_code == 503
+    assert reply.json() == {"detail": "The live demo has used up its spending allowance for now.", "retryable": False}

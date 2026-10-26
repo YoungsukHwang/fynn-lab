@@ -1,8 +1,8 @@
 """Request limits for the public demo: a per-visitor hourly limit and a daily cap across all visitors.
 
 Both count /chat requests. The site sends one request per bot, so one question to both bots counts twice.
-Counts live in memory, so they reset when the server restarts; a spend limit on the API key is the hard
-backstop. A limit left unset means no limit, which is the default for local use.
+Counts live in memory, so they reset when the server restarts; a spend limit on the Anthropic Console
+workspace that holds the demo's key is the hard backstop. A limit left unset means no limit, which is the default for local use.
 """
 
 from __future__ import annotations
@@ -59,8 +59,8 @@ class ChatLimits:
 
 def client_address(peer: str | None, forwarded_for: str | None, trust_forwarded: bool) -> str:
     """Who a request comes from. Behind a proxy (FYNN_TRUST_FORWARDED=1) that is the first address in
-    X-Forwarded-For, which a client can set itself, so the per-visitor limit is fairness, not security;
-    the daily cap still bounds spending."""
+    X-Forwarded-For, which a client can set itself, so the per-visitor limit is fairness, not security.
+    Neither limit bounds spending (the counts reset on restart); the key's workspace spend limit does."""
     if trust_forwarded and forwarded_for:
         first = forwarded_for.split(",")[0].strip()
         if first:
