@@ -9,6 +9,7 @@ import {
   type ChatMessage,
   checkHealth,
   getArchitecture,
+  LOAD_TIMEOUT_MS,
   DEFAULT_LIMITS,
   getPersonas,
   type Persona,
@@ -116,7 +117,7 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
       </div>
       {/* Hidden rather than unmounted, so switching back keeps the live conversation. */}
       <div hidden={mode !== "live"}>
-        <LiveDemo key={attempt} onUnavailable={unavailable} />
+        <LiveDemo key={attempt} hosted onUnavailable={unavailable} />
       </div>
       {mode === "recorded" && (
         <>
@@ -140,7 +141,7 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
               ) : wake === "waking" ? (
                 <p>
                   <span className="font-semibold text-ink">The live demo&apos;s server is waking up.</span> It sleeps
-                  when nobody has used it for a while and takes about a minute to start; this page checks again every{" "}
+                  when nobody has used it for a while and takes a minute or two to start; this page checks again every{" "}
                   {WAKE_CHECK_MS / 1000} seconds. Until then, here are recorded replies.
                 </p>
               ) : (
@@ -158,7 +159,8 @@ export function Demo({ recorded = null }: { recorded?: RecordedDemoData | null }
   );
 }
 
-function LiveDemo({ onUnavailable }: { onUnavailable?: (waking: boolean) => void }) {
+/** `hosted`: the public site's backend, which sleeps when idle, so a first load can take a while. */
+function LiveDemo({ hosted = false, onUnavailable }: { hosted?: boolean; onUnavailable?: (waking: boolean) => void }) {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [architecture, setArchitecture] = useState<Architecture | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
@@ -293,8 +295,16 @@ function LiveDemo({ onUnavailable }: { onUnavailable?: (waking: boolean) => void
 
   if (!architecture || !persona) {
     return (
-      <p className="text-sm text-slate" role="status">
-        Loading personas and architecture...
+      <p className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-slate" role="status">
+        {hosted ? (
+          <>
+            <span className="font-semibold text-ink">Starting the demo&apos;s backend in the cloud.</span> It sleeps when
+            nobody has used it for a while, so this can take a minute or two. If it is not up within{" "}
+            {LOAD_TIMEOUT_MS / 1000} seconds, recorded replies show here while it starts.
+          </>
+        ) : (
+          "Loading personas and architecture..."
+        )}
       </p>
     );
   }

@@ -9,7 +9,7 @@ export const DEFAULT_LIMITS = { max_messages: 20, max_user_message_chars: 2000 }
 // as retryable.
 const CHAT_TIMEOUT_MS = 120_000;
 // Personas and architecture are small; a backend that has not answered by then is down or still waking up.
-const LOAD_TIMEOUT_MS = 15_000;
+export const LOAD_TIMEOUT_MS = 15_000;
 
 export type BotName = "before" | "after";
 
