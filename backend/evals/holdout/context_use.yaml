@@ -1,0 +1,133 @@
+# context_use (held-out): questions the bot must answer with the member's own numbers, dates or product status.
+# Written blind to every eval result; see README.md in this directory. Each fact cites its source.
+
+- id: cu-101
+  dataset: context_use
+  persona: rebuilder
+  message: "I applied for a personal loan with another lender back in April and got declined. Is that hard inquiry still on my report, and when does it stop counting against my score?"
+  intents: 2
+  skills: [score-changes]
+  expected_facts:
+    # persona:recent_events[7] ("2026-04-14: Applied for a personal loan with another lender (hard inquiry; declined)") + skill:score-changes ("Hard inqu...
+    - "Says the hard inquiry from the April 14, 2026 personal loan application is still on Jordan's report"
+    # persona:recent_events[7] ("2026-04-14: Applied for a personal loan with another lender (hard inquiry; declined)") + skill:score-changes ("Hard inqu...
+    - "Says the inquiry stays on the report until April 2028"
+    # persona:recent_events[7] ("2026-04-14: Applied for a personal loan with another lender (hard inquiry; declined)") + skill:score-changes ("FICO coun...
+    - "Says FICO stops counting the inquiry after April 2027"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '\b2027\b'
+    - '\b2028\b'
+
+- id: cu-102
+  dataset: context_use
+  persona: high-util
+  message: "Quick check on my Credit Builder: have all my payments been on time so far? Also, is the $102 I still owe on it part of why my utilization is so high?"
+  intents: 2
+  skills: [credit-builder-account, utilization]
+  expected_facts:
+    # skill:credit-builder-account ("Use products.credit_builder (status, start date, payments, any late) if present") + persona:products.credit_builder....
+    - "Says she has made 7 on-time Credit Builder payments"
+    # skill:credit-builder-account ("Use products.credit_builder (status, start date, payments, any late) if present") + persona:products.credit_builder....
+    - "Says she has no late Credit Builder payments"
+    # skill:utilization ("Installment loans (auto, student, personal, the app's Credit Builder plan) are not part of revolving utilization.")
+    - "Says the Credit Builder balance is not part of her revolving utilization"
+    # skill:utilization ("State `credit.utilization` when present and compare it to the 30% and 10% guidance.") + persona:credit.utilization.overall ("0....
+    - "Gives her overall utilization as 85%"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '85\s*(%|percent)'
+    - '\b(7|seven)\b'
+
+- id: cu-103
+  dataset: context_use
+  persona: new-to-credit
+  message: "My next Credit Builder payment is coming up. When exactly is it due? And if something comes up and I end up a little late, what's the last day I could pay before it gets reported as late?"
+  intents: 2
+  skills: [credit-builder-account]
+  expected_facts:
+    # persona:products.credit_builder.next_payment_due ("2026-11-01")
+    - "Says her next Credit Builder payment is due 2026-11-01 (November 1)"
+    # skill:credit-builder-account ("A payment 1 to 29 days late is not reported as late.")
+    - "Says a Credit Builder payment 1 to 29 days late is not reported as late"
+    # skill:credit-builder-account ("1 to 29 days late: paying before day 30 keeps it from being reported as late; use profile dates to count the days le...
+    - "Gives November 30, 2026 as the last day she can pay without it being reported as late (paying before December 1 is the same deadline)"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '(nov(ember)?\.?\s*1(st)?\b|\b1(st)?\s+(of\s+)?nov|2026-11-01|\b11/0?1\b)'
+
+- id: cu-104
+  dataset: context_use
+  persona: renter
+  message: "When I signed up for Rent Reporting in June I skipped adding my past rent. How far back could I still go, and what would it cost?"
+  intents: 2
+  skills: [rent-reporting]
+  expected_facts:
+    # skill:rent-reporting ("Up to 12 months of past rent can be added for a one-time $25 fee.")
+    - "Says up to 12 months of past rent can be added"
+    # persona:products.rent_reporting.lease_start ("2024-09-01")
+    - "Notes his lease started on 2024-09-01"
+    # skill:rent-reporting ("Up to 12 months of past rent can be added for a one-time $25 fee.")
+    - "Says adding past rent costs a one-time $25 fee"
+    # skill:rent-reporting ("Frame past rent as added positive history, not a guaranteed score change.")
+    - "Does not promise that adding past rent will raise his score"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '(sep(t(ember)?)?\.?\s+(1(st)?,?\s+)?(of\s+)?2024|2024-0?9(-0?1)?\b|\b0?9/(0?1/)?(20)?24\b)'
+
+- id: cu-105
+  dataset: context_use
+  persona: collections
+  message: "If you get the bank card settled for something like $1,500, am I going to owe taxes on the rest?"
+  intents: 1
+  skills: [debt-settlement]
+  expected_facts:
+    # skill:debt-settlement ("Show the fee with the user's numbers, e.g. $1,000 settled for $600: $400 saved, $80 fee, $680 total paid, and the $400 forg...
+    - "Says $1,300 of her $2,800 balance would be forgiven if it settles for $1,500"
+    # skill:debt-settlement ("Forgiven debt may be taxable income even if no Form 1099-C arrives; $600 or more forgiven usually triggers one. Exclusions ...
+    - "Says the forgiven amount may count as taxable income"
+    # skill:debt-settlement ("Forgiven debt may be taxable income even if no Form 1099-C arrives; $600 or more forgiven usually triggers one. Exclusions ...
+    - "Says $600 or more forgiven usually triggers a Form 1099-C"
+    # skill:debt-settlement ("Whenever any amount is forgiven, give the tax point above, including that $600 or more forgiven usually triggers a Form 109...
+    - "Suggests a tax professional"
+    # skill:debt-settlement ("Say whether the user will owe tax or qualify for an exclusion.")
+    - "Does not say whether she will owe tax"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '1,?300'
+    - '2,?800'
+
+- id: cu-106
+  dataset: context_use
+  persona: multi-product
+  message: "I turned on Bill Reporting back in February. Which of my bills are actually getting reported, and how many months does each one have so far?"
+  intents: 2
+  skills: [bill-reporting]
+  expected_facts:
+    # persona:products.bill_reporting.status ("active")
+    - "Says Sam's Bill Reporting is active"
+    # persona:products.bill_reporting.bills[0].name ("Mobile phone") + persona:products.bill_reporting.bills[1].name ("Electric utility") + persona:produ...
+    - "Names Sam's mobile phone, electric and home internet bills as the bills being reported"
+    # persona:products.bill_reporting.bills[].months_reported ("8")
+    - "Says each of the three bills shows 8 months reported"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+  must_include_regex:
+    - '\b(8|eight)\b'

@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import evals.cases as case_files
 from evals.cases import DATASETS, EvalCase, load_cases
 from evals.checks import run_checks
 from evals.judge import Judge
@@ -241,13 +242,16 @@ def build_results(
     repeats: int = 1,
     skill_cap: int | None = None,
     setup: Mapping[str, str] | None = None,
+    cases_dir: str | None = None,
 ) -> dict[str, Any]:
     """`setup` is the setup fingerprint taken when the run started; recomputing it at the end would
-    record code edited during the run instead of the code that ran."""
+    record code edited during the run instead of the code that ran. `cases_dir` names a case set other
+    than the main one (see case_set), so a later rerun or report uses the same cases."""
     return {
         "name": name,
         "bot": bot,
         "scenario": scenario.id if scenario else None,
+        **({"cases_dir": cases_dir} if cases_dir else {}),
         "repeats": repeats,
         # After bot only: the most new topic skills its router may pick per message.
         "skill_cap": (config.MAX_NEW_SKILLS_PER_TURN if skill_cap is None else skill_cap) if bot == "after" else None,
@@ -284,6 +288,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--scenario", help="overlay scenarios/<id>/skills on skills/")
     parser.add_argument("--baseline", type=Path, help="baseline results JSON; enables dependent-test selection")
     parser.add_argument("--dataset", choices=DATASETS)
+    parser.add_argument(
+        "--cases", type=Path, help="directory of case files instead of evals/cases, e.g. evals/holdout for the held-out set"
+    )
     parser.add_argument("--limit", type=int, help="run at most N cases (after filtering)")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument(
@@ -316,12 +323,26 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
+def case_set(directory: Path | None) -> str | None:
+    """How a results file names its case set: None for the main set, else the directory (repo-relative
+    when it is inside the repo)."""
+    if directory is None or directory.resolve() == case_files.CASES_DIR.resolve():
+        return None
+    resolved = directory.resolve()
+    return resolved.relative_to(config.REPO_ROOT).as_posix() if resolved.is_relative_to(config.REPO_ROOT) else str(resolved)
+
+
+def _case_dir(name: str | None) -> Path | None:
+    return None if name is None else (Path(name) if Path(name).is_absolute() else config.REPO_ROOT / name)
+
+
 def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
     args = parse_args(argv)
     setup = setup_fingerprint()  # before any API call, so it describes the code that runs
     if args.rerun_errors:
         return rerun_errors(args, setup)
-    cases = load_cases()
+    cases_dir = case_set(args.cases)
+    cases = load_cases(args.cases)
     personas = load_personas()
     base_lib = SkillLibrary.load()
     scenario = load_scenario(args.scenario) if args.scenario else None
@@ -335,6 +356,10 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
         baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
         if baseline.get("bot") != args.bot:
             raise SystemExit(f"baseline was run on bot {baseline.get('bot')!r}, not {args.bot!r}")
+        if baseline.get("cases_dir") != cases_dir:
+            raise SystemExit(
+                f"baseline ran the case set {baseline.get('cases_dir') or 'evals/cases'}, not {cases_dir or 'evals/cases'}"
+            )
         if run_repeats(baseline) != args.repeats:
             print(f"warning: the baseline ran each case {run_repeats(baseline)} times and this run {args.repeats}")
         if scenario:
@@ -385,6 +410,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Any]:
         repeats=args.repeats,
         skill_cap=args.max_skills,
         setup=setup,
+        cases_dir=cases_dir,
     )
     return _finish(args, results)
 
@@ -452,6 +478,9 @@ def rerun_errors(args: argparse.Namespace, setup: Mapping[str, str]) -> dict[str
         problems.append(f"it used a skill cap of {cap}, not {args.max_skills}")
     if args.repeats not in (1, repeats):
         problems.append(f"it ran each case {repeats} times, not {args.repeats}")
+    cases_dir = previous.get("cases_dir")
+    if args.cases is not None and case_set(args.cases) != cases_dir:
+        problems.append(f"it ran the case set {cases_dir or 'evals/cases'}, not {case_set(args.cases) or 'evals/cases'}")
     scenario = load_scenario(scenario_id) if scenario_id else None
     library = scenario_library(scenario) if scenario else SkillLibrary.load()
     if previous.get("skill_fingerprint") != {name: asdict(h) for name, h in library.fingerprint().items()}:
@@ -459,7 +488,7 @@ def rerun_errors(args: argparse.Namespace, setup: Mapping[str, str]) -> dict[str
     if "setup_fingerprint" not in previous:
         problems.append("it predates setup fingerprints, so the bot and judge code it ran cannot be checked")
     problems += [f"{part} changed since then" for part in setup_changes(previous, run_models(), setup)]
-    cases = {c.id: c for c in load_cases()}
+    cases = {c.id: c for c in load_cases(_case_dir(cases_dir))}
     missing = [c["id"] for c in previous.get("cases", []) if c["id"] not in cases]
     if missing:
         problems.append(f"these cases are no longer in the eval set: {', '.join(missing)}")
@@ -501,6 +530,7 @@ def rerun_errors(args: argparse.Namespace, setup: Mapping[str, str]) -> dict[str
         repeats=repeats,
         skill_cap=cap,
         setup=setup,
+        cases_dir=cases_dir,
     )
     results["rerun_errors"] = {"from_created_at": previous.get("created_at"), "runs": len(jobs)}
     return _finish(args, results)

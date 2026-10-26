@@ -1,0 +1,238 @@
+# multi_intent (held-out): two or three questions in one message, spanning two or more Before domains.
+# Written blind to every eval result; see README.md in this directory. Each fact cites its source.
+
+- id: mi-101
+  dataset: multi_intent
+  persona: rebuilder
+  message: "Once my secured card finally shows up, can I start using it right away? Also, if I turn on rent reporting, can the rent I already paid earlier this year count too, or only months after I sign up?"
+  intents: 2
+  skills: [secured-card, rent-reporting]
+  expected_facts:
+    # skill:secured-card ("The card must be activated in the app before first use.")
+    - "Says the Secured Card must be activated in the app before first use"
+    # skill:rent-reporting ("Up to 12 months of past rent can be added for a one-time $25 fee.")
+    - "Says up to 12 months of past rent can be added"
+    # skill:rent-reporting ("Up to 12 months of past rent can be added for a one-time $25 fee.")
+    - "Says adding past rent costs a one-time $25 fee"
+    # skill:rent-reporting ("Frame past rent as added positive history, not a guaranteed score change.")
+    - "Does not promise that adding past rent will raise Jordan's score"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-102
+  dataset: multi_intent
+  persona: rebuilder
+  message: "Ok, a few things. Why does the Marketplace keep showing me travel cards? When my secured card comes, do I have to carry a balance and pay some interest on it to build credit? And will the extra $300 limit help my 47% utilization?"
+  intents: 3
+  skills: [marketplace-offers, secured-card, utilization]
+  expected_facts:
+    # skill:marketplace-offers ("say Coach does not know how offers are selected or ranked")
+    - "Says Coach does not know how Marketplace offers are selected or ranked"
+    # skill:marketplace-offers ("The app may be paid by partners when a user is approved for an offer.")
+    - "Says Marketplace partners may pay the app when a user is approved for an offer"
+    # skill:utilization ("Tell the user to carry a balance or pay interest to build credit.") + skill:secured-card ("The statement balance and payment st...
+    - "Says Jordan does not need to carry a balance on the Secured Card to build credit"
+    # persona:credit.utilization ("{"overall": 0.47, "total_revolving_balance": 1410, "total_revolving_limit": 3000}") + persona:products.secured_card.cr...
+    - "Says the $300 limit would lower utilization to about 43% ($1,410 of $3,300) at current balances"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-103
+  dataset: multi_intent
+  persona: high-util
+  message: "The Marketplace keeps showing me balance transfer cards. Does that mean I'd probably get approved? Separately, if I turned on Bill Reporting for my phone and electric bills, would a lender actually see those payments?"
+  intents: 2
+  skills: [marketplace-offers, bill-reporting]
+  expected_facts:
+    # skill:marketplace-offers ("say seeing an offer says nothing about approval odds")
+    - "Says seeing an offer in the Marketplace says nothing about her approval odds"
+    # skill:marketplace-offers ("The app may be paid by partners when a user is approved for an offer.")
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+    # skill:bill-reporting ("On-time utility, phone, and internet bill payments found in the user's linked bank account are reported to Equifax. They are...
+    - "Says the app's Bill Reporting sends on-time bill payments only to Equifax"
+    # skill:bill-reporting ("The effect on a score depends on the scoring model and on whether a lender pulls Equifax.")
+    - "Says only a lender that pulls her Equifax report would see these bill payments"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-104
+  dataset: multi_intent
+  persona: high-util
+  message: "I want to think this through before I change anything. My score here says 655, but my bank's app shows me a different number, so why don't they match? Since I already have two credit cards, is my Credit Builder plan actually adding anything? And what would Rent Reporting cost me if I signed up?"
+  intents: 3
+  skills: [score-changes, credit-builder-account, rent-reporting]
+  expected_facts:
+    # skill:score-changes ("A lender may use a different bureau or model than the score the user sees.") + persona:credit.score.model ("VantageScore 3.0")
+    - "Says her score in the app is a VantageScore 3.0 score"
+    # skill:score-changes ("Models (FICO 8, 9, 10T, VantageScore 3.0 and 4.0, industry auto and bankcard versions) weigh the same data differently.")
+    - "Says different scoring models can give different scores from the same credit data"
+    # skill:credit-builder-account ("It is not revolving like a card, and it adds to credit mix.")
+    - "Says the Credit Builder plan adds to her credit mix"
+    # skill:rent-reporting ("Rent Reporting costs $4 per month.")
+    - "Says Rent Reporting costs $4 per month"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-105
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "I'm thinking about the Secured Card as my first real card. How does it work, like how much would I have to put down? Also, is Bill Reporting free or is it another monthly charge? I'd want to add my phone bill."
+  intents: 2
+  skills: [secured-card, bill-reporting]
+  expected_facts:
+    # skill:secured-card ("Refundable deposit of $50 to $2,000; the credit limit equals the deposit.")
+    - "Says the Secured Card deposit is $50 to $2,000"
+    # skill:secured-card ("Refundable deposit of $50 to $2,000; the credit limit equals the deposit.")
+    - "Says the Secured Card's credit limit equals the deposit"
+    # skill:bill-reporting ("Bill Reporting is free.")
+    - "Says Bill Reporting is free"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-106
+  dataset: multi_intent
+  persona: new-to-credit
+  message: "ok a few things. 1) I'm signing my first lease next month, how would rent reporting even know I paid if my landlord doesn't report anything? 2) does checking my score in here every day hurt it lol 3) does the credit builder thing show up with all 3 credit bureaus or just one?"
+  intents: 3
+  skills: [rent-reporting, score-changes, credit-builder-account]
+  expected_facts:
+    # skill:rent-reporting ("On-time rent payments, verified through the user's linked bank account, are reported to TransUnion and Experian.")
+    - "Says Rent Reporting verifies rent payments through her linked bank account"
+    # skill:score-changes ("Soft inquiries, including checking your own score, do not affect scores.")
+    - "Says checking her own score does not affect it"
+    # skill:credit-builder-account ("Each payment is reported to Equifax, Experian and TransUnion as an installment account, monthly, a few days after it...
+    - "Says Credit Builder payments are reported to all three bureaus (Equifax, Experian and TransUnion)"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-107
+  dataset: multi_intent
+  persona: renter
+  message: "Couple things. I'm out of town the first week of November, so my rent might go out a few days late. Would Rent Reporting show that as a late payment? And when a mortgage lender does a hard pull next year, how long does that inquiry stay on my report?"
+  intents: 2
+  skills: [rent-reporting, score-changes]
+  expected_facts:
+    # skill:rent-reporting ("Late rent is never reported. A missed month is simply not reported.")
+    - "Says the app never reports late rent"
+    # skill:score-changes ("Hard inquiries stay on a report for 2 years; FICO counts only those from the last 12 months.")
+    - "Says a hard inquiry stays on a report for 2 years"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-108
+  dataset: multi_intent
+  persona: renter
+  message: "A few things while I get ready for a mortgage. Is the $6 Credit Builder plan worth adding for someone in my spot? There's a card in the Marketplace I keep looking at, what would applying do to my credit? And is the $550 on my bank card too much right now?"
+  intents: 3
+  skills: [credit-builder-account, marketplace-offers, utilization]
+  expected_facts:
+    # skill:credit-builder-account ("Opening it needs no credit check and no hard inquiry.")
+    - "Says opening the Credit Builder plan needs no hard inquiry"
+    # skill:marketplace-offers ("Applying through a partner usually triggers a hard inquiry from that issuer (score effects of inquiries and new accounts...
+    - "Says applying for a Marketplace card usually triggers a hard inquiry"
+    # skill:marketplace-offers ("The app may be paid by partners when a user is approved for an offer.")
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+    # persona:credit.utilization.overall ("0.22")
+    - "Gives his utilization as 22%"
+    # skill:utilization ("Common guidance: keep utilization under 30%, and under 10% tends to be better.") + persona:credit.utilization.overall ("0.22")
+    - "Says his 22% utilization is under the common 30% guidance"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-109
+  dataset: multi_intent
+  persona: collections
+  message: "Two things. When the settlement on my bank card goes through, do I have to save up for it in some special account? Also, does Bill Reporting cost anything? I can't take on another monthly charge right now."
+  intents: 2
+  skills: [debt-settlement, bill-reporting]
+  expected_facts:
+    # skill:debt-settlement ("The user pays the creditor directly or through the app; there is no dedicated savings account.")
+    - "Says there is no dedicated savings account for the settlement"
+    # skill:debt-settlement ("The user pays the creditor directly or through the app; there is no dedicated savings account.")
+    - "Says she pays the settlement to the creditor directly or through the app"
+    # skill:bill-reporting ("Bill Reporting is free.") + persona:products.bill_reporting ("null")
+    - "Says Bill Reporting is free"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-110
+  dataset: multi_intent
+  persona: collections
+  message: "Sorry, a few basic questions. Would asking for a higher limit on my $800 store card help my utilization? What's the catch with the $6 credit builder plan? And the card offers I see in the app, would I actually get approved with a 560?"
+  intents: 3
+  skills: [utilization, credit-builder-account, marketplace-offers]
+  expected_facts:
+    # skill:utilization ("A limit increase lowers the ratio, but some issuers do a hard inquiry for it; suggest asking first.")
+    - "Says some card issuers do a hard inquiry for a limit increase"
+    # skill:credit-builder-account ("To someone without the plan, mention that it adds a $6 monthly payment for 24 months, reported as late once 30 or mo...
+    - "Says the Credit Builder plan commits her to a $6 monthly payment for 24 months"
+    # skill:credit-builder-account ("A payment 1 to 29 days late is not reported as late. At 30 or more days past due it is reported as late (impact: see...
+    - "Says a Credit Builder payment 30 or more days past due is reported as late"
+    # skill:marketplace-offers ("The app does not know a user's approval odds and never guarantees approval.")
+    - "Says the app does not know her approval odds for Marketplace offers"
+    # skill:marketplace-offers ("Applying through a partner usually triggers a hard inquiry from that issuer (score effects of inquiries and new accounts...
+    - "Says applying for a Marketplace offer usually triggers a hard inquiry from the issuer"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-111
+  dataset: multi_intent
+  persona: multi-product
+  message: "I keep seeing a travel rewards card in the Marketplace. With my credit where it's at, is it worth applying? And would opening another card hurt my score at all?"
+  intents: 2
+  skills: [marketplace-offers, score-changes]
+  expected_facts:
+    # skill:marketplace-offers ("Stable profile: applying can be reasonable; suggest comparing APR, fees and terms on the offer page.") + persona:credit....
+    - "Says applying can be reasonable given Sam's current profile"
+    # skill:marketplace-offers ("The app may be paid by partners when a user is approved for an offer.")
+    - "Discloses that the app may be paid by partners when a user is approved for an offer"
+    # skill:marketplace-offers ("The app does not know a user's approval odds and never guarantees approval.")
+    - "Says Coach does not know Sam's approval odds"
+    # skill:marketplace-offers ("Applying through a partner usually triggers a hard inquiry from that issuer")
+    - "Says applying for the card triggers a hard inquiry"
+    # skill:score-changes ("A new account lowers the average age of accounts.")
+    - "Says a new account lowers the average age of accounts"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: mi-112
+  dataset: multi_intent
+  persona: multi-product
+  message: "Couple questions. My lease actually started in May 2023, so can I get more of my older rent added to my reports? If I carry a balance on my Secured Card through the holidays, what interest rate am I looking at? And what's the free way to check all three of my reports?"
+  intents: 3
+  skills: [rent-reporting, secured-card, payment-history]
+  expected_facts:
+    # skill:rent-reporting ("Up to 12 months of past rent can be added for a one-time $25 fee.")
+    - "Says up to 12 months of past rent can be added"
+    # persona:products.rent_reporting.past_months_added ("12")
+    - "Notes Sam's profile shows 12 months of past rent already added"
+    # skill:secured-card ("Variable APR of 27.99%, charged on balances carried month to month.")
+    - "Gives 27.99% as the Secured Card's APR"
+    # skill:payment-history ("Free reports from all three bureaus are available weekly at AnnualCreditReport.com.")
+    - "Names AnnualCreditReport.com as the free source for reports from all three bureaus"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'

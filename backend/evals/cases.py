@@ -23,6 +23,8 @@ ID_PREFIXES: dict[str, str] = {
 }
 
 CASES_DIR = Path(__file__).resolve().parent / "cases"
+# Cases written after the skills were frozen and never used to change them; run with evals.run --cases.
+HOLDOUT_DIR = Path(__file__).resolve().parent / "holdout"
 
 # Every regex in a case is matched case-insensitively.
 REGEX_FLAGS = re.IGNORECASE

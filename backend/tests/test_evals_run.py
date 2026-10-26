@@ -724,3 +724,26 @@ def test_cli_an_empty_selection_keeps_the_results_file_already_there(
     results = evals.run.main(["--bot", "after", "--baseline", str(baseline), "--out", str(out)])
     assert results["cases"] == []
     assert json.loads(out.read_text(encoding="utf-8")) == {"kept": True}
+
+
+def test_cli_runs_another_case_set_and_records_it(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(evals.cases, "CASES_DIR", FIXTURE_CASES)
+    monkeypatch.setattr(evals.run, "make_llms", lambda: (ScriptedLLM(), ScriptedLLM()))
+    holdout = tmp_path / "holdout"
+    holdout.mkdir()
+    (holdout / "single_topic.yaml").write_text((FIXTURE_CASES / "single_topic.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+
+    main_path, other_path = tmp_path / "after.json", tmp_path / "after-holdout.json"
+    main_run = evals.run.main(["--bot", "after", "--out", str(main_path)])
+    assert "cases_dir" not in main_run  # the main set is not named, so existing files stay as they were
+    other = evals.run.main(["--bot", "after", "--cases", str(holdout), "--out", str(other_path)])
+    assert other["cases_dir"] == str(holdout.resolve())
+    assert [c["id"] for c in other["cases"]] == ["st-001", "st-002"]
+    # A baseline from the other case set cannot pick the cases to rerun.
+    with pytest.raises(SystemExit, match="case set"):
+        evals.run.main(["--bot", "after", "--baseline", str(main_path), "--cases", str(holdout), "--out", str(tmp_path / "x.json")])
+    # Rerunning errors keeps the file's own case set, and refuses another.
+    again = evals.run.main(["--bot", "after", "--rerun-errors", str(other_path), "--out", str(tmp_path / "again.json")])
+    assert again["cases_dir"] == other["cases_dir"] and len(again["cases"]) == 2
+    with pytest.raises(SystemExit, match="case set"):
+        evals.run.main(["--bot", "after", "--rerun-errors", str(other_path), "--cases", str(FIXTURE_CASES), "--out", str(tmp_path / "y.json")])

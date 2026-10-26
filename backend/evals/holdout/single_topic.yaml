@@ -1,0 +1,118 @@
+# single_topic (held-out): one question per message, answered from one domain.
+# Written blind to every eval result; see README.md in this directory. Each fact cites its source.
+
+- id: st-101
+  dataset: single_topic
+  persona: rebuilder
+  message: "I missed the store card payment that was due Aug 25, and it got reported as 30 days late on Sept 28. If I hadn't caught up on Oct 2, would it have gotten even worse from there?"
+  intents: 1
+  skills: [payment-history]
+  expected_facts:
+    # skill:payment-history ("Lates are reported in steps (30, 60, 90, 120+ days past due); each later step is more severe.")
+    - "Says the late would have moved to a more severe step (60 days past due or more) if it had stayed unpaid"
+    # skill:payment-history ("Paying an overdue account brings it current but does not erase a late mark already reported.") + persona:recent_events[4] (...
+    - "Says catching up on Oct 2 does not erase the 30-day late already reported"
+    # skill:payment-history ("Its impact is largest while recent and fades as it ages and on-time payments build up.")
+    - "Says the late's impact fades as it ages"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: st-102
+  dataset: single_topic
+  persona: high-util
+  message: "I'm chipping away at the car repair I put on my rewards card. Does it actually matter what day of the month I pay, as long as it's in before the due date?"
+  intents: 1
+  skills: [utilization]
+  expected_facts:
+    # skill:utilization ("Issuers usually report the statement balance, not the balance on the due date.")
+    - "Says card issuers usually report the statement balance, not the balance on the due date"
+    # skill:utilization ("Paying down a card before the statement closing date lowers the balance that gets reported.")
+    - "Says paying before the statement closing date lowers the balance that gets reported"
+    # skill:utilization ("high utilization stops weighing on the score once a lower balance is reported")
+    - "Says high utilization stops weighing on her score once a lower balance is reported"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: st-103
+  dataset: single_topic
+  persona: new-to-credit
+  message: "I was scrolling through the credit cards in the Marketplace last week but didn't apply to any. Would I even get approved for one? I've never had a credit card before."
+  intents: 1
+  skills: [marketplace-offers]
+  expected_facts:
+    # skill:marketplace-offers ("Marketplace offers come from third-party issuers and lenders, which set the terms and make the approval decision.")
+    - "Says the card issuer, not the app, makes the approval decision"
+    # skill:marketplace-offers ("The app does not know a user's approval odds and never guarantees approval.")
+    - "Says the app does not know her approval odds"
+    # skill:marketplace-offers ("Estimate, imply or rank approval odds ("you'll likely qualify", "good chance").")
+    - "Does not estimate or imply her chances of being approved"
+    # skill:marketplace-offers ("The app may be paid by partners when a user is approved for an offer.")
+    - "Discloses that Marketplace partners may pay the app when a user is approved"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: st-104
+  dataset: single_topic
+  persona: renter
+  message: "Does the 641 score I see in the app already include the rent I've been reporting, or would only some lenders' scores pick it up?"
+  intents: 1
+  skills: [rent-reporting]
+  expected_facts:
+    # skill:rent-reporting ("FICO 8 ignores rent; FICO 9, FICO 10 and VantageScore 3.0 and 4.0 can count it.") + persona:credit.score.model ("VantageScor...
+    - "Says VantageScore 3.0, the model behind his 641 score, can count reported rent"
+    # skill:rent-reporting ("On-time rent payments, verified through the user's linked bank account, are reported to TransUnion and Experian. The app doe...
+    - "Says the app reports his rent to TransUnion and Experian, not Equifax"
+    # skill:rent-reporting ("FICO 8 ignores rent; FICO 9, FICO 10 and VantageScore 3.0 and 4.0 can count it.")
+    - "Says FICO 8 ignores rent"
+    # skill:rent-reporting ("FICO 8 is still widely used, and each lender picks its model and bureaus.")
+    - "Says each lender picks its own scoring model and bureaus"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: st-105
+  dataset: single_topic
+  persona: collections
+  message: "I'm honestly scared the collection agency is going to take me to court over the phone bill. It's been unpaid since 2022, so is it too old for them to sue me now?"
+  intents: 1
+  skills: [collections]
+  expected_facts:
+    # skill:collections ("The statute of limitations is a separate state deadline for suing over a debt, commonly 3 to 6 years.")
+    - "Says whether she can be sued depends on her state's deadline for suing over a debt (the statute of limitations)"
+    # skill:collections ("Once it expires, collectors in most states may still ask for payment but cannot sue or threaten to sue.")
+    - "Says that once the state deadline expires, collectors in most states cannot sue over the debt"
+    # skill:collections ("In many states a partial payment or written promise to pay can restart it.")
+    - "Warns that in many states a partial payment or written promise to pay can restart the deadline"
+    # skill:collections ("Old debt: before any payment or written promise to pay, flag the restart risk, suggest a legal aid office or attorney to check ...
+    - "Suggests a legal aid office or attorney to check her state's deadline"
+    # skill:collections ("Say whether a debt is time-barred or what the state deadline is.")
+    - "Does not say whether the phone debt is past its state deadline"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
+
+- id: st-106
+  dataset: single_topic
+  persona: multi-product
+  message: "Before I apply for anything in the Marketplace, I want to understand one thing. If I get turned down, does the card company have to tell me why?"
+  intents: 1
+  skills: [marketplace-offers]
+  expected_facts:
+    # skill:marketplace-offers ("A denied applicant must get an adverse action notice giving the reasons or how to request them.")
+    - "Says a denied applicant must get an adverse action notice"
+    # skill:marketplace-offers ("A denied applicant must get an adverse action notice giving the reasons or how to request them.")
+    - "Says the notice gives the reasons for the denial or explains how to request them"
+    # skill:marketplace-offers ("The app may be paid by partners when a user is approved for an offer.")
+    - "Discloses that the app may be paid by partners when a user is approved for an offer"
+  must_not_regex:
+    - '\bI guarantee\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\bwill definitely (?:raise|increase|improve|boost|recover)\b'
+    - '(?m)(?:^|(?<=[.!?,;:])\s+)(?:(?!\b(?:no|not|never|nobody|none|cannot|can\W?t|won\W?t|don\W?t|doesn\W?t|isn\W?t|aren\W?t|couldn\W?t|wouldn\W?t|shouldn\W?t|impossible|unclear|unknown|guarantee[sd]?|promise[sd]?|predict|whether|says?|said|tells?|told|claims?|knows?|sure|certain)\b)(?:[^.!?\n,;:]|[,;:](?!\s)))*?\b(?:you\W?ll|you will|your score will|it will|it\W?ll) (?:gain|get back|go up|rise|increase|recover|bounce back)(?: by)? (?:about |around |roughly |up to |at least )?\d+(?:\s*(?:-|to|–)\s*\d+)?\s*points\b'
