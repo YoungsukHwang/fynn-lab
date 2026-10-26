@@ -1,10 +1,17 @@
 # Fynn Lab
 
-An independent re-implementation of the architecture change described in Kikoff's engineering post ["Fynn at 100% scale"](https://about.kikoff.com/build/fynn-at-100-scale), with an eval loop that checks when the change helps and whether each skill edit is safe to ship.
+A study of how to evaluate a skill-based LLM assistant: an eval set graded by an LLM judge, a regression check for every skill edit, a check of the judge against a person, and a plan for experiments on real traffic. The bots it evaluates are an independent re-implementation of the architecture change described in Kikoff's engineering post ["Fynn at 100% scale"](https://about.kikoff.com/build/fynn-at-100-scale).
 
 It is a study project and is not affiliated with Kikoff. The products the bots talk about are fictional; see [docs/products.md](docs/products.md).
 
 **Site:** [youngsukhwang.github.io/fynn-lab](https://youngsukhwang.github.io/fynn-lab/). It has the eval framework and results pages. Its Demo page chats with both bots through a hosted backend with a small daily allowance (see "Hosted backend" below). Recorded replies from the committed eval run are one click away, and the page switches to them when that backend is asleep or not set up.
+
+## In short
+
+- **The routing change helps where a question needs a second domain, and the result held out of sample.** On those questions the skill design passes 79% of runs and the single-agent design 16%; on a pre-registered held-out set written after the skills were frozen, 39 of 39 runs against 12 of 39. When one domain is enough, the two are about even.
+- **Every skill edit gets a regression check.** Only the cases it can affect rerun; each flip counts as fixed, broken or chance, depending on whether the edit could reach that case; and a decision stays a lead, not proof, unless the paired test backs it. One of the four edits shown is backed.
+- **The LLM judge was checked against a person.** On 13 sampled replies graded blind (48 facts), it agreed with the person on 92% of facts, and in all 4 disagreements it was the stricter one.
+- **Cost and models.** Sonnet came close to Opus at about 41% of the cost, and the skill design costs about 9% less per reply than the single-agent one.
 
 - **Before:** the earlier design in the post, which the post calls its beta. A small model routes each message to exactly one domain expert agent, so a question that spans several domains gets only one domain's expertise.
 - **After:** the skill design the post moved to. A small model selects the topic skills the message needs. One agent answers with those skills plus always-on skills (tone, response rules, guardrails).
@@ -192,12 +199,12 @@ You can override each model with an environment variable; see `backend/.env.exam
 
 ### Hosted backend
 
-The public demo's backend runs on Render's free tier, set up by the Blueprint in `render.yaml`: Render installs `backend/` and starts the API, and redeploys on pushes to `main` that touch it. It allows 20 chat requests per visitor per hour and 400 a day in all (10 and 200 questions to both bots, about $4 to $5 of Sonnet answers), and only the GitHub Pages origin. The free instance sleeps after 15 idle minutes and takes about a minute to wake; the site then shows recorded replies, keeps checking, and offers the live chat once the backend answers. The counts live in memory and start over each time it wakes, and a client can fake the address the per-visitor limit counts by, so they slow ordinary use but do not bound spending. The only hard cap is the spend limit on the API key, so set it to the most you are willing to spend in a month.
+The public demo's backend runs on Render's free tier, set up by the Blueprint in `render.yaml`: Render installs `backend/` and starts the API, and redeploys on pushes to `main` that touch it. It allows 20 chat requests per visitor per hour and 400 a day in all (10 and 200 questions to both bots, about $4 to $5 of Sonnet answers), and only the GitHub Pages origin. The free instance sleeps after 15 idle minutes and takes a minute or two to wake; the site then shows recorded replies, keeps checking, and offers the live chat once the backend answers. The counts live in memory and start over each time it wakes, and a client can fake the address the per-visitor limit counts by, so they slow ordinary use but do not bound spending. The only hard cap is a spend limit in the Anthropic Console: put the demo's key in a workspace of its own and set that workspace's monthly limit to the most you are willing to spend.
 
 One-time setup:
 
 1. In Render, choose New, then Blueprint, sign in with GitHub and connect this repo.
-2. When asked, enter `ANTHROPIC_API_KEY`: a key used only for this demo. Set a monthly spend limit for it in the Anthropic Console first; it is the only hard cap.
+2. When asked, enter `ANTHROPIC_API_KEY`: a key used only for this demo, created in an Anthropic Console workspace of its own. Set that workspace's monthly spend limit first; it is the only hard cap.
 3. Once it is live, add the service's address (for example `https://fynn-lab-api.onrender.com`) as the GitHub Actions variable `FYNN_API_URL`, and run the "Deploy site" workflow so the site is rebuilt with it.
 
 ## Web

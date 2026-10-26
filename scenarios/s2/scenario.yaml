@@ -6,9 +6,9 @@ change: >-
   Changes the length rule in the always-on response-rules skill from "under about 250 words"
   to "under about 120 words".
 motivation: >-
-  Assumes a product request for shorter answers. The blog warns that short answers can leave
-  out important content, and an always-on skill is in every prompt, so this edit can affect
-  any case.
+  Assumes a product request for shorter answers. Fynn Lab's own guess is that a tighter length
+  cap makes answers drop details, and an always-on skill is in every prompt, so this edit can
+  affect any case.
 hypothesis:
   expected: regress
   detail: >-

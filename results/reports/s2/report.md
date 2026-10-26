@@ -14,7 +14,7 @@ Paired test of the net change (exact McNemar on the 8 cases that flipped): p = 0
 
 - Skill: `response-rules` (always_on change)
 - Change: Changes the length rule in the always-on response-rules skill from "under about 250 words" to "under about 120 words".
-- Motivation: Assumes a product request for shorter answers. The blog warns that short answers can leave out important content, and an always-on skill is in every prompt, so this edit can affect any case.
+- Motivation: Assumes a product request for shorter answers. Fynn Lab's own guess is that a tighter length cap makes answers drop details, and an always-on skill is in every prompt, so this edit can affect any case.
 - Hypothesis (regress): An always-on edit reruns every case. Single-question cases should mostly hold, since one answer fits in about 120 words. Multi-part messages, especially three-question ones with four or five expected facts, should regress because facts get dropped to meet the limit. Expected verdict: not passed, do not ship.
 
 ## Pass rates

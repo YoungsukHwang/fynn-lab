@@ -71,7 +71,7 @@ v1에서 말하는 "모니터링"은 **출시 전 회귀 테스트**입니다. �
 
 ### 1-2. 평가 섹션
 
-상단 메뉴는 Demo, Before vs After, Skill edits, Models, Online evaluation입니다. Before vs After와 Skill edits에는 Framework 탭(어떻게 재는가)과 Results 탭(무엇이 나왔는가)이 있고, Online evaluation은 프레임워크 한 페이지입니다. 예전 `/framework`, `/results`는 Before vs After로, `/noise`는 Online evaluation으로 넘어갑니다.
+상단 메뉴는 Demo, Before vs After, Skill edits, Models, Online evaluation입니다. Before vs After와 Skill edits에는 Framework 탭(어떻게 재는가)과 Results 탭(무엇이 나왔는가)이 있고, Online evaluation은 프레임워크 한 페이지입니다. `/before-after`와 `/skill-edits`는 각 섹션의 Results 탭을 보여 줍니다. 예전 `/framework`, `/results`, `/noise` 주소는 `npm run dev`에서만 새 페이지로 넘어가고, 정적 사이트에는 없습니다.
 
 - **Before vs After** (`/before-after`)
   - Framework: 두 설계의 차이, Before 도메인별로 에이전트가 보는 스킬, 두 번째 도메인이 필요한 케이스, 평가셋, 채점
@@ -271,7 +271,7 @@ judge가 사람과 같은 판정을 내리는지, 더 싼 judge 모델로 바꿔
 
 ### 노이즈와 유의성
 
-LLM 답변은 실행마다 달라서, 아무것도 안 바꿔도 케이스가 뒤집힐 수 있습니다. 실제로 스킬 편집 일곱 건에서 수정이 닿지 못한 케이스 216건 중 30건(약 14%)이 실행 사이에 뒤집혔고, 그중 고른 스킬도 같았던 202건만 보면 25건(약 12%)이었습니다. 또, 케이스당 3회 실행에서는 두 실행이 갈리는 비율이 Sonnet·Opus 답변 10%, Haiku 답변 27%였습니다. 사이트와 리포트 첫머리는 두 가지만 씁니다. Before vs After에는 짝지은 검정(케이스당 1회면 정확 McNemar, 여러 번이면 run-permutation), 스킬 편집에는 고침·망가뜨림·우연 구분(아래 "스킬 편집: 고침, 망가뜨림, 우연")입니다.
+LLM 답변은 실행마다 달라서, 아무것도 안 바꿔도 케이스가 뒤집힐 수 있습니다. 실제로 남긴 스킬 편집 네 건(S1, S2, S4, 상한 4)에서 수정이 닿지 못한 케이스 60건 중 9건이 실행 사이에 뒤집혔고, 그중 고른 스킬도 같았던 53건만 보면 7건(약 13%)이었습니다(기대 사실 문구가 바뀐 케이스 제외). 또, 케이스당 3회 실행에서는 두 실행이 갈리는 비율이 Sonnet·Opus 답변 10%, Haiku 답변 27%였습니다. 사이트와 리포트 첫머리는 두 가지만 씁니다. Before vs After에는 짝지은 검정(케이스당 1회면 정확 McNemar, 여러 번이면 run-permutation), 스킬 편집에는 고침·망가뜨림·우연 구분(아래 "스킬 편집: 고침, 망가뜨림, 우연")입니다.
 
 `backend/evals/stats.py`에는 아래 도구도 들어 있습니다. API를 부르지 않고 결과 파일만 읽습니다. 반복 실행(케이스당 3회)의 run-permutation 검정과 플래그 규칙은 2026-10-23부터 Before vs After와 답변 모델 비교에 쓰이고 사이트에도 나옵니다. A/A 노이즈 기준선과 Holm 보정은 리포트 Markdown의 Details 절에만 나옵니다.
 
@@ -314,7 +314,7 @@ Before/After 비교는 "아키텍처를 바꾼 게 맞았나"를 봅니다. 시�
 |---|---|---|
 | 고칠 스킬 | `score-changes` 본문 | `response-rules` (상시) |
 | 바꾸는 내용 | 잔액이 늘어난 시점에 점수가 떨어졌으면, 카드별 이용률을 계산하고 먼저 갚을 카드를 짚도록 안내 추가 | "답변을 250단어 이하로"를 "120단어 이하로"로 줄임 (짧은 답을 원하는 제품 요청을 가정) |
-| 동기 | 2026-10-19 실측에서 After의 점수 답변이 Before보다 덜 구체적이었음 (Before는 도메인 스킬 3개를 다 받아서 카드별 이용률까지 계산) | 블로그가 말한 "짧지만 중요한 내용을 빠뜨리는 답" |
+| 동기 | 2026-10-19 실측에서 After의 점수 답변이 Before보다 덜 구체적이었음 (Before는 도메인 스킬 3개를 다 받아서 카드별 이용률까지 계산) | 길이 상한을 줄이면 답이 세부를 빠뜨릴 것이라는 Fynn Lab의 가정 (블로그 주장 아님) |
 | 다시 돌리는 범위 | `score-changes` 의존 케이스만 (약 8~10개) | 전체 |
 | 가설 (미리 적어 둠) | 점수 하락 케이스 개선, 퇴보 없음 → 배포 가능 | 단일 질문은 유지, 여러 질문 케이스에서 사실 누락으로 퇴보 → 배포 불가 |
 | 보여주는 것 | 의존 테스트만 돌려도 되는 깔끔한 개선 | 상시 스킬 수정은 왜 전체를 돌려야 하는가 |
@@ -398,7 +398,7 @@ fynn report results/a.json results/b.json
 - **실행**
   - 로컬: 백엔드 `uvicorn` (포트 8000), 프론트 `npm run dev` (포트 3000)
   - 배포: 사이트는 GitHub Pages에 정적 파일로 올립니다. `main`에 push하면 `.github/workflows/pages.yml`이 `FYNN_STATIC_SITE=1`로 빌드합니다(`output: "export"`, 저장소 이름을 basePath로). Demo는 녹화된 답변(`results/demo/recorded.json`, `evals/demo_snapshot.py`가 커밋된 3회 실행에서 뽑은 네 질문)도 함께 보여 주고, 백엔드가 15초 안에 답하지 않으면 그쪽으로 바꿉니다.
-  - 백엔드는 Render 무료 인스턴스에서 돌립니다(`render.yaml` Blueprint). Hugging Face Docker Space는 개인 계정이면 PRO($9/월)가 필요해서 바꿨습니다. 무료 인스턴스는 15분 동안 요청이 없으면 잠들고 깨는 데 약 1분이 걸립니다. 그동안 사이트는 녹화된 답변을 보여 주면서 10초마다 `/health`를 확인하고, 답이 오면 라이브 채팅으로 돌아가는 버튼을 보여 줍니다. 공개 데모라서 `/chat`에 한도를 둡니다(`api/limits.py`): 방문자당 시간당 20회, 전체 하루 400회 요청이고, 두 봇에 묻는 질문 하나가 요청 두 번이므로 질문으로는 10개와 200개입니다(Sonnet 답변으로 약 $4~5). 다만 한도는 메모리에 있어 서버가 잠들었다 깰 때마다(15분 무요청 후) 처음부터 다시 셉니다. 또 방문자는 `X-Forwarded-For`의 첫 주소로 구분하는데 클라이언트가 이 헤더를 꾸밀 수 있습니다. 그래서 두 한도는 평범한 사용을 늦출 뿐 지출을 막지 못하고, 실제 상한은 이 데모 전용 API 키에 Anthropic Console에서 거는 월 지출 한도 하나입니다.
+  - 백엔드는 Render 무료 인스턴스에서 돌립니다(`render.yaml` Blueprint). Hugging Face Docker Space는 개인 계정이면 PRO($9/월)가 필요해서 바꿨습니다. 무료 인스턴스는 15분 동안 요청이 없으면 잠들고 깨는 데 약 1분이 걸립니다. 그동안 사이트는 녹화된 답변을 보여 주면서 10초마다 `/health`를 확인하고, 답이 오면 라이브 채팅으로 돌아가는 버튼을 보여 줍니다. 공개 데모라서 `/chat`에 한도를 둡니다(`api/limits.py`): 방문자당 시간당 20회, 전체 하루 400회 요청이고, 두 봇에 묻는 질문 하나가 요청 두 번이므로 질문으로는 10개와 200개입니다(Sonnet 답변으로 약 $4~5). 다만 한도는 메모리에 있어 서버가 잠들었다 깰 때마다(15분 무요청 후) 처음부터 다시 셉니다. 또 방문자는 `X-Forwarded-For`의 첫 주소로 구분하는데 클라이언트가 이 헤더를 꾸밀 수 있습니다. 그래서 두 한도는 평범한 사용을 늦출 뿐 지출을 막지 못하고, 실제 상한은 이 데모 전용 키를 따로 둔 Anthropic Console 워크스페이스에 거는 월 지출 한도 하나입니다.
 
 ### 백엔드 API (v1)
 
@@ -467,7 +467,7 @@ fynn report results/a.json results/b.json
 
 ### API 키
 
-`backend/.env`에 넣었습니다 (2026-10-19). `.gitignore`가 `.env*`를 모두 막고 `.env.example`만 허용합니다. `fynn/config.py`가 다른 설정보다 먼저 이 파일을 읽고, 셸에서 export한 값이 우선합니다. CI나 배포 환경에서는 고정 키 대신 Workload Identity Federation을 검토합니다 (M6).
+`backend/.env`에 넣었습니다 (2026-10-19). `.gitignore`가 `.env*`를 모두 막고 `.env.example`만 허용합니다. `fynn/config.py`가 다른 설정보다 먼저 이 파일을 읽고, 셸에서 export한 값이 우선합니다. 공개 데모(Render)는 이 데모 전용 키를 Render 환경 변수로 받고, 그 키를 만든 Anthropic Console 워크스페이스에 월 지출 한도를 겁니다(지출 한도는 키가 아니라 워크스페이스나 조직 단위입니다). 그 한도가 데모 지출의 유일한 상한입니다.
 
 ## 5. 레포 구조
 
@@ -484,7 +484,9 @@ fynn-lab/
 │   ├── cap4.json, scenarios/     # 상한 4와 S1, S2, S4 (케이스당 1회)
 │   ├── models/           # 답변 모델별 실행 (after-*.json은 1회, k3/는 3회)
 │   ├── validation/       # judge 표본, 번역, 재채점, 일치도
-│   ├── reports/          # report.json + report.md (before-vs-after, s1~s6, cap4, models)
+│   ├── holdout/          # 보류 평가 실행 (before.json, after.json, 케이스당 3회)
+│   ├── demo/             # 정적 사이트 Demo의 녹화된 답변 (recorded.json)
+│   ├── reports/          # report.json + report.md (before-vs-after, holdout, s1, s2, s4, cap4, models)
 │   └── archive/          # 커밋된 리포트가 아직 비교하는 이전 실행
 ├── backend/
 │   ├── pyproject.toml
@@ -536,7 +538,7 @@ fynn-lab/
 | M1 | 스킬 파일, 페르소나, Before/After 봇 (백엔드 코어) | pytest + 터미널에서 두 봇과 대화 |
 | M2 | FastAPI + Next.js Demo 페이지 (좌우 채팅, 라우팅 결과, 다이어그램) | 브라우저에서 비교 |
 | M3 | 평가셋, 객관 체크, judge, 실행기; 스킬 상한 비교; 답변 모델 비교. 하지 않은 것: Batch API, 상한 5와 무제한(3 대 4만 비교), 이월 0 대 2(평가가 단일 턴이라 잴 수 없음) | 두 버전 전체 평가 결과 JSON |
-| M4 | 회귀 리포트, 의존 테스트 선택, 스킬 개선 시나리오 3개 (S1~S3) | 시나리오별 리포트 Markdown + 가설 대비 결과 |
+| M4 | 회귀 리포트, 의존 테스트 선택, 스킬 개선 시나리오 3개 (S1~S3; S3는 이후 git 기록으로만 남김) | 시나리오별 리포트 Markdown + 가설 대비 결과 |
 | M5 | 평가 페이지: Before vs After, Skill edits (각각 Framework / Results 탭), Online evaluation 프레임워크 | 사이트의 평가 섹션 완성 |
 | 통계 | 짝지은 검정, 고침·망가뜨림·우연 구분 (반복 실행, A/A 노이즈 기준선, 플래그 규칙, Holm 보정은 코드에만 남김) | 리포트 첫머리와 사이트의 결정 |
 | M6 | 결과 사이트를 GitHub Pages에 정적 배포, 백엔드는 한도를 둔 Render 무료 인스턴스 (응답이 없으면 Demo는 녹화된 답변) | 공개 URL |
@@ -546,9 +548,9 @@ fynn-lab/
 | 항목 | 결정 |
 |---|---|
 | 기술 스택 | Python 코어 (FastAPI) + Next.js 프론트 |
-| 레포 위치 | `~/projects/fynn-lab` 로컬 git 레포. GitHub에는 검토가 끝난 뒤 올림 |
+| 레포 위치 | 공개 GitHub 저장소 `YoungsukHwang/fynn-lab` (2026-10-25부터) |
 | 라우터 / 답변 / judge 모델 | Haiku 5.5 / Sonnet 5.5 / Opus 5.5 (답변 모델은 2026-10-19 Opus에서 변경) |
 | 데모 입력 | 입력창 하나로 양쪽에 동시 전송 |
 | UI 언어 | 영어 (문서는 한국어 병행) |
 | 스킬 예산 | 새로 고르는 스킬 4개(상한 실험 전에는 3개) + 직전 턴 이월 2개 (설정값) |
-| 남은 것 | 없음 (백엔드 공개는 Render 설정을 마치면 켜짐) |
+| 남은 것 | 정리 글 |
