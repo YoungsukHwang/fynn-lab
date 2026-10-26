@@ -627,6 +627,8 @@
     "chance_down": [],
     "errored": [],
     "decision": "do not ship",
+    "reached_p": 0.070312,
+    "reached_significant": false,
     "tested": false
   },
   "flag_rule": {
@@ -691,6 +693,12 @@
         "p_holm": 1.0,
         "significant": false
       }
+    },
+    "case_level": {
+      "cases": 40,
+      "better": 1,
+      "worse": 7,
+      "p_value": 0.070312
     }
   },
   "noise_floor": null,

@@ -1,6 +1,6 @@
 # Regression report: s4 (Closed-account reporting time in the Credit Builder skill)
 
-**Decision: Ship.** The change fixed 5 cases and broke none; 1 other case flipped outside its reach and counts as chance.
+**Decision: Ship, as a lead.** The change fixed 5 cases and broke none; 1 other case flipped outside its reach and counts as chance. The test on the cases it could reach gives p = 0.063, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 6 cases that flipped): p = 0.031, significant (improvement) at 0.05.
 
 ## What changed

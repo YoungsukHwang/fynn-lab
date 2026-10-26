@@ -1630,6 +1630,12 @@
         "p_holm": 1.0,
         "significant": false
       }
+    },
+    "case_level": {
+      "cases": 64,
+      "better": 28,
+      "worse": 3,
+      "p_value": 5e-06
     }
   },
   "noise_floor": {

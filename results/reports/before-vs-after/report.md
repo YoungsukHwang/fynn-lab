@@ -1,7 +1,7 @@
 # Regression report
 
 **After passes 165 of 192; before passes 101 of 192.**
-Paired test of the net change (exact run-permutation test; 33 of 64 cases had runs that disagreed): mean pass-fraction change +33.3 pts, p < 0.001, significant (improvement) at 0.05. Persona bootstrap 95% interval [+25.8 pts, +41.7 pts] over 6 personas (descriptive only).
+Paired test of the net change (exact run-permutation test; 33 of 64 cases had runs that disagreed): mean pass-fraction change +33.3 pts, p < 0.001, significant (improvement) at 0.05. Persona bootstrap 95% interval [+25.8 pts, +41.7 pts] over 6 personas (descriptive only). Counting cases instead of runs (sign test): 28 better, 3 worse, p < 0.001.
 
 ## Pass rates
 

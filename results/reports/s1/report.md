@@ -1,6 +1,6 @@
 # Regression report: s1 (Per-card utilization in score-drop answers)
 
-**Decision: Tradeoff, as a lead.** The change fixed 4 cases and broke 1. The paired test of the net change does not back it, so a reached flip may still be chance.
+**Decision: Tradeoff, as a lead.** The change fixed 4 cases and broke 1. A tradeoff stays a lead whatever the test shows, since it broke 1 case it could reach (the test on the cases it could reach gives p = 0.375).
 Paired test of the net change (exact McNemar on the 5 cases that flipped): p = 0.375, not significant at 0.05.
 
 ## What changed

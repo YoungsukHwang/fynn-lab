@@ -10,9 +10,9 @@
 
 Paired by case (up: the second passes more often):
 
-- after-haiku to after (run_permutation): 31 up, 6 down, p < 0.001
-- after to after-opus (run_permutation): 8 up, 6 down, p = 0.0988
-- after-haiku to after-opus (run_permutation): 30 up, 3 down, p < 0.001
+- after-haiku to after (run_permutation): 31 up, 6 down, p < 0.001; counting cases (sign test), p < 0.001
+- after to after-opus (run_permutation): 8 up, 6 down, p = 0.0988; counting cases (sign test), p = 0.7905
+- after-haiku to after-opus (run_permutation): 30 up, 3 down, p < 0.001; counting cases (sign test), p < 0.001
 
 Passing runs if replies over a cutoff counted as failures (the rules say about 250 words; nothing grades it):
 

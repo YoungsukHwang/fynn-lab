@@ -1,6 +1,6 @@
 # Regression report: s2 (Shorter replies in the always-on response rules)
 
-**Decision: Do not ship, as a lead.** The change fixed 1 case and broke 7. The paired test of the net change does not back it, so a reached flip may still be chance.
+**Decision: Do not ship, as a lead.** The change fixed 1 case and broke 7. The test on the cases it could reach gives p = 0.070, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 8 cases that flipped): p = 0.070, not significant at 0.05.
 
 ## What changed

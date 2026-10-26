@@ -1,6 +1,6 @@
 # Regression report
 
-**Decision: Ship, as a lead.** The change fixed 3 cases and broke none; 8 other cases flipped outside its reach and count as chance. The paired test of the net change does not back it, so a reached flip may still be chance.
+**Decision: Ship, as a lead.** The change fixed 3 cases and broke none; 8 other cases flipped outside its reach and count as chance. The test on the cases it could reach gives p = 0.250, so a reached flip may still be chance.
 Paired test of the net change (exact McNemar on the 11 cases that flipped): p = 0.065, not significant at 0.05.
 
 ## What changed

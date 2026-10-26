@@ -719,6 +719,12 @@
         "p_holm": 1.0,
         "significant": false
       }
+    },
+    "case_level": {
+      "cases": 24,
+      "better": 9,
+      "worse": 1,
+      "p_value": 0.021484
     }
   },
   "noise_floor": {

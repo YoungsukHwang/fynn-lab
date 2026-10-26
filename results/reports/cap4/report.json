@@ -901,6 +901,8 @@
     ],
     "errored": [],
     "decision": "ship",
+    "reached_p": 0.25,
+    "reached_significant": false,
     "tested": false
   },
   "flag_rule": {
@@ -965,6 +967,12 @@
         "p_holm": 1.0,
         "significant": false
       }
+    },
+    "case_level": {
+      "cases": 62,
+      "better": 9,
+      "worse": 2,
+      "p_value": 0.06543
     }
   },
   "noise_floor": null,

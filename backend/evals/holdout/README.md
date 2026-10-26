@@ -37,7 +37,7 @@ Added after the runs; the plan above is unchanged from the commit before them (`
 | One domain is enough (11) | 31 of 33 (94%) | 30 of 33 (91%) |
 | All (24) | 43 of 72 (60%) | 69 of 72 (96%) |
 
-Mean gain +36 points per case, p < 0.001 (run-permutation), persona bootstrap interval +28 to +46; 9 cases improved and none regressed under the flag rule. Recorded cost $3.56.
+Mean gain +36 points per case, p < 0.001 (run-permutation), persona bootstrap interval +28 to +46; 9 cases improved and none regressed under the flag rule. The run-permutation test holds these 24 cases fixed. Counting cases as a sample of questions instead (sign test), 9 came out better on After and 1 worse (p = 0.021); on the 13 needing a second domain, 9 better and none worse (p = 0.004). Recorded cost $3.56.
 
 Against the expectations:
 
